@@ -1066,3 +1066,11 @@ body:not([data-outfit="hero"]) .mascot .blink{display:none}
 .jar b{position:absolute;left:0;right:0;bottom:0;height:62%;background:var(--jc);opacity:.9}
 .jar.pop{animation:jpop .25s}
 @keyframes jpop{50%{transform:scale(1.14)}}
+
+/* ---- 3D glossy artwork: question cards and tiered chests ---- */
+.bcard .front,.mcard .front{background:url(art/3d_qcard.webp) center/contain no-repeat!important;border:0!important;box-shadow:none!important;font-size:0!important;color:transparent!important;text-shadow:none!important;filter:drop-shadow(0 4px 3px rgba(0,40,90,.4));transition:transform .5s,filter .2s}
+.bcard:active .front{transform:scale(.94)}
+@media (hover:hover) and (pointer:fine){.bcard:hover .front{filter:drop-shadow(0 6px 6px rgba(0,40,90,.5)) brightness(1.08)}}
+#chest .chest-art{width:150px;height:140px;object-fit:contain;filter:drop-shadow(0 6px 5px rgba(60,20,0,.45))}
+#chestSpeed{margin-top:8px;background:linear-gradient(#ffd84a,#ff9a00);color:#5a2a00;border:3px solid #fff}
+.med .disc img{object-fit:contain}

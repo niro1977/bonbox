@@ -755,7 +755,7 @@
   }
   /* ---------- daily bonus: pick one of nine cards ---------- */
   const PRIZES = [
-    { id: 'c10', w: 30, coins: 10 }, { id: 'c25', w: 20, coins: 25 }, { id: 'c50', w: 9, coins: 50, rare: 1 }, { id: 'c100', w: 2, coins: 100, rare: 1 },
+    { id: 'c10', w: 30, coins: 5 }, { id: 'c25', w: 20, coins: 10 }, { id: 'c50', w: 9, coins: 25, rare: 1 }, { id: 'c100', w: 2, coins: 50, rare: 1 },
     { id: 'h1', w: 22, hints: 1 }, { id: 'h2', w: 8, hints: 2, rare: 1 }, { id: 'w1', w: 9, wands: 1, rare: 1 },
     { id: 's1', w: 10, shield: 1 }, { id: 'k1', w: 10, sweeper: 1 }, { id: 'l1', w: 10, lens: 1 }, { id: 'd1', w: 5, double: 1, rare: 1 }
   ];
@@ -871,7 +871,7 @@
     const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; }
     score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
     store.set('score', score); postScore();
-    const earnedCoins = (cur.n * 2 + (cur.hearts >= 3 ? 4 : 0)) * (rushActive() ? 2 : 1);
+    const earnedCoins = (cur.n + (cur.hearts >= 3 ? 2 : 0)) * (rushActive() ? 2 : 1);
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
     setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
@@ -900,7 +900,7 @@
     else if (m.kind === 'level') { wr.hidden = false; wr.textContent = (cleared % HINT_EVERY) + ' / ' + HINT_EVERY + ' levels to a free hint · wand in ' + (WAND_EVERY - (cleared % WAND_EVERY)) + ' more'; }
     else wr.hidden = true;
     if (m.kind === 'level' && m.level % 10 === 0) {
-      const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 100 : 60, wands: 1, hints: flawless ? 2 : 0, shield: 1, lens: flawless ? 1 : 0 };
+      const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 50 : 30, wands: 1, hints: flawless ? 2 : 0, shield: 1, lens: flawless ? 1 : 0 };
       give(bp); setTimeout(() => announce(bp, '👑 Boss defeated!', true), 3600); wr.hidden = false;
       wr.innerHTML = '👑 Boss defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
@@ -1187,9 +1187,9 @@
     const g = $('game'); if (g) g.style.setProperty('--fbg', frameOf(frame).bg);
     document.documentElement.style.setProperty('--fbg', frameOf(frame).bg);
   }
-  const STK_PRIZES = { 5: { coins: 150, lens: 1 }, 10: { coins: 300, wands: 1, shield: 1 }, 20: { coins: 600, wands: 2, double: 1 }, 30: { coins: 1000, wands: 3, shield: 2, lens: 2 } };
+  const STK_PRIZES = { 5: { coins: 75, lens: 1 }, 10: { coins: 150, wands: 1, shield: 1 }, 20: { coins: 300, wands: 2, double: 1 }, 30: { coins: 500, wands: 3, shield: 2, lens: 2 } };
   const prizeChipsHtml = (p) => Object.keys(p).map((k) => '<em>' + p[k] + '× ' + (PNAME[k] || k) + '</em>').join(' ');
-  const stkPrize = (n) => STK_PRIZES[n] || (n % 5 === 0 ? { coins: 150 } : null);
+  const stkPrize = (n) => STK_PRIZES[n] || (n % 5 === 0 ? { coins: 75 } : null);
   let stkClaimed = store.get('stkClaimed', {});
   const stickerCount = () => Math.min(WORLD_NAMES.length, Math.floor(passed() / 10));
   let colTab = 'outfits';
@@ -1244,7 +1244,7 @@
   function checkUnlocks(m) {
     const lv = m.level, extra = [];
     OUTFITS.filter((o) => o.at === lv && o.at > 0).forEach((o) => extra.push({ t: 'New outfit!', html: '<div class="rw-it"><img src="art/' + o.img + '.webp" alt="" draggable="false"><b>' + o.name + '</b></div>', big: true }));
-    if (lv % 50 === 0) { const n = lv / 50; extra.push({ t: 'Rare sticker!', html: '<div class="rw-it"><div class="sticker big rare">💀</div><b>Extreme Champion ' + n + '</b></div>', p: { coins: 200 }, big: true }); give({ coins: 200 }); }
+    if (lv % 50 === 0) { const n = lv / 50; extra.push({ t: 'Rare sticker!', html: '<div class="rw-it"><div class="sticker big rare">💀</div><b>Extreme Champion ' + n + '</b></div>', p: { coins: 100 }, big: true }); give({ coins: 100 }); }
     FRAMES.filter((f) => f.at === lv && f.at > 0).forEach((f) => extra.push({ t: 'New board frame!', html: '<div class="rw-it"><div class="swatch big" style="background:' + f.bg + '"><u></u><u></u><u></u><u></u></div><b>' + f.name + '</b></div>' }));
     if (lv % 10 === 0 && lv / 10 <= WORLD_NAMES.length) {
       const i = lv / 10 - 1; extra.push({ t: 'New sticker!', html: '<div class="rw-it"><div class="sticker big" style="background-image:url(art/bg_' + i + '.jpg)"></div><b>' + WORLD_NAMES[i] + '</b></div>' });
@@ -1257,19 +1257,19 @@
   const weekKey = () => { const d = new Date(); const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return t.getUTCFullYear() + '-W' + Math.ceil(((t - y0) / 864e5 + 1) / 7); };
   let stats = Object.assign({ solved: 0, flawless: 0, nohint: 0, bosses: 0, run: 0, maxRun: 0 }, store.get('stats', {}));
   let weekly = store.get('weekly', null), achClaimed = store.get('achClaimed', {});
-  const WDEF = [{ id: 'w1', text: 'Solve 15 levels this week', goal: 15, key: 'solved', prize: { coins: 100, double: 1 } },
+  const WDEF = [{ id: 'w1', text: 'Solve 15 levels this week', goal: 15, key: 'solved', prize: { coins: 50, double: 1 } },
     { id: 'w2', text: 'Win 3 Hard (or harder) levels', goal: 3, key: 'hard', prize: { lens: 1, shield: 1 } },
-    { id: 'w3', text: 'Win 5 levels without losing a heart', goal: 5, key: 'flawless', prize: { wands: 1, coins: 60 } }];
-  const ADEF = [{ id: 'a1', text: 'Pass 10 levels', goal: 10, get: () => stats.solved, prize: { coins: 50 } },
-    { id: 'a2', text: 'Pass 50 levels', goal: 50, get: () => stats.solved, prize: { coins: 120, shield: 1 } },
-    { id: 'a3', text: 'Pass 100 levels', goal: 100, get: () => stats.solved, prize: { coins: 250, lens: 2 } },
-    { id: 'a4', text: 'Pass 200 levels', goal: 200, get: () => stats.solved, prize: { coins: 500, wands: 2, double: 1 } },
+    { id: 'w3', text: 'Win 5 levels without losing a heart', goal: 5, key: 'flawless', prize: { wands: 1, coins: 30 } }];
+  const ADEF = [{ id: 'a1', text: 'Pass 10 levels', goal: 10, get: () => stats.solved, prize: { coins: 25 } },
+    { id: 'a2', text: 'Pass 50 levels', goal: 50, get: () => stats.solved, prize: { coins: 60, shield: 1 } },
+    { id: 'a3', text: 'Pass 100 levels', goal: 100, get: () => stats.solved, prize: { coins: 125, lens: 2 } },
+    { id: 'a4', text: 'Pass 200 levels', goal: 200, get: () => stats.solved, prize: { coins: 250, wands: 2, double: 1 } },
     { id: 'a5', text: 'Win 10 levels without losing a heart', goal: 10, get: () => stats.flawless, prize: { sweeper: 2 } },
-    { id: 'a6', text: 'Win 50 levels without losing a heart', goal: 50, get: () => stats.flawless, prize: { coins: 200, shield: 2 } },
-    { id: 'a7', text: 'Win 10 levels with no hints', goal: 10, get: () => stats.nohint, prize: { coins: 80 } },
-    { id: 'a8', text: 'Defeat 3 bosses', goal: 3, get: () => stats.bosses, prize: { wands: 1, coins: 100 } },
-    { id: 'a9', text: 'Sky Path: 5 flawless levels in a row', goal: 5, get: () => stats.maxRun, prize: { coins: 100, lens: 1 } },
-    { id: 'a10', text: 'Daily Bonus streak of 7 days', goal: 7, get: () => Math.max(bonus.streak || 0, 0), prize: { wands: 1, coins: 100 } }];
+    { id: 'a6', text: 'Win 50 levels without losing a heart', goal: 50, get: () => stats.flawless, prize: { coins: 100, shield: 2 } },
+    { id: 'a7', text: 'Win 10 levels with no hints', goal: 10, get: () => stats.nohint, prize: { coins: 40 } },
+    { id: 'a8', text: 'Defeat 3 bosses', goal: 3, get: () => stats.bosses, prize: { wands: 1, coins: 50 } },
+    { id: 'a9', text: 'Sky Path: 5 flawless levels in a row', goal: 5, get: () => stats.maxRun, prize: { coins: 50, lens: 1 } },
+    { id: 'a10', text: 'Daily Bonus streak of 7 days', goal: 7, get: () => Math.max(bonus.streak || 0, 0), prize: { wands: 1, coins: 50 } }];
   function freshWeek() { const k = weekKey(); if (!weekly || weekly.week !== k) { weekly = { week: k, solved: 0, hard: 0, flawless: 0, claimed: {} }; store.set('weekly', weekly); } }
   function trackSolved() {
     freshWeek(); const flawless = cur.hearts >= MAX_HEARTS;
@@ -1315,9 +1315,9 @@
 
   const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick'].forEach((id) => { $(id).hidden = true; }); };
   const QDEF = [
-    { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 25 },
-    { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 30 },
-    { id: 'flawless', text: 'Solve a level without losing a heart', goal: 1, coins: 30 }
+    { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 12 },
+    { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 15 },
+    { id: 'flawless', text: 'Solve a level without losing a heart', goal: 1, coins: 15 }
   ];
   function freshDay() {
     const t = today();
@@ -1331,7 +1331,7 @@
     freshDay(); trackSolved();
     quests.p.solved++; if (!cur.hints) quests.p.nohint++; if (cur.hearts >= MAX_HEARTS) quests.p.flawless++;
     store.set('quests', quests);
-    chest.n = Math.min(CHEST_AT, chest.n + 1); store.set('chest', chest);
+    chest.n = Math.min(CHEST_AT, chest.n + 1); if (cur.hearts >= MAX_HEARTS) chest.fl = (chest.fl || 0) + 1; store.set('chest', chest);
     updateSides();
   }
   function updateSides() {
@@ -1340,7 +1340,9 @@
     set('medDailyTag', daily.last === today() ? '✓' : 'Play');
     const free = wheel.date !== today() || wheel.extra > 0;
     set('medWheelTag', free ? 'FREE' : 'Soon'); $('medWheel').classList.toggle('ready', free);
-    set('medChestTag', chest.n >= CHEST_AT ? 'OPEN' : chest.n + '/' + CHEST_AT); $('medChest').classList.toggle('ready', chest.n >= CHEST_AT);
+    { const q = chest.q, rd = q ? chestLeft() <= 0 : chest.n >= CHEST_AT;
+      set('medChestTag', q ? (chestLeft() <= 0 ? 'OPEN' : fmtWait(chestLeft())) : chest.n >= CHEST_AT ? 'START' : chest.n + '/' + CHEST_AT); $('medChest').classList.toggle('ready', rd);
+      const ci = document.querySelector('#medChest .disc img'); if (ci) ci.src = chestImg(q ? q.tier : chestTier()); }
     const left = (MAX_PLAYS - plays.memory) + (MAX_PLAYS - plays.toss) + (MAX_PLAYS - (plays.odd || 0)) + (MAX_PLAYS - (plays.jars || 0));
     set('medGamesTag', left + '/' + MAX_PLAYS * 4);
     const pc = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
@@ -1355,7 +1357,7 @@
     S.unlock(); S.tap(); closeAll();
     const list = $('giftList'); list.innerHTML = '';
     const rows = [
-      { name: 'Daily gift', sub: dailyGiftReady() ? 'Ready to collect!' : 'Come back tomorrow', ready: dailyGiftReady(), prize: { coins: 20 }, claim: () => { gifts.daily = today(); } },
+      { name: 'Daily gift', sub: dailyGiftReady() ? 'Ready to collect!' : 'Come back tomorrow', ready: dailyGiftReady(), prize: { coins: 10 }, claim: () => { gifts.daily = today(); } },
       { name: 'Free hint', sub: freeGiftReady() ? 'Ready to collect!' : 'Ready in ' + (() => { const ms = 6 * HOUR - (Date.now() - gifts.free), h = Math.floor(ms / HOUR), m = Math.ceil((ms % HOUR) / 60000); return h + 'h ' + m + 'm'; })(), ready: freeGiftReady(), prize: { hints: 1 }, claim: () => { gifts.free = Date.now(); } }
     ];
     rows.forEach((r) => {
@@ -1371,15 +1373,36 @@
   function openQuests() {
     S.unlock(); S.tap(); closeAll(); freshDay(); freshWeek(); { const tr = tabReady(); if (!tr[qTab]) qTab = tr.daily ? 'daily' : tr.weekly ? 'weekly' : tr.trophies ? 'trophies' : qTab; } renderQuests(); $('quests').hidden = false;
   }
-  /* chest */
+  /* chest: fills up as you solve levels; the better you played (hearts kept), the bigger the chest.
+     It then needs time to open: small 15 min, medium 1 h, large 3 h. Coins can speed it up. */
+  const CHEST_T = { small: 15 * 60e3, med: 60 * 60e3, large: 3 * 3600e3 }, CHEST_NAME = { small: 'Small chest', med: 'Medium chest', large: 'Large chest' };
+  const chestTier = () => ((chest.fl || 0) >= 8 ? 'large' : (chest.fl || 0) >= 4 ? 'med' : 'small');
+  const chestImg = (t) => 'art/3d_chest_' + (t === 'med' ? 'med' : t) + '.webp';
+  const chestLeft = () => (chest.q ? Math.max(0, chest.q.ready - Date.now()) : 0);
+  const speedCost = () => Math.max(3, Math.ceil(chestLeft() / 60000 / 5));
+  function mergePrize(a, b) { const o = Object.assign({}, a); Object.keys(b).forEach((k) => { o[k] = (o[k] || 0) + b[k]; }); return o; }
+  function chestLoot(tier) {
+    const common = () => { let p; do { p = rollPrize(0, false); } while (p.rare); return p; };
+    if (tier === 'small') return mergePrize({ coins: 8 }, common());
+    if (tier === 'med') return mergePrize(mergePrize({ coins: 15 }, common()), rollPrize(3, true));
+    return mergePrize(mergePrize(mergePrize({ coins: 30 }, rollPrize(6, true)), rollPrize(6, true)), { wands: 1 });
+  }
+  function renderChest() {
+    const art = document.querySelector('#chest .chest-art'), full = chest.n >= CHEST_AT, b = $('chestOpen'), q = chest.q;
+    const tier = q ? q.tier : chestTier(); art.src = chestImg(tier); art.classList.remove('opening', 'opened'); $('chestPrize').innerHTML = '';
+    $('chestBar').style.width = (q ? 100 - chestLeft() / CHEST_T[q.tier] * 100 : (chest.n / CHEST_AT) * 100) + '%';
+    b.hidden = false; b.disabled = false; $('chestSpeed').hidden = true;
+    if (q) {
+      if (chestLeft() <= 0) { $('chestMsg').textContent = CHEST_NAME[q.tier] + ' is ready!'; b.textContent = 'Open chest'; }
+      else {
+        $('chestMsg').textContent = CHEST_NAME[q.tier] + ' opens in ' + fmtWait(chestLeft()); b.hidden = true;
+        const sp = $('chestSpeed'); sp.hidden = false; sp.innerHTML = 'Open now · ' + speedCost() + ' ' + coinSvg; sp.disabled = coins < speedCost();
+      }
+    } else if (full) { $('chestMsg').textContent = 'Full! It will be a ' + CHEST_NAME[chestTier()].toLowerCase() + '.'; b.textContent = 'Start opening · ' + fmtWait(CHEST_T[chestTier()]); }
+    else { $('chestMsg').textContent = 'Solve ' + (CHEST_AT - chest.n) + ' more level' + (CHEST_AT - chest.n > 1 ? 's' : '') + ' · ' + CHEST_NAME[chestTier()] + ' so far (keep your hearts for a bigger one)'; b.disabled = true; b.textContent = 'Start opening'; }
+  }
   function openChest() {
-    S.unlock(); S.tap(); closeAll();
-    const full = chest.n >= CHEST_AT;
-    $('chestMsg').textContent = full ? 'Your chest is ready!' : 'Solve ' + (CHEST_AT - chest.n) + ' more level' + (CHEST_AT - chest.n > 1 ? 's' : '') + ' to open it';
-    $('chestBar').style.width = (chest.n / CHEST_AT) * 100 + '%'; $('chestPrize').innerHTML = '';
-    document.querySelector('#chest .chest-art').classList.remove('opening', 'opened');
-    const b = $('chestOpen'); b.disabled = !full; b.hidden = false; b.textContent = 'Open chest';
-    $('chest').hidden = false;
+    S.unlock(); S.tap(); closeAll(); renderChest(); $('chest').hidden = false;
   }
   function coinBurst(el) {
     const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.35, L = fxLayer();
@@ -1392,23 +1415,32 @@
     }
   }
   function openChestNow() {
-    if (chest.n < CHEST_AT) return;
-    chest.n -= CHEST_AT; store.set('chest', chest);
-    const p = rollPrize(5, true), bonus = { coins: 30 };
-    give(p); give(bonus);
+    if (!chest.q) {                                                   // start the timer
+      if (chest.n < CHEST_AT) return;
+      const tier = chestTier(); chest.q = { tier, ready: Date.now() + CHEST_T[tier] }; chest.n -= CHEST_AT; chest.fl = 0; store.set('chest', chest);
+      S.tap(); buzz(14); renderChest(); updateSides(); return;
+    }
+    if (chestLeft() > 0) return;
+    const tier = chest.q.tier, p = chestLoot(tier); chest.q = null; store.set('chest', chest);
+    give(p);
     const art = document.querySelector('#chest .chest-art'), btn = $('chestOpen'); btn.hidden = true; $('chestMsg').textContent = 'Opening…';
     art.classList.remove('opened'); void art.offsetWidth; art.classList.add('opening'); S.tap();
     [0, 220, 440, 660].forEach((t) => setTimeout(() => { S.tap(); buzz(14); }, t));
     setTimeout(() => {
       art.classList.remove('opening'); art.classList.add('opened'); coinBurst(art); S.win(); buzz([30, 40, 60]);
-      $('chestPrize').innerHTML = '<div class="rwd big">' + prizeHtml(p) + '</div><div class="rwd">' + prizeHtml(bonus) + '</div>';
-      $('chestMsg').textContent = 'You found ' + prizeText(p) + ' and 30 coins!';
+      $('chestPrize').innerHTML = '<div class="rwd big">' + prizeHtml(p) + '</div>';
+      $('chestMsg').textContent = CHEST_NAME[tier] + ': ' + prizeText(p);
       $('chestBar').style.width = (chest.n / CHEST_AT) * 100 + '%'; updateSides();
-      setTimeout(() => announce(Object.assign({}, p, { coins: (p.coins || 0) + 30 }), 'Candy Chest!', true), 1300);
+      setTimeout(() => announce(p, CHEST_NAME[tier] + '!', tier !== 'small'), 1300);
     }, 950);
   }
+  function renderChestTick() { if (chest.q && !$('chest').hidden && !$('chestPrize').innerHTML) renderChest(); }
+  function speedChest() {
+    if (!chest.q || chestLeft() <= 0) return; const c = speedCost(); if (coins < c) { toast('Not enough coins'); return; }
+    coins -= c; saveWallet(); updateHintUi(); chest.q.ready = Date.now() - 1; store.set('chest', chest); S.ui('buy', 1, 1); renderChest(); updateSides();
+  }
   /* lucky wheel */
-  const WSEG = [{ c: 10 }, { h: 1 }, { s: 1 }, { k: 1 }, { w: 1 }, { l: 1 }, { d: 1 }, { c: 50 }], WW = [24, 16, 12, 12, 8, 12, 5, 3], WCOL = ['#ff5fa8', '#ffb347', '#7be37a', '#45d0ff', '#b07bff', '#ffe14d', '#ff7a5c', '#5fd8ff'];
+  const WSEG = [{ c: 5 }, { h: 1 }, { s: 1 }, { k: 1 }, { w: 1 }, { l: 1 }, { d: 1 }, { c: 25 }], WW = [24, 16, 12, 12, 8, 12, 5, 3], WCOL = ['#ff5fa8', '#ffb347', '#7be37a', '#45d0ff', '#b07bff', '#ffe14d', '#ff7a5c', '#5fd8ff'];
   let wheelRot = 0, spinning = false;
   function buildWheel() {
     const ICON = (g) => (g.c ? 'ic_coin' : g.h ? 'ic_hint' : g.w ? 'ic_wand' : g.s ? 'ic_shield' : g.k ? 'ic_sweeper' : g.l ? 'ic_lens' : 'ic_double');
@@ -1456,21 +1488,23 @@
     $('wheelBtn').textContent = free ? 'Spin (free!)' : extra > 0 ? 'Spin (' + extra + ' bonus)' : 'Come back tomorrow';
   }
   /* mini-games hub */
+  const GAME_CD = 2 * 3600e3;
+  const fmtWait = (ms) => { const m = Math.ceil(ms / 60000); return m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm'; };
   function openGames() {
     S.unlock(); S.tap(); closeAll(); freshDay();
     const list = $('gameList'); list.innerHTML = '';
     [['memory', 'Memory Match', 'Find all the pairs in 14 moves', 'games'], ['toss', 'Candy Toss', 'Toss 5 candies into the jar', 'games'], ['odd', 'Odd One Out', 'Spot the different candy before time runs out', 'games'], ['jars', 'Sugar Jars', 'Tap the jar that matches the drop', 'games']].forEach((g) => {
-      const left = MAX_PLAYS - (plays[g[0]] || 0), d = document.createElement('div'); d.className = 'shoprow';
-      d.innerHTML = '<img class="pico" src="art/ic_' + g[3] + '.webp" alt="" draggable="false"><span><b>' + g[1] + '</b><small>' + g[2] + ' · ' + left + '/' + MAX_PLAYS + ' today</small></span>';
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy'; b.textContent = 'Play'; b.disabled = left <= 0;
-      b.onclick = () => { if (g[0] === 'memory') startMemory(); else if (g[0] === 'toss') startToss(); else if (g[0] === 'odd') startOdd(); else startJars(); };
+      const left = MAX_PLAYS - (plays[g[0]] || 0), wait = Math.max(0, GAME_CD - (Date.now() - ((plays.t || {})[g[0]] || 0))), d = document.createElement('div'); d.className = 'shoprow';
+      d.innerHTML = '<img class="pico" src="art/ic_' + g[3] + '.webp" alt="" draggable="false"><span><b>' + g[1] + '</b><small>' + g[2] + ' · ' + left + '/' + MAX_PLAYS + ' today' + (wait > 0 && left > 0 ? ' · ready in ' + fmtWait(wait) : '') + '</small></span>';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy'; b.textContent = wait > 0 && left > 0 ? '⏳' : 'Play'; b.disabled = left <= 0 || wait > 0;
+      b.onclick = () => { plays.t = plays.t || {}; plays.t[g[0]] = Date.now(); store.set('plays', plays); if (g[0] === 'memory') startMemory(); else if (g[0] === 'toss') startToss(); else if (g[0] === 'odd') startOdd(); else startJars(); };
       d.appendChild(b); list.appendChild(d);
     });
     $('games').hidden = false;
   }
 
   /* ---------- Candy Pass: a vertical track of prizes; every level won without losing a heart climbs one step ---------- */
-  const PASS = [{ coins: 20 }, { coins: 30, hints: 1 }, { coins: 40 }, { wands: 1 }, { coins: 50, shield: 1 }, { coins: 60 }, { lens: 1, coins: 30 }, { coins: 80 }, { sweeper: 1, coins: 40 }, { coins: 150, wands: 1, double: 1 }];
+  const PASS = [{ coins: 10 }, { coins: 15, hints: 1 }, { coins: 20 }, { wands: 1 }, { coins: 25, shield: 1 }, { coins: 30 }, { lens: 1, coins: 15 }, { coins: 40 }, { sweeper: 1, coins: 20 }, { coins: 75, wands: 1, double: 1 }];
   let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
   function passAdvance() {
     if (pass.step >= PASS.length) return;
@@ -1549,7 +1583,7 @@
     freshDay(); if ((plays.odd || 0) >= MAX_PLAYS) return; plays.odd = (plays.odd || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Odd One Out', 'Tap the candy that is different. Wrong taps cost 3 seconds.');
     const sizes = [3, 3, 4, 4, 5, 5]; let round = 0, score = 0, penalty = 0, over = false; const t0 = performance.now(), TOTAL = 30000;
-    const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, 10 + score * 6, win ? { hints: 1 } : null); };
+    const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, 5 + score * 3, win ? { hints: 1 } : null); };
     const board = () => {
       const n = sizes[round], a = Math.floor(Math.random() * 10); let b = Math.floor(Math.random() * 9); if (b >= a) b++;
       const odd = Math.floor(Math.random() * n * n), g = document.createElement('div'); g.className = 'oddgrid'; g.style.gridTemplateColumns = 'repeat(' + n + ',1fr)';
@@ -1576,7 +1610,7 @@
     const cols = ['#22b8ff', '#ff52c8', '#ffd400', '#7ee21f'], body = $('quickBody'), TOT = 14; let n = 0, ok = 0, lives = 3, over = false, now = 0, tStart = 0, dur = 2400;
     body.innerHTML = '<div class="jdrop"><i id="jDrop"></i></div><div class="jars">' + cols.map((c, i) => '<button type="button" class="jar" data-i="' + i + '" style="--jc:' + c + '"><b></b></button>').join('') + '</div>';
     const drop = $('jDrop');
-    const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? 'Perfect!' : ok + ' / ' + TOT + ' sorted', ok * 4 + 5, ok >= TOT ? { wands: 1 } : null); };
+    const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? 'Perfect!' : ok + ' / ' + TOT + ' sorted', ok * 2 + 3, ok >= TOT ? { wands: 1 } : null); };
     const next = () => {
       if (over) return; if (n >= TOT) return fin();
       now = Math.floor(Math.random() * 4); drop.style.background = 'radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),transparent 45%),' + cols[now];
@@ -1600,7 +1634,7 @@
     const grid = $('memGrid'); grid.innerHTML = ''; let first = null, lock = false, found = 0, moves = 14;
     $('memMoves').textContent = 'Moves left: ' + moves; $('memMsg').textContent = ''; $('memClose').textContent = 'Give up';
     const finish = (win) => {
-      const reward = win ? 15 + moves * 3 : 5; give({ coins: reward }, true); S.win(); updateSides();
+      const reward = win ? 8 + moves * 2 : 3; give({ coins: reward }, true); S.win(); updateSides();
       $('memMsg').innerHTML = (win ? 'Great memory! +' : 'Out of moves. +') + reward + ' ' + coinSvg; $('memClose').textContent = 'Done'; lock = true;
     };
     deck.forEach((id) => {
@@ -1636,7 +1670,7 @@
     let shot = 0, hits = 0, perfect = 0, flying = null, note = '', noteT = 0, over = false, t0 = performance.now(), lastT = t0, jx = W / 2;
     const jarPos = (t) => W / 2 + Math.sin(t / 1000 * (1.5 + shot * 0.5)) * (W / 2 - JW / 2 - 8);
     const end = () => {
-      over = true; const reward = hits * 8 + perfect * 6; give({ coins: reward }, true); S.win(); updateSides();
+      over = true; const reward = hits * 4 + perfect * 3; give({ coins: reward }, true); S.win(); updateSides();
       $('tossMsg').innerHTML = hits + ' in the jar! +' + reward + ' ' + coinSvg; $('tossClose').textContent = 'Done';
     };
     cv.onpointerdown = (e) => { e.preventDefault(); S.unlock(); if (over || flying) return; flying = { y: SY }; };
@@ -1671,7 +1705,7 @@
     $('navGifts').onclick = openGifts; $('navQuests').onclick = openQuests;
     $('navHome').onclick = () => { S.tap(); closeAll(); scrollToLevel(level); }; $('navShop').onclick = openShop; $('navRank').onclick = openRanking;
     $('walletMe').onclick = openProfile;
-    $('wheelBtn').onclick = spinWheel; $('chestOpen').onclick = openChestNow;
+    $('wheelBtn').onclick = spinWheel; $('chestOpen').onclick = openChestNow; $('chestSpeed').onclick = speedChest;
     $('wheelClose').onclick = () => { S.tap(); if (!spinning) $('wheel').hidden = true; };
     $('chestClose').onclick = () => { S.tap(); $('chest').hidden = true; };
     $('questClose').onclick = () => { S.tap(); $('quests').hidden = true; };
@@ -1681,7 +1715,7 @@
     $('tossClose').onclick = () => { S.tap(); stopToss(); $('toss').hidden = true; updateSides(); };
     $('medPass').onclick = openPass; $('passClose').onclick = () => { S.tap(); $('pass').hidden = true; updateSides(); };
     $('medRush').onclick = startRush; $('quickClose').onclick = () => { S.tap(); stopQuick(); $('quick').hidden = true; updateSides(); };
-    setInterval(() => { if (rushActive() || rushWas) updateRushTag(); }, 1000);
+    setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
   }
   wireExtras();
   // every popup opens and closes with a sound, found automatically
