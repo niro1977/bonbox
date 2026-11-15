@@ -1074,3 +1074,19 @@ body:not([data-outfit="hero"]) .mascot .blink{display:none}
 #chest .chest-art{width:150px;height:140px;object-fit:contain;filter:drop-shadow(0 6px 5px rgba(60,20,0,.45))}
 #chestSpeed{margin-top:8px;background:linear-gradient(#ffd84a,#ff9a00);color:#5a2a00;border:3px solid #fff}
 .med .disc img{object-fit:contain}
+
+/* ---- Events screen: glossy 3D cards ---- */
+.evgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-height:calc(100dvh - 250px);overflow-y:auto;overflow-x:hidden;padding:4px 2px 10px;-webkit-overflow-scrolling:touch}
+.evcard{position:relative;border:3px solid #fff;border-radius:18px;background:linear-gradient(160deg,var(--a),var(--b));box-shadow:0 5px 0 rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.55);padding:6px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#fff;overflow:hidden;cursor:pointer}
+.evcard::before{content:"";position:absolute;left:-10%;right:-10%;top:0;height:46%;background:linear-gradient(rgba(255,255,255,.42),rgba(255,255,255,.04));border-radius:0 0 60% 60%/0 0 40% 40%;pointer-events:none}
+.evart{display:grid;place-items:center;height:80px;position:relative}
+.evart img{max-width:94px;max-height:80px;object-fit:contain;filter:drop-shadow(0 4px 3px rgba(0,0,0,.45))}
+.evcard b{position:relative;font-size:14px;line-height:1.05;text-align:center;-webkit-text-stroke:1px #000;paint-order:stroke fill;font-weight:900}
+.evcard em{position:relative;font-style:normal;font-size:11px;font-weight:900;background:rgba(0,0,0,.38);border-radius:99px;padding:2px 9px;margin-top:1px;white-space:nowrap}
+.evcard.hot em{background:linear-gradient(#ffd84a,#ff9a00);color:#5a2a00}
+.evcard.hot .evart img{animation:evbob 1.6s ease-in-out infinite}
+.evcard.dim{filter:saturate(.55) brightness(.85)}
+.evcard:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.55)}
+@keyframes evbob{50%{transform:translateY(-4px) scale(1.04)}}
+@media (prefers-reduced-motion:reduce){.evcard.hot .evart img{animation:none}}
+.qcv{display:block;width:100%;max-width:300px;margin:0 auto;border-radius:14px;touch-action:none;box-shadow:0 4px 0 rgba(0,0,0,.3),0 0 0 3px #fff;cursor:crosshair}

@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icon-180.png?v=85">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
-<link rel="stylesheet" href="style.css?v=109">
+<link rel="stylesheet" href="style.css?v=111">
 </head>
 <body>
 <div id="scene" aria-hidden="true"></div>
@@ -155,15 +155,14 @@
   <div class="sides">
     <div class="col l">
       <button class="med" id="medDaily" type="button"><span class="disc"><svg><use href="#c3"/></svg></span><span class="tag" id="medDailyTag">Play</span></button>
-      <button class="med" id="medPass" type="button"><span class="disc emo">🎟️</span><span class="tag" id="medPassTag">0/10</span></button>
       <button class="med" id="medWheel" type="button"><span class="disc"><img class="" src="art/ic_wheel.webp" alt="" draggable="false"></span><span class="tag" id="medWheelTag">FREE</span></button>
     </div>
     <div class="col r">
       <button class="med" id="medChest" type="button"><span class="disc"><img class="" src="art/ic_chest.webp" alt="" draggable="false"></span><span class="tag" id="medChestTag">0/10</span></button>
-      <button class="med" id="medRush" type="button"><span class="disc emo">⚡</span><span class="tag" id="medRushTag">START</span></button>
-      <button class="med" id="medGames" type="button"><span class="disc"><img class="" src="art/ic_games.webp" alt="" draggable="false"></span><span class="tag" id="medGamesTag">4/4</span></button>
+      <button class="med" id="medEvents" type="button"><span class="disc"><img src="art/ev_shooter.webp" alt="" draggable="false"></span><span class="tag" id="medEventsTag">EVENTS</span></button>
     </div>
   </div>
+  <div hidden><button class="med" id="medPass" type="button"><span class="disc emo">🎟️</span><span class="tag" id="medPassTag">0/10</span></button><button class="med" id="medRush" type="button"><span class="disc emo">⚡</span><span class="tag" id="medRushTag">START</span></button><button class="med" id="medGames" type="button"><span class="disc"><img class="" src="art/ic_games.webp" alt="" draggable="false"></span><span class="tag" id="medGamesTag">4/4</span></button></div>
   <div class="map" id="map"></div>
 </main>
 
@@ -188,7 +187,7 @@
     <button class="btn" id="maybeBtn" type="button" aria-pressed="false" aria-label="Maybe" title="Maybe"><img class="tico" src="art/tool_maybe.webp" alt="" draggable="false"></button>
     <button class="btn" id="clearBtn" type="button" aria-label="Restart" title="Restart"><img class="tico" src="art/tool_restart_red.webp" alt="" draggable="false"></button>
   </div>
-  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v109</span></p>
+  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v111</span></p>
 </main>
 
 <!-- WIN -->
@@ -315,6 +314,13 @@
   <div class="memgrid" id="memGrid"></div>
   <p class="reward" id="memMsg"></p>
   <button class="btn main wide" id="memClose" type="button">Give up</button>
+</div></div>
+
+<!-- EVENTS -->
+<div id="events" class="overlay" hidden><div class="card">
+  <h2>Events</h2>
+  <div class="evgrid" id="evGrid"></div>
+  <button class="btn main wide" id="eventsClose" type="button">Close</button>
 </div></div>
 
 <!-- CANDY PASS -->
@@ -458,12 +464,12 @@
   <button type="button" id="navShop"><img class="navico" src="art/nav_shop.webp" alt="" draggable="false"><span>Shop</span></button>
   <button type="button" id="navRank"><img class="navico" src="art/nav_rank.webp" alt="" draggable="false"><span>Ranking</span></button>
 </nav>
-<script src="engine.js?v=109"></script>
-<script src="hints.js?v=109"></script>
-<script src="seeds.js?v=109"></script>
-<script src="sound.js?v=109"></script>
-<script src="music.js?v=109"></script>
-<script src="voice.js?v=109"></script>
-<script src="app.js?v=109"></script>
+<script src="engine.js?v=111"></script>
+<script src="hints.js?v=111"></script>
+<script src="seeds.js?v=111"></script>
+<script src="sound.js?v=111"></script>
+<script src="music.js?v=111"></script>
+<script src="voice.js?v=111"></script>
+<script src="app.js?v=111"></script>
 </body>
 </html>
