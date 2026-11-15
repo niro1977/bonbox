@@ -1819,12 +1819,15 @@
   /* ---------- Cart Race: switch lanes, dodge rocks, grab coins, beat the rival to the finish ---------- */
   function startCart() {
     freshDay(); if ((plays.cart || 0) >= MAX_PLAYS) return; plays.cart = (plays.cart || 0) + 1; store.set('plays', plays); updateSides();
-    quickOpen('Cart Race', 'Tap left or right to change lane. Dodge rocks, grab coins, beat the rival!');
+    quickOpen('Cart Race', 'Hold the cart and drag it left or right. Dodge rocks, grab coins, beat the rival!');
     const { cv, g } = quickCanvas(); const bear = new Image(); bear.src = look.stand;
-    const LANES = [84, 150, 216], CART_Y = 292, GOAL = 900; let lane = 1, cx = 150, dist = 0, v = 0, rival = 0, got = 0, shake = 0, items = [], nextSpawn = 8, scroll = 0, over = false, last = performance.now(), t = 0; const texts = [];
-    const go = (d) => { if (over) return; const n = Math.max(0, Math.min(2, lane + d)); if (n !== lane) { lane = n; S.hop(); buzz(6); } };
-    cv.onpointerdown = (e) => { const r = cv.getBoundingClientRect(); go((e.clientX - r.left) < r.width / 2 ? -1 : 1); };
-    quickKey = (e) => { if (e.key === 'ArrowLeft' || e.key === 'a') go(-1); if (e.key === 'ArrowRight' || e.key === 'd') go(1); };
+    const LANES = [84, 150, 216], CART_Y = 292, GOAL = 900; let tx = 150, cx = 150, dist = 0, v = 0, rival = 0, got = 0, shake = 0, items = [], nextSpawn = 8, scroll = 0, over = false, last = performance.now(), t = 0; const texts = [];
+    // drag the cart with your finger: it follows left and right freely (no lanes to tap)
+    const setX = (e) => { const r = cv.getBoundingClientRect(); tx = Math.max(46, Math.min(254, (e.clientX - r.left) * 300 / r.width)); };
+    cv.onpointerdown = (e) => { try { cv.setPointerCapture(e.pointerId); } catch (_) {} setX(e); };
+    cv.onpointermove = (e) => { if (e.pressure > 0 || e.buttons) setX(e); };
+    quickKey = (e) => { if (e.key === 'ArrowLeft' || e.key === 'a') tx = Math.max(46, tx - 60); if (e.key === 'ArrowRight' || e.key === 'd') tx = Math.min(254, tx + 60); };
+    if (location.search.includes('dbg')) window.__cart = () => ({ cx, tx, v, dist, t });
     const finish = (win) => { if (over) return; over = true; quickKey = null; quickEnd(win ? 'You won the race!' : 'The rival won this time', Math.min(10, got) + (win ? 6 : 0), win ? { hints: 1 } : null); };
     const spawn = () => {
       const roll = Math.random(), free = Math.floor(Math.random() * 3);
@@ -1857,12 +1860,12 @@
       if (over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; shake = Math.max(0, shake - dt);
       v += (44 - v) * Math.min(1, dt * 1.4); dist += v * dt; scroll += v * 5 * dt;
       const gap = dist - rival; rival += (33 + 3 * Math.sin(t * 1.3) + (gap > 70 ? -4 : gap < -70 ? 5 : 0)) * dt * Math.min(1, t / 1.5);
-      cx += (LANES[lane] - cx) * Math.min(1, dt * 14);
+      cx += (tx - cx) * Math.min(1, dt * 16);
       if (dist >= nextSpawn) { spawn(); nextSpawn += 15; }
       items.forEach((it) => { it.y += v * 5 * dt; });
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i]; if (it.y > 390) { items.splice(i, 1); continue; }
-        if (Math.abs(it.y - CART_Y) < 26 && Math.abs(LANES[it.lane] - cx) < 26) {
+        if (Math.abs(it.y - CART_Y) < 26 && Math.abs(LANES[it.lane] - cx) < (it.k === 'rock' ? 27 : 30)) {
           if (it.k === 'rock') { v = Math.max(10, v * 0.35); shake = 0.4; S.wrong(); buzz([20, 30]); texts.push({ t: 'Ouch!', x: cx, y: CART_Y - 60, a: 1, c: '#ff6a6a' }); }
           else { got++; S.candy(got % 9, 3); buzz(6); texts.push({ t: '+1', x: cx, y: CART_Y - 60, a: 1, c: '#ffe14d' }); }
           items.splice(i, 1);
