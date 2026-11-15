@@ -893,7 +893,6 @@
     }
     let st = ''; for (let i = 1; i <= 3; i++) st += starSvg(i <= earned);
     $('winStars').innerHTML = st;
-    { const wb = $('winBanner'); wb.textContent = earned >= 3 ? 'WELL DONE!' : earned === 2 ? 'GREAT!' : 'NICE!'; wb.classList.remove('pop'); void wb.offsetWidth; wb.classList.add('pop'); }
     $('winInfo').textContent = cur.n + '×' + cur.n + (cur.tier !== 'normal' ? ' ' + tierLabel[cur.tier] : '') + ' solved' + (cur.hints ? ' · ' + cur.hints + ' hint' + (cur.hints > 1 ? 's' : '') : ' · no hints');
     const wr = $('winReward');
     if (wandReward) { wr.hidden = false; wr.innerHTML = '🪄 Big reward! <b>+1 magic wand</b> for passing ' + WAND_EVERY + ' levels' + (reward ? '<br>🎁 and +1 hint' : ''); }
