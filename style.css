@@ -1114,3 +1114,15 @@ body:not([data-outfit="hero"]) .mascot .blink{display:none}
 @keyframes wbpop{0%{opacity:0;transform:scale(.3) rotate(-8deg)}60%{opacity:1;transform:scale(1.18) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 @media (max-height:640px){.wbanner{top:calc(50% - 230px);font-size:34px}}
 @media (prefers-reduced-motion:reduce){.wbanner.pop{animation:none}}
+
+/* ===== level nodes are now real 3D glossy artwork (Overchat); per-world colour via hue-rotate ===== */
+.node,.node:not(.locked),.node.locked,.node.current,.node.hard,.node.veryhard,.node.extreme{background:none!important;border:0!important;box-shadow:none!important;overflow:visible}
+.node{--nimg:url(art/node_blue.webp);--nf:hue-rotate(0deg)}
+.node.hard{--nimg:url(art/node_hard.webp);--nf:hue-rotate(0deg)!important}
+.node.veryhard{--nimg:url(art/node_vhard.webp);--nf:hue-rotate(0deg)!important}
+.node.extreme{--nimg:url(art/node_extreme.webp);--nf:hue-rotate(0deg)!important}
+.node.locked{--nimg:url(art/node_lock.webp);--nf:hue-rotate(0deg)!important;filter:none!important}
+.node::after{content:"";position:absolute;inset:-5px;background:var(--nimg) center/100% 100% no-repeat;filter:var(--nf) drop-shadow(0 5px 3px rgba(30,0,70,.42));z-index:-1;pointer-events:none;transition:transform .08s}
+.node:not(.locked):active::after{transform:translateY(3px) scale(.97)}
+.node.current::after{filter:var(--nf) drop-shadow(0 0 9px #ffe14d) drop-shadow(0 0 3px #fff) drop-shadow(0 5px 3px rgba(30,0,70,.42))}
+.node.hard,.node.veryhard,.node.extreme{overflow:visible}

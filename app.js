@@ -217,7 +217,7 @@
       b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tier) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
       b.dataset.lv = lv;
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
-      if (tier === 'normal') { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); }
+      if (tier === 'normal') { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--nf', 'hue-rotate(' + (hue - 187) + 'deg)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); }
       let html = '' + lv;
       if (tier !== 'normal') html += '<span class="badge">' + (tier === 'hard' ? 'HARD' : tier === 'extreme' ? 'EXTREME' : 'VERY HARD') + '</span>';
       if (lv < level && stars[lv]) { b.classList.add('hasst'); html += '<span class="st">'; for (let i = 1; i <= 3; i++) html += starSvg(i <= stars[lv]); html += '</span>'; }
