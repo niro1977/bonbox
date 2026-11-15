@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icon-180.png?v=85">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
-<link rel="stylesheet" href="style.css?v=106">
+<link rel="stylesheet" href="style.css?v=107">
 </head>
 <body>
 <div id="scene" aria-hidden="true"></div>
@@ -155,10 +155,12 @@
   <div class="sides">
     <div class="col l">
       <button class="med" id="medDaily" type="button"><span class="disc"><svg><use href="#c3"/></svg></span><span class="tag" id="medDailyTag">Play</span></button>
+      <button class="med" id="medPass" type="button"><span class="disc emo">🎟️</span><span class="tag" id="medPassTag">0/10</span></button>
       <button class="med" id="medWheel" type="button"><span class="disc"><img class="" src="art/ic_wheel.webp" alt="" draggable="false"></span><span class="tag" id="medWheelTag">FREE</span></button>
     </div>
     <div class="col r">
       <button class="med" id="medChest" type="button"><span class="disc"><img class="" src="art/ic_chest.webp" alt="" draggable="false"></span><span class="tag" id="medChestTag">0/10</span></button>
+      <button class="med" id="medRush" type="button"><span class="disc emo">⚡</span><span class="tag" id="medRushTag">START</span></button>
       <button class="med" id="medGames" type="button"><span class="disc"><img class="" src="art/ic_games.webp" alt="" draggable="false"></span><span class="tag" id="medGamesTag">4/4</span></button>
     </div>
   </div>
@@ -186,7 +188,7 @@
     <button class="btn" id="maybeBtn" type="button" aria-pressed="false" aria-label="Maybe" title="Maybe"><img class="tico" src="art/tool_maybe.webp" alt="" draggable="false"></button>
     <button class="btn" id="clearBtn" type="button" aria-label="Restart" title="Restart"><img class="tico" src="art/tool_restart_red.webp" alt="" draggable="false"></button>
   </div>
-  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v106</span></p>
+  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v107</span></p>
 </main>
 
 <!-- WIN -->
@@ -314,6 +316,24 @@
   <button class="btn main wide" id="memClose" type="button">Give up</button>
 </div></div>
 
+<!-- CANDY PASS -->
+<div id="pass" class="overlay" hidden><div class="card">
+  <h2>Candy Pass</h2>
+  <p class="small" id="passInfo">Win levels without losing a heart to climb the pass.</p>
+  <div class="shoplist" id="passList"></div>
+  <button class="btn main wide" id="passClose" type="button">Close</button>
+</div></div>
+
+<!-- QUICK MINI-GAMES (Odd One Out, Sugar Jars) -->
+<div id="quick" class="overlay" hidden><div class="card">
+  <h2 id="quickTitle">Mini-game</h2>
+  <p class="small" id="quickInfo"></p>
+  <div class="qbar"><i id="quickBar"></i></div>
+  <div id="quickBody" class="qbody"></div>
+  <p class="reward" id="quickMsg"></p>
+  <button class="btn main wide" id="quickClose" type="button">Give up</button>
+</div></div>
+
 <!-- CANDY TOSS -->
 <div id="toss" class="overlay" hidden><div class="card">
   <h2>Candy Toss</h2>
@@ -437,12 +457,12 @@
   <button type="button" id="navShop"><img class="navico" src="art/nav_shop.webp" alt="" draggable="false"><span>Shop</span></button>
   <button type="button" id="navRank"><img class="navico" src="art/nav_rank.webp" alt="" draggable="false"><span>Ranking</span></button>
 </nav>
-<script src="engine.js?v=106"></script>
-<script src="hints.js?v=106"></script>
-<script src="seeds.js?v=106"></script>
-<script src="sound.js?v=106"></script>
-<script src="music.js?v=106"></script>
-<script src="voice.js?v=106"></script>
-<script src="app.js?v=106"></script>
+<script src="engine.js?v=107"></script>
+<script src="hints.js?v=107"></script>
+<script src="seeds.js?v=107"></script>
+<script src="sound.js?v=107"></script>
+<script src="music.js?v=107"></script>
+<script src="voice.js?v=107"></script>
+<script src="app.js?v=107"></script>
 </body>
 </html>

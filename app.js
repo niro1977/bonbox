@@ -786,7 +786,7 @@
     $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>+' + r.p[k] + '</b></div>').join('');
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
     $('reward').hidden = false; S.win(); buzz([25, 30, 45]);
-    r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900);
+    r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900); setTimeout(() => flyItems(r), 1000);
     if (V) setTimeout(() => V.say(r.big ? 'bigreward' : r.p.wands ? 'wandget' : ['reward1', 'reward2', 'reward3'][Math.floor(Math.random() * 3)], true), 350);
   }
   // the coins of a prize fly up into the top-bar wallet by themselves while the card is showing
@@ -871,7 +871,7 @@
     const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; }
     score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
     store.set('score', score); postScore();
-    const earnedCoins = cur.n * 2 + (cur.hearts >= 3 ? 4 : 0);
+    const earnedCoins = (cur.n * 2 + (cur.hearts >= 3 ? 4 : 0)) * (rushActive() ? 2 : 1);
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
     setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
@@ -1045,7 +1045,7 @@
     x.onclick = (e) => {
       e.stopPropagation(); S.tap();
       const ov = card.closest('.overlay'); if (!ov) return;
-      const ids = ['#rwOk', '#howClose', '#wheelClose', '#chestClose', '#questClose', '#giftClose', '#gamesClose', '#memClose', '#tossClose', '#rankClose', '#hintCancel', '#shopClose', '#colClose', '#pfClose', '#homeBtn', '#loseHome', '#bonusClaim'];
+      const ids = ['#rwOk', '#howClose', '#wheelClose', '#chestClose', '#questClose', '#giftClose', '#gamesClose', '#memClose', '#tossClose', '#passClose', '#quickClose', '#rankClose', '#hintCancel', '#shopClose', '#colClose', '#pfClose', '#homeBtn', '#loseHome', '#bonusClaim'];
       for (const id of ids) { const b = card.querySelector(id); if (b) { b.click(); if (ov.hidden) return; break; } }
       ov.hidden = true;                                   // any popup without its own button just closes
     };
@@ -1273,7 +1273,7 @@
   function freshWeek() { const k = weekKey(); if (!weekly || weekly.week !== k) { weekly = { week: k, solved: 0, hard: 0, flawless: 0, claimed: {} }; store.set('weekly', weekly); } }
   function trackSolved() {
     freshWeek(); const flawless = cur.hearts >= MAX_HEARTS;
-    stats.solved++; if (flawless) { stats.flawless++; stats.run++; stats.maxRun = Math.max(stats.maxRun, stats.run); } else stats.run = 0; if (!cur.hints) stats.nohint++;
+    stats.solved++; if (flawless) { passAdvance(); stats.flawless++; stats.run++; stats.maxRun = Math.max(stats.maxRun, stats.run); } else stats.run = 0; if (!cur.hints) stats.nohint++;
     if (cur.meta && cur.meta.kind === 'level' && cur.meta.level % 10 === 0) stats.bosses++;
     weekly.solved++; if (cur.tier !== 'normal') weekly.hard++; if (flawless) weekly.flawless++;
     store.set('stats', stats); store.set('weekly', weekly);
@@ -1311,9 +1311,9 @@
   /* ---------- extras: gifts, daily quests, chest, lucky wheel, mini-games ---------- */
   const HOUR = 3600e3, MAX_PLAYS = 2, CHEST_AT = 10;
   let quests = store.get('quests', null), chest = store.get('chest', { n: 0 }), wheel = store.get('wheel', { date: '', extra: 0 });
-  let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0 });
+  let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0, odd: 0, jars: 0 });
 
-  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss'].forEach((id) => { $(id).hidden = true; }); };
+  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick'].forEach((id) => { $(id).hidden = true; }); };
   const QDEF = [
     { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 25 },
     { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 30 },
@@ -1322,7 +1322,7 @@
   function freshDay() {
     const t = today();
     if (!quests || quests.date !== t) { quests = { date: t, p: { solved: 0, nohint: 0, flawless: 0 }, claimed: {}, bonus: false }; store.set('quests', quests); }
-    if (plays.date !== t) { plays = { date: t, memory: 0, toss: 0 }; store.set('plays', plays); }
+    if (plays.date !== t) { plays = { date: t, memory: 0, toss: 0, odd: 0, jars: 0 }; store.set('plays', plays); }
   }
   const dailyGiftReady = () => gifts.daily !== today();
   const freeGiftReady = () => Date.now() - gifts.free >= 6 * HOUR;
@@ -1341,8 +1341,11 @@
     const free = wheel.date !== today() || wheel.extra > 0;
     set('medWheelTag', free ? 'FREE' : 'Soon'); $('medWheel').classList.toggle('ready', free);
     set('medChestTag', chest.n >= CHEST_AT ? 'OPEN' : chest.n + '/' + CHEST_AT); $('medChest').classList.toggle('ready', chest.n >= CHEST_AT);
-    const left = (MAX_PLAYS - plays.memory) + (MAX_PLAYS - plays.toss);
-    set('medGamesTag', left + '/' + MAX_PLAYS * 2); $('medGames').classList.toggle('ready', left > 0);
+    const left = (MAX_PLAYS - plays.memory) + (MAX_PLAYS - plays.toss) + (MAX_PLAYS - (plays.odd || 0)) + (MAX_PLAYS - (plays.jars || 0));
+    set('medGamesTag', left + '/' + MAX_PLAYS * 4);
+    const pc = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
+    set('medPassTag', pc ? 'CLAIM' : pass.step + '/' + PASS.length); $('medPass').classList.toggle('ready', pc > 0);
+    updateRushTag(); $('medGames').classList.toggle('ready', left > 0);
     $('navQuests').classList.toggle('dot', questReady()); $('navGifts').classList.toggle('dot', dailyGiftReady() || freeGiftReady());
   }
   function rewardRow(p) { return '<div class="rwd">' + prizeHtml(p) + '</div>'; }
@@ -1456,15 +1459,139 @@
   function openGames() {
     S.unlock(); S.tap(); closeAll(); freshDay();
     const list = $('gameList'); list.innerHTML = '';
-    [['memory', 'Memory Match', 'Find all the pairs in 14 moves', 'games'], ['toss', 'Candy Toss', 'Toss 5 candies into the jar', 'games']].forEach((g) => {
-      const left = MAX_PLAYS - plays[g[0]], d = document.createElement('div'); d.className = 'shoprow';
+    [['memory', 'Memory Match', 'Find all the pairs in 14 moves', 'games'], ['toss', 'Candy Toss', 'Toss 5 candies into the jar', 'games'], ['odd', 'Odd One Out', 'Spot the different candy before time runs out', 'games'], ['jars', 'Sugar Jars', 'Tap the jar that matches the drop', 'games']].forEach((g) => {
+      const left = MAX_PLAYS - (plays[g[0]] || 0), d = document.createElement('div'); d.className = 'shoprow';
       d.innerHTML = '<img class="pico" src="art/ic_' + g[3] + '.webp" alt="" draggable="false"><span><b>' + g[1] + '</b><small>' + g[2] + ' · ' + left + '/' + MAX_PLAYS + ' today</small></span>';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy'; b.textContent = 'Play'; b.disabled = left <= 0;
-      b.onclick = () => { if (g[0] === 'memory') startMemory(); else startToss(); };
+      b.onclick = () => { if (g[0] === 'memory') startMemory(); else if (g[0] === 'toss') startToss(); else if (g[0] === 'odd') startOdd(); else startJars(); };
       d.appendChild(b); list.appendChild(d);
     });
     $('games').hidden = false;
   }
+
+  /* ---------- Candy Pass: a vertical track of prizes; every level won without losing a heart climbs one step ---------- */
+  const PASS = [{ coins: 20 }, { coins: 30, hints: 1 }, { coins: 40 }, { wands: 1 }, { coins: 50, shield: 1 }, { coins: 60 }, { lens: 1, coins: 30 }, { coins: 80 }, { sweeper: 1, coins: 40 }, { coins: 150, wands: 1, double: 1 }];
+  let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
+  function passAdvance() {
+    if (pass.step >= PASS.length) return;
+    pass.step++; store.set('pass', pass); setTimeout(() => toast('🎟️ Candy Pass: step ' + pass.step + ' / ' + PASS.length), 1800); updateSides();
+  }
+  function openPass() {
+    S.unlock(); S.tap(); closeAll(); renderPass(); $('pass').hidden = false;
+  }
+  function renderPass() {
+    const list = $('passList'); list.innerHTML = '';
+    for (let i = PASS.length - 1; i >= 0; i--) {
+      const reached = i < pass.step, done = !!pass.cl[i], r = document.createElement('div');
+      r.className = 'stkrow passrow' + (reached ? '' : ' lock') + (i === pass.step - 1 ? ' now' : '');
+      r.innerHTML = '<i class="pnum' + (reached ? ' on' : '') + '">' + (i + 1) + '</i><span>' + prizeChipsHtml(PASS[i]) + '</span>';
+      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn main stkbtn';
+      bt.textContent = done ? '✓' : reached ? 'Claim' : '🔒'; bt.disabled = done || !reached;
+      bt.onclick = () => { pass.cl[i] = true; store.set('pass', pass); giveReward(PASS[i], 'Candy Pass!', i === PASS.length - 1); renderPass(); updateSides(); };
+      r.appendChild(bt); list.appendChild(r);
+    }
+    const all = pass.step >= PASS.length && PASS.every((x, i) => pass.cl[i]);
+    $('passInfo').textContent = all ? 'Pass complete! Start a fresh one.' : 'Win levels without losing a heart to climb · ' + pass.step + ' / ' + PASS.length;
+    if (all) {
+      const nb = document.createElement('button'); nb.type = 'button'; nb.className = 'btn main wide'; nb.textContent = 'Start a new pass';
+      nb.onclick = () => { pass = { step: 0, cl: [], round: pass.round + 1 }; store.set('pass', pass); renderPass(); updateSides(); };
+      list.prepend(nb);
+    }
+  }
+
+  /* ---------- Coin Rush: once a day, 30 minutes of double coins on level wins ---------- */
+  let rush = store.get('rush', { until: 0, day: '' }), rushWas = false;
+  const rushActive = () => Date.now() < rush.until;
+  function updateRushTag() {
+    const e = $('medRushTag'); if (!e) return;
+    if (rushActive()) {
+      const t = Math.ceil((rush.until - Date.now()) / 1000); e.textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); rushWas = true; $('medRush').classList.add('ready', 'live');
+    } else { rushWas = false; $('medRush').classList.remove('live'); e.textContent = rush.day === today() ? 'Soon' : 'START'; $('medRush').classList.toggle('ready', rush.day !== today()); }
+  }
+  function startRush() {
+    S.unlock(); S.tap();
+    if (rushActive()) { toast('⚡ Coin Rush is on: double coins from every level you win!'); return; }
+    if (rush.day === today()) { toast('Coin Rush is back tomorrow'); return; }
+    rush = { until: Date.now() + 30 * 60e3, day: today() }; store.set('rush', rush); S.win(); buzz([20, 30, 40]);
+    toast('⚡ Coin Rush! Double coins from level wins for 30 minutes'); updateRushTag();
+  }
+
+  /* ---------- prize items fly into the matching counter at the top ---------- */
+  function flyItems(r) {
+    if (!r || !r.p) return;
+    const tgt = { hints: 'hintN', wands: 'wandN' }, keys = prizeKeys(r.p);
+    keys.forEach((k, n) => {
+      if (k === 'coins') return;
+      const from = [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]'))[keys.filter((x) => x !== 'coins').indexOf(k)], img = from && from.querySelector('img'); if (!img) return;
+      const a = img.getBoundingClientRect(); if (!a.width) return;
+      const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width && !$('home').hidden;
+      const tx = ok ? tb.left + tb.width / 2 : innerWidth * 0.62, ty = ok ? tb.top + tb.height / 2 : 20;
+      const p = document.createElement('img'); p.src = img.src; p.className = 'fx-coin'; p.style.cssText = 'left:' + (a.left + a.width / 2) + 'px;top:' + (a.top + a.height / 2) + 'px;width:38px;height:38px'; fxLayer().appendChild(p);
+      const dx = tx - (a.left + a.width / 2), dy = ty - (a.top + a.height / 2);
+      const an = p.animate([{ transform: 'translate(-50%,-50%) scale(.6)', opacity: 0 }, { transform: 'translate(calc(-50% + ' + dx * 0.2 + 'px),' + (dy * 0.2 - 50) + 'px) scale(1.25)', opacity: 1, offset: 0.25 }, { transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(.5)', opacity: 1 }], { duration: 650, delay: 120 + n * 110, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' });
+      an.onfinish = () => { p.remove(); const c = chip && (chip.closest('.chip') || chip); if (c) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } S.ui('coin'); buzz(8); };
+    });
+  }
+
+  /* ---------- two more mini-games ---------- */
+  let quickT = 0, quickRaf = 0;
+  function stopQuick() { clearInterval(quickT); cancelAnimationFrame(quickRaf); quickT = 0; }
+  function quickOpen(title, info) {
+    closeAll(); stopQuick(); $('quickTitle').textContent = title; $('quickInfo').textContent = info; $('quickMsg').textContent = ''; $('quickBody').innerHTML = ''; $('quickClose').textContent = 'Give up'; $('quickBar').style.width = '100%'; $('quick').hidden = false;
+  }
+  function quickEnd(msg, reward, extra) {
+    stopQuick(); if (reward) { coinHold += reward; } if (reward) give({ coins: reward }, true); if (extra) give(extra);
+    S.win(); buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + ' +' + reward + ' ' + coinSvg + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
+    if (reward) { updateHintUi(); setTimeout(() => flyCoins($('quickMsg'), reward, 0, true), 400); }
+  }
+  // Odd One Out: one candy is different, tap it. 6 boards, 30 seconds, a wrong tap costs 3 seconds.
+  function startOdd() {
+    freshDay(); if ((plays.odd || 0) >= MAX_PLAYS) return; plays.odd = (plays.odd || 0) + 1; store.set('plays', plays); updateSides();
+    quickOpen('Odd One Out', 'Tap the candy that is different. Wrong taps cost 3 seconds.');
+    const sizes = [3, 3, 4, 4, 5, 5]; let round = 0, score = 0, penalty = 0, over = false; const t0 = performance.now(), TOTAL = 30000;
+    const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, 10 + score * 6, win ? { hints: 1 } : null); };
+    const board = () => {
+      const n = sizes[round], a = Math.floor(Math.random() * 10); let b = Math.floor(Math.random() * 9); if (b >= a) b++;
+      const odd = Math.floor(Math.random() * n * n), g = document.createElement('div'); g.className = 'oddgrid'; g.style.gridTemplateColumns = 'repeat(' + n + ',1fr)';
+      for (let i = 0; i < n * n; i++) {
+        const c = document.createElement('button'); c.type = 'button'; c.className = 'oddc'; c.innerHTML = '<svg><use href="#c' + (i === odd ? b : a) + '"/></svg>';
+        c.onclick = () => {
+          if (over) return;
+          if (i === odd) { score++; S.candy(round + 2, round + 2); buzz(10); round++; if (round >= sizes.length) return fin(true); show(); }
+          else { penalty += 3000; S.wrong(); buzz(25); c.classList.add('shake'); }
+        };
+        g.appendChild(c);
+      }
+      return g;
+    };
+    const show = () => { $('quickBody').innerHTML = ''; $('quickBody').appendChild(board()); $('quickInfo').textContent = 'Board ' + (round + 1) + ' / ' + sizes.length; };
+    show();
+    const tick = () => { if (over) return; const left = TOTAL - (performance.now() - t0) - penalty; $('quickBar').style.width = Math.max(0, left / TOTAL * 100) + '%'; if (left <= 0) fin(false); else quickRaf = requestAnimationFrame(tick); };
+    quickRaf = requestAnimationFrame(tick);
+  }
+  // Sugar Jars: a gumdrop drops in, tap the jar of the same colour before the bar runs out. 14 drops, 3 mistakes allowed.
+  function startJars() {
+    freshDay(); if ((plays.jars || 0) >= MAX_PLAYS) return; plays.jars = (plays.jars || 0) + 1; store.set('plays', plays); updateSides();
+    quickOpen('Sugar Jars', 'Tap the jar with the same colour. 3 mistakes and it is over.');
+    const cols = ['#22b8ff', '#ff52c8', '#ffd400', '#7ee21f'], body = $('quickBody'), TOT = 14; let n = 0, ok = 0, lives = 3, over = false, now = 0, tStart = 0, dur = 2400;
+    body.innerHTML = '<div class="jdrop"><i id="jDrop"></i></div><div class="jars">' + cols.map((c, i) => '<button type="button" class="jar" data-i="' + i + '" style="--jc:' + c + '"><b></b></button>').join('') + '</div>';
+    const drop = $('jDrop');
+    const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? 'Perfect!' : ok + ' / ' + TOT + ' sorted', ok * 4 + 5, ok >= TOT ? { wands: 1 } : null); };
+    const next = () => {
+      if (over) return; if (n >= TOT) return fin();
+      now = Math.floor(Math.random() * 4); drop.style.background = 'radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),transparent 45%),' + cols[now];
+      dur = Math.max(1100, 2400 - n * 90); drop.classList.remove('fall'); void drop.offsetWidth; drop.style.animationDuration = dur + 'ms'; drop.classList.add('fall'); tStart = performance.now(); n++;
+      $('quickInfo').textContent = 'Drop ' + n + ' / ' + TOT + ' · ❤️ ' + lives;
+    };
+    const miss = () => { lives--; S.wrong(); buzz(25); $('quickInfo').textContent = 'Drop ' + n + ' / ' + TOT + ' · ❤️ ' + lives; if (lives <= 0) return fin(); next(); };
+    body.querySelectorAll('.jar').forEach((j) => {
+      j.onclick = () => { if (over) return; if (+j.dataset.i === now) { ok++; S.candy(ok % 9, Math.min(8, ok)); buzz(10); j.classList.remove('pop'); void j.offsetWidth; j.classList.add('pop'); next(); } else miss(); };
+    });
+    next();
+    const tick = () => { if (over) return; const left = 1 - (performance.now() - tStart) / dur; $('quickBar').style.width = Math.max(0, left * 100) + '%'; if (left <= 0) miss(); quickRaf = requestAnimationFrame(tick); };
+    quickRaf = requestAnimationFrame(tick);
+  }
+
   /* memory match */
   function startMemory() {
     freshDay(); if (plays.memory >= MAX_PLAYS) return;
@@ -1552,6 +1679,9 @@
     $('gamesClose').onclick = () => { S.tap(); $('games').hidden = true; };
     $('memClose').onclick = () => { S.tap(); $('memory').hidden = true; updateSides(); };
     $('tossClose').onclick = () => { S.tap(); stopToss(); $('toss').hidden = true; updateSides(); };
+    $('medPass').onclick = openPass; $('passClose').onclick = () => { S.tap(); $('pass').hidden = true; updateSides(); };
+    $('medRush').onclick = startRush; $('quickClose').onclick = () => { S.tap(); stopQuick(); $('quick').hidden = true; updateSides(); };
+    setInterval(() => { if (rushActive() || rushWas) updateRushTag(); }, 1000);
   }
   wireExtras();
   // every popup opens and closes with a sound, found automatically
