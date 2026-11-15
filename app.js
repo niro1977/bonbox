@@ -1187,6 +1187,10 @@
     const g = $('game'); if (g) g.style.setProperty('--fbg', frameOf(frame).bg);
     document.documentElement.style.setProperty('--fbg', frameOf(frame).bg);
   }
+  const STK_PRIZES = { 5: { coins: 150, lens: 1 }, 10: { coins: 300, wands: 1, shield: 1 }, 20: { coins: 600, wands: 2, double: 1 }, 30: { coins: 1000, wands: 3, shield: 2, lens: 2 } };
+  const prizeChipsHtml = (p) => Object.keys(p).map((k) => '<em>' + p[k] + '× ' + (PNAME[k] || k) + '</em>').join(' ');
+  const stkPrize = (n) => STK_PRIZES[n] || (n % 5 === 0 ? { coins: 150 } : null);
+  let stkClaimed = store.get('stkClaimed', {});
   const stickerCount = () => Math.min(WORLD_NAMES.length, Math.floor(passed() / 10));
   let colTab = 'outfits';
   function openCollection() {
@@ -1226,7 +1230,14 @@
         b.innerHTML = '<div class="sticker" style="background-image:url(art/bg_' + i + '.jpg)"></div><span>' + (open ? w : '?') + '</span>';
         grid.appendChild(b);
       });
-      note.textContent = stickerCount() + ' / ' + WORLD_NAMES.length + ' stickers · a prize every 5 stickers';
+      for (let n = 5; n <= WORLD_NAMES.length; n += 5) {
+        const pz = stkPrize(n), got = stickerCount() >= n, done = !!stkClaimed[n], r = document.createElement('div'); r.className = 'stkrow' + (got ? '' : ' lock');
+        r.innerHTML = '<span><b>' + n + ' stickers</b> ' + prizeChipsHtml(pz) + '</span>';
+        const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn main stkbtn'; bt.textContent = done ? 'Claimed ✓' : got ? 'Claim' : stickerCount() + '/' + n; bt.disabled = done || !got;
+        bt.onclick = () => { stkClaimed[n] = true; store.set('stkClaimed', stkClaimed); giveReward(pz, 'Album prize!', true); renderCollection(); };
+        r.appendChild(bt); grid.appendChild(r);
+      }
+      note.textContent = stickerCount() + ' / ' + WORLD_NAMES.length + ' stickers · claim a prize every 5 stickers';
     }
   }
   /* unlocks and sticker prizes announced the moment you earn them */
@@ -1237,9 +1248,7 @@
     FRAMES.filter((f) => f.at === lv && f.at > 0).forEach((f) => extra.push({ t: 'New board frame!', html: '<div class="rw-it"><div class="swatch big" style="background:' + f.bg + '"><u></u><u></u><u></u><u></u></div><b>' + f.name + '</b></div>' }));
     if (lv % 10 === 0 && lv / 10 <= WORLD_NAMES.length) {
       const i = lv / 10 - 1; extra.push({ t: 'New sticker!', html: '<div class="rw-it"><div class="sticker big" style="background-image:url(art/bg_' + i + '.jpg)"></div><b>' + WORLD_NAMES[i] + '</b></div>' });
-      const n = lv / 10, prizes = { 5: { coins: 150, lens: 1 }, 10: { coins: 300, wands: 1, shield: 1 }, 20: { coins: 600, wands: 2, double: 1 }, 30: { coins: 1000, wands: 3, shield: 2, lens: 2 } };
-      const pz = prizes[n] || (n % 5 === 0 ? { coins: 150 } : null);
-      if (pz) { give(pz); extra.push({ p: pz, t: 'Album prize! ' + n + ' stickers', big: true }); }
+      const n = lv / 10; if (stkPrize(n)) extra.push({ p: {}, t: 'Album prize ready! ' + n + ' stickers', html: '<div class="rw-it"><b>Open My Collection → Stickers to claim it</b></div>', big: false });
     }
     extra.forEach((e, k) => setTimeout(() => announce(e.p || {}, e.t, e.big, e.html), 5200 + k * 100));
   }
