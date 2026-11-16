@@ -405,7 +405,7 @@
     const drawBoost = () => { bx.innerHTML = resume ? '' : ['shield', 'double'].map((k) => '<button type="button" class="bst' + (pick[k] ? ' on' : '') + (items[k] > 0 ? '' : ' none') + '" data-k="' + k + '"><img src="art/ic_' + k + '.webp" alt="" draggable="false"><span>' + (k === 'shield' ? 'Shield' : 'x2 Points') + '</span><i>' + items[k] + '</i></button>').join('');
       bx.querySelectorAll('.bst').forEach((b) => { b.onclick = () => { const k = b.dataset.k; if (items[k] <= 0) { toast('You have none. Buy one in the shop!'); return; } pick[k] = !pick[k]; S.tap(); drawBoost(); }; }); };
     drawBoost();
-    $('plPlay').onclick = () => { S.unlock(); S.tap(); $('prelevel').hidden = true; preSpoken = true; pendingBoost = { shield: pick.shield && items.shield > 0, double: pick.double && items.double > 0 }; if (after) after(); else transition(() => startLevel(lv)); };
+    $('plPlay').onclick = () => { S.unlock(); S.tap(); if (!resume && !canPlay()) { $('prelevel').hidden = true; openLives(); return; } $('prelevel').hidden = true; preSpoken = true; pendingBoost = { shield: pick.shield && items.shield > 0, double: pick.double && items.double > 0 }; if (after) after(); else transition(() => startLevel(lv)); };
     $('prelevel').hidden = false;
     if (V) setTimeout(() => V.say(tier === 'normal' ? 'ready' : tier === 'extreme' ? 'extremehard' : tier, true), 350);
   }
@@ -641,7 +641,7 @@
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; saveGame(); freshScore(); score.run = 0; store.set('score', score); climbLose(); setTimeout(() => { S.lose(); if (V) V.lose(); $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; saveGame(); freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); setTimeout(() => { S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -659,12 +659,14 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
   }
   /* ---------- wallet: coins, hints, wands, helpers ---------- */
+  const MAX_LIVES_FALLBACK = 5;
   let infUntil = store.get('infUntil', 0);
   const infOn = () => Date.now() < infUntil;
   const fmtMS = (ms) => { const t = Math.ceil(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
   function infTick() {
     const on = infOn(), e = $('heartN'); document.body.classList.toggle('inf-on', on);
-    if (e) e.textContent = on ? '∞ ' + fmtMS(infUntil - Date.now()) : MAX_HEARTS;
+    if (e) e.textContent = on ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : MAX_LIVES_FALLBACK);
+    if (typeof renderLives === 'function' && $('lives') && !$('lives').hidden) renderLives();
     const g = $('infTag'); if (g) { g.hidden = !on; if (on) g.textContent = '∞ ' + fmtMS(infUntil - Date.now()); }
   }
   setInterval(infTick, 1000);
@@ -745,7 +747,7 @@
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
-    set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : MAX_HEARTS); set('hintBadge', hintsLeft); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
+    set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : 5)); set('hintBadge', hintsLeft); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
     $('hintBtn').classList.toggle('empty', hintsLeft <= 0); $('wandBtn').classList.toggle('empty', wands <= 0);
     set('sweepBtnBadge', items.sweeper); set('lensBtnBadge', items.lens); $('sweepBtn').classList.toggle('empty', items.sweeper <= 0); $('lensBtn').classList.toggle('empty', items.lens <= 0);
   }
@@ -937,7 +939,7 @@
   /* ---------- shop ---------- */
   function openShop() {
     S.unlock(); S.tap();
-    $('shopCoins').textContent = coins;
+    $('shopCoins').textContent = coins; renderPacks();
     const list = $('shopList'); list.innerHTML = '';
     for (const k of ['hint', 'wand', 'shield', 'double', 'sweeper', 'lens']) {
       const it = ITEMS[k], row = document.createElement('div'); row.className = 'shoprow';
@@ -1169,7 +1171,7 @@
   }
 
   /* ---------- wiring ---------- */
-  $('daily').onclick = () => { S.unlock(); S.tap(); transition(() => startDaily()); };
+  $('daily').onclick = () => { S.unlock(); S.tap(); if (!canPlay()) { openLives(); return; } transition(() => startDaily()); };
   $('backBtn').onclick = () => { S.ui('back', 1, 1); toMap(); };
   $('undoBtn').onclick = undo;
   document.querySelectorAll('.card').forEach((card) => {
@@ -1177,7 +1179,7 @@
     x.onclick = (e) => {
       e.stopPropagation(); S.tap();
       const ov = card.closest('.overlay'); if (!ov) return;
-      const ids = ['#rwOk', '#howClose', '#wheelClose', '#chestClose', '#questClose', '#giftClose', '#gamesClose', '#memClose', '#tossClose', '#passClose', '#quickClose', '#eventsClose', '#climbClose', '#rankClose', '#hintCancel', '#shopClose', '#colClose', '#pfClose', '#homeBtn', '#loseHome', '#bonusClaim'];
+      const ids = ['#rwOk', '#howClose', '#wheelClose', '#chestClose', '#questClose', '#giftClose', '#gamesClose', '#memClose', '#tossClose', '#passClose', '#quickClose', '#eventsClose', '#climbClose', '#livesClose', '#rankClose', '#hintCancel', '#shopClose', '#colClose', '#pfClose', '#homeBtn', '#loseHome', '#bonusClaim'];
       for (const id of ids) { const b = card.querySelector(id); if (b) { b.click(); if (ov.hidden) return; break; } }
       ov.hidden = true;                                   // any popup without its own button just closes
     };
@@ -1220,7 +1222,11 @@
   $('sndHome').onclick = toggleSound; $('sndGame').onclick = () => { S.tap(); syncOpts(); $('how').hidden = false; };
   $('homeBtn').onclick = () => { $('win').hidden = true; toMap(); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
-  $('retryBtn').onclick = () => { S.tap(); $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily())); };
+  $('reviveBtn').onclick = () => { S.tap(); watchAd(() => {
+    cur.revived = true; cur.done = false; cur.hearts = 1; addLives(1); if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
+    $('lose').hidden = true; drawHearts(); saveGame(); toast('❤️ One more heart. Keep going!');
+  }); };
+  $('retryBtn').onclick = () => { S.tap(); if (!canPlay()) { $('lose').hidden = true; toMap(); setTimeout(openLives, 900); return; } $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily())); };
   $('nextBtn').onclick = () => { S.tap(); nextLevel(); };
   $('shareBtn').onclick = async () => {
     const text = 'Candoku 🍬 ' + cur.label + ' ' + cur.n + '×' + cur.n + ' solved' + (cur.hints ? '' : ' with no hints');
@@ -1710,6 +1716,92 @@
     }
   }
 
+
+
+  /* ====================== LIVES, VIDEO REWARDS AND THE REAL-MONEY STORE ======================
+     Lives: 5 at most. Failing a level costs one. One comes back every 30 minutes. With none left you wait,
+     watch a video, or refill with coins.
+     Videos and purchases go through window.CandokuNative, which the Android app provides (AdMob + Play Billing).
+     In the browser there is no such bridge, so those buttons explain that they arrive with the app
+     (with ?dbg=1 they are simulated so the flows can be tested). */
+  const MAX_LIVES = 5, LIFE_MS = 30 * 60e3, DBG = location.search.includes('dbg');
+  let lives = Object.assign({ n: MAX_LIVES, t: 0 }, store.get('lives', {}));
+  function livesNow() {
+    if (lives.n >= MAX_LIVES) { lives.n = MAX_LIVES; lives.t = 0; return lives.n; }
+    if (!lives.t) lives.t = Date.now();
+    const k = Math.floor((Date.now() - lives.t) / LIFE_MS);
+    if (k > 0) { lives.n = Math.min(MAX_LIVES, lives.n + k); lives.t = lives.n >= MAX_LIVES ? 0 : lives.t + k * LIFE_MS; store.set('lives', lives); }
+    return lives.n;
+  }
+  const nextLifeIn = () => (livesNow() >= MAX_LIVES ? 0 : Math.max(0, lives.t + LIFE_MS - Date.now()));
+  function addLives(n) { livesNow(); lives.n = Math.min(MAX_LIVES, lives.n + n); if (lives.n >= MAX_LIVES) lives.t = 0; store.set('lives', lives); infTick(); }
+  function loseLife() { if (infOn()) return; livesNow(); if (lives.n <= 0) return; if (lives.n >= MAX_LIVES) lives.t = Date.now(); lives.n--; store.set('lives', lives); infTick(); }
+  const canPlay = () => infOn() || livesNow() > 0;
+
+  const NATIVE = () => window.CandokuNative || null;
+  let adsOff = store.get('adsOff', false), adDay = store.get('adDay', { d: '', n: 0 });
+  const AD_CAP = 12;
+  const adsLeft = () => { if (adDay.d !== today()) { adDay = { d: today(), n: 0 }; } return AD_CAP - adDay.n; };
+  const adAvailable = () => !!(NATIVE() && NATIVE().showRewarded) || DBG;
+  // show a rewarded video; `grant` runs only when the video was watched to the end
+  function watchAd(grant) {
+    if (adsLeft() <= 0) { toast('No more videos today. Come back tomorrow!'); return; }
+    const ok = () => { adDay.n++; store.set('adDay', adDay); grant(); };
+    const nat = NATIVE();
+    if (nat && nat.showRewarded) { Promise.resolve(nat.showRewarded()).then((done) => { if (done) ok(); else toast('Watch the whole video to get the reward'); }).catch(() => toast('No video available right now')); return; }
+    if (DBG) { toast('▶ (test) video playing…'); setTimeout(ok, 1500); return; }
+    toast('Video rewards arrive with the Candoku app on Google Play');
+  }
+  /* products sold for real money; ids match the ones to create in Google Play Console */
+  const PACKS = [
+    { id: 'starter', name: 'Starter Pack', price: '$0.99', img: 'ev_pass', once: true, tag: 'ONE TIME · BEST DEAL', give: { coins: 100, hints: 3, wands: 1, inf: 60 } },
+    { id: 'coins_s', name: 'Bag of Coins', price: '$1.99', img: '3d_chest_small', give: { coins: 150 } },
+    { id: 'coins_m', name: 'Jar of Coins', price: '$4.99', img: '3d_chest_med', tag: 'POPULAR', give: { coins: 500 } },
+    { id: 'coins_l', name: 'Chest of Coins', price: '$9.99', img: '3d_chest_large', tag: 'BEST VALUE', give: { coins: 1500 } },
+    { id: 'helpers', name: 'Helper Pack', price: '$3.99', img: 'ic_wand', give: { hints: 10, wands: 5, shield: 3, sweeper: 3, lens: 3, double: 3 } },
+    { id: 'noads', name: 'No Ads', price: '$2.99', img: 'ic_shield', once: true, give: {}, noads: true }
+  ];
+  let owned = store.get('owned', {});
+  // called after a purchase is confirmed (by the native app, or by the test mode)
+  function grantPack(id) {
+    const p = PACKS.find((x) => x.id === id); if (!p) return false;
+    if (p.once) { if (owned[id]) return false; owned[id] = true; store.set('owned', owned); }
+    if (p.noads) { adsOff = true; store.set('adsOff', true); toast('Ads removed. Thank you!'); }
+    if (prizeKeys(p.give).length) giveReward(p.give, p.name + '!', true);
+    updateHintUi(); if (!$('shop').hidden) openShop();
+    return true;
+  }
+  window.CandokuGrant = grantPack;
+  function buyPack(id) {
+    const p = PACKS.find((x) => x.id === id); if (!p) return; if (p.once && owned[id]) { toast('You already have this'); return; }
+    const nat = NATIVE();
+    if (nat && nat.purchase) { Promise.resolve(nat.purchase(id)).then((done) => { if (done) grantPack(id); }).catch(() => toast('The purchase did not go through')); return; }
+    if (DBG) { toast('(test) purchase approved'); setTimeout(() => grantPack(id), 600); return; }
+    toast('Purchases open with the Candoku app on Google Play');
+  }
+  function renderPacks() {
+    const box = $('shopPacks'); if (!box) return; box.innerHTML = '';
+    PACKS.forEach((p) => {
+      const gone = p.once && owned[p.id], d = document.createElement('div'); d.className = 'pack' + (p.tag ? ' tagged' : '') + (gone ? ' gone' : '');
+      d.innerHTML = (p.tag ? '<i class="ptag">' + p.tag + '</i>' : '') + '<img src="art/' + p.img + '.webp" alt="" draggable="false"><b>' + p.name + '</b><small>' + (p.noads ? 'Remove the ads forever' : prizeChipsHtml(p.give)) + '</small>';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main pbuy'; b.textContent = gone ? 'Owned ✓' : p.price; b.disabled = !!gone; b.onclick = () => { S.tap(); buyPack(p.id); }; d.appendChild(b); box.appendChild(d);
+    });
+    const fr = $('shopFree'); fr.innerHTML = '';
+    [['+1 life', 'ic_heart', () => addLives(1), () => livesNow() < MAX_LIVES], ['+1 hint', 'ic_hint', () => giveReward({ hints: 1 }, 'Free hint!'), () => true], ['+3 coins', 'ic_coin', () => giveReward({ coins: 3 }, 'Free coins!'), () => true]].forEach((f) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'freeb'; b.innerHTML = '<img src="art/' + f[1] + '.webp" alt="" draggable="false"><b>' + f[0] + '</b><span>▶ Watch</span>'; b.disabled = !f[3]();
+      b.onclick = () => { S.tap(); watchAd(() => { f[2](); renderPacks(); }); }; fr.appendChild(b);
+    });
+    $('shopAds').textContent = adAvailable() ? adsLeft() + ' videos left today' : 'Video rewards arrive with the app';
+  }
+  function openLives() {
+    S.unlock(); S.tap(); renderLives(); $('lives').hidden = false;
+  }
+  function renderLives() {
+    const n = livesNow(), full = n >= MAX_LIVES;
+    $('livesRow').innerHTML = Array.from({ length: MAX_LIVES }, (x, i) => '<img src="art/ic_heart' + (i < n ? '' : '_off') + '.webp" alt="" draggable="false">').join('');
+    $('livesMsg').textContent = infOn() ? 'Unlimited hearts are on!' : full ? 'You are full of lives. Go play!' : n === 0 ? 'No lives left. Next life in ' + fmtMS(nextLifeIn()) : 'Next life in ' + fmtMS(nextLifeIn());
+    $('livesAd').disabled = full; $('livesCoins').disabled = full || coins < 30; $('livesCoins').innerHTML = 'Refill all · 30 ' + coinSvg;
+  }
 
   /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
      platform, every level you lose drops him one. Each platform holds a bigger prize; a golden chest waits on top. Once a day. ---------- */
@@ -2268,6 +2360,11 @@
     $('tossClose').onclick = () => { S.tap(); stopToss(); $('toss').hidden = true; updateSides(); };
     $('medPass').onclick = openPass; $('passClose').onclick = () => { S.tap(); $('pass').hidden = true; updateSides(); };
     $('medEvents').onclick = openEvents; $('eventsClose').onclick = () => { S.tap(); $('events').hidden = true; updateSides(); };
+    $('livesClose').onclick = () => { S.tap(); $('lives').hidden = true; };
+    $('livesAd').onclick = () => { S.tap(); watchAd(() => { addLives(1); renderLives(); toast('❤️ +1 life'); }); };
+    $('livesCoins').onclick = () => { if (coins < 30 || livesNow() >= MAX_LIVES) return; coins -= 30; saveWallet(); addLives(MAX_LIVES); updateHintUi(); S.ui('buy', 1, 1); renderLives(); };
+    $('livesShop').onclick = () => { $('lives').hidden = true; openShop(); };
+    { const hc = $('heartN') && $('heartN').closest('.chip'); if (hc) { hc.style.cursor = 'pointer'; hc.onclick = openLives; } }
     $('climbStart').onclick = climbStart; $('climbPlay').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); openPrelevel(level); }; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
     $('medRush').onclick = startRush; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === 'Done'; $('quick').hidden = true; updateSides(); if (was) openEvents(); };
     setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (!$('climb').hidden && climbOn()) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft()); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);

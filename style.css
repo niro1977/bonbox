@@ -1289,3 +1289,31 @@ body.in-game .toast.gtoast{bottom:150px}
 #climb .cl-scroll{flex:1 1 auto;min-height:110px;max-height:none}
 #climb .card>button,#climb .card>p,#climb .cl-timer{flex:none}
 #climb .btn.wide{padding-top:9px;padding-bottom:11px}
+
+/* ===== store, lives, video rewards ===== */
+.shopscroll{max-height:calc(100svh - 300px);min-height:160px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:6px;padding:2px}
+.shopscroll .shoplist{max-height:none;overflow:visible}
+.shoph{margin:6px 0 0;font:900 14px 'Nunito',sans-serif;color:#7a2fd0;text-align:left;letter-spacing:.3px}
+.packs{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pack{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 5px 7px;border-radius:16px;border:3px solid #fff;background:linear-gradient(170deg,#fff6d8,#ffd98a);box-shadow:0 4px 0 rgba(120,60,0,.35),inset 0 2px 0 rgba(255,255,255,.8);color:#5a2a00}
+.pack.tagged{background:linear-gradient(170deg,#ffe9f6,#ffb3dc)}
+.pack img{width:62px;height:56px;object-fit:contain;filter:drop-shadow(0 3px 2px rgba(80,30,0,.4))}
+.pack b{font-size:13.5px;line-height:1.1}
+.pack small{font-size:10px;line-height:1.5;min-height:30px;display:block}
+.pack small em{font-style:normal;background:#fff;border-radius:7px;padding:0 4px;margin:0 1px;white-space:nowrap;display:inline-block}
+.ptag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-style:normal;font:900 9px 'Nunito',sans-serif;background:linear-gradient(#ff5f8f,#e0245e);color:#fff;border:2px solid #fff;border-radius:99px;padding:1px 8px;white-space:nowrap}
+.pbuy{padding:6px 10px 8px!important;font-size:15px!important;min-width:82px;margin-top:2px}
+.pack.gone{filter:saturate(.4);opacity:.75}
+.freerow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.freeb{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;border-radius:14px;border:3px solid #fff;background:linear-gradient(170deg,#d9f7ff,#8fd8ff);box-shadow:0 3px 0 rgba(0,70,120,.35);color:#0b4a78;font-weight:900;font-size:12px}
+.freeb img{width:30px;height:30px;object-fit:contain}
+.freeb span{background:#1f9d3c;color:#fff;border-radius:99px;padding:1px 9px;font-size:11px}
+.freeb:disabled{filter:saturate(.3);opacity:.6}
+.livesrow{display:flex;justify-content:center;gap:5px}
+.livesrow img{width:40px;height:40px;object-fit:contain}
+#livesMsg{font-weight:900;font-size:17px;margin:2px 0;color:#7a2fd0}
+#lives .card{gap:7px}
+#lives .btn.wide,#lose .btn.wide{padding-top:9px;padding-bottom:11px}
+#loseLives{margin:0;font-weight:900}
+.packs{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pack{min-width:0}.pack small em{white-space:normal}
+.shopscroll{max-height:calc(100svh - 350px)}#shop .card>.small{display:none}
