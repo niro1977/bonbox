@@ -98,9 +98,9 @@
   function buzz(p) { try { if (hapticOn && navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
   document.addEventListener('pointerdown', (e) => { if (hapticOn && e.target.closest && e.target.closest('button,.cell,.node,.bcard,.mcard,.med,.chip,.colcell,.bst')) { try { if (navigator.vibrate) navigator.vibrate(7); } catch (_) {} } }, true);
   /* ---------- polish: every button answers the finger; every window pops in with a sound ---------- */
-  const PRESSABLE = 'button,.node,.bcard,.mcard,.med,.chip,.colcell,.bst,.evcard';
+  const PRESSABLE = 'button,.node,.bcard,.mcard,.med,.chip,.colcell,.bst,.evcard', SCROLLS = '#map,.shopscroll,#evGrid,#questList,.rlist,#colGrid,#passList,#giftList,#gameList,.cl-scroll,#stormRows';
   let pressedEl = null;
-  document.addEventListener('pointerdown', (e) => { const b = e.target.closest && e.target.closest(PRESSABLE); if (!b || b.disabled || b.closest('#board')) return; pressedEl = b; b.classList.add('pressing'); S.press(); }, true);
+  document.addEventListener('pointerdown', (e) => { const b = e.target.closest && e.target.closest(PRESSABLE); if (!b || b.disabled || b.closest('#board')) return; pressedEl = b; b.classList.add('pressing'); if (!b.closest(SCROLLS)) S.pre('tap'); }, true);   // inside scrolling lists the click sound waits for the click itself, so scrolling stays quiet
   const liftPress = () => { if (!pressedEl) return; pressedEl.classList.remove('pressing'); pressedEl = null; S.release(); };
   document.addEventListener('pointerup', liftPress, true); document.addEventListener('pointercancel', liftPress, true);
   // the wallet bar lives on <body>, fixed to the top: visible on the map and above every popup, so prizes can fly into it
@@ -375,7 +375,7 @@
     t.hidden = tier === 'normal'; t.className = 'tier ' + tier; t.textContent = tierLabel[tier] || '';
     const bd = $('board'); bd.className = 'board ' + (tier === 'normal' ? '' : tier);
     bd.style.setProperty('--n', n);
-    bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9);
+    bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9); $('game').classList.toggle('full', n >= 10);
     $('maybeBtn').setAttribute('aria-pressed', 'false');
     $('lose').hidden = true; $('win').hidden = true; $('toast').classList.remove('show');
     buildBoard(); drawHearts(); drawFound();
@@ -523,6 +523,8 @@
       if (!c) return;
       const y = +c.dataset.y, x = +c.dataset.x;
       drag = { y, x, start: c, mode: cur.state[y][x] === 1 ? 'remove' : 'add', moved: false, long: false, snap: false, px: e.clientX, py: e.clientY };
+      { const st = cur.state[y][x], dbl = lastTap && lastTap.y === y && lastTap.x === x && performance.now() - lastTap.t < 330;   // a second quick tap places a candy: that has its own sound
+        if (!cur.lensArmed && !dbl) { if (cur.maybeMode) { if (st !== 2) S.pre('tap'); } else S.pre(st === 0 || st === 3 ? 'x' : 'tap'); } }
       try { board.setPointerCapture(e.pointerId); } catch (_) {}
       if (!cur.maybeMode) drag.timer = setTimeout(() => { if (drag && !drag.moved) { drag.long = true; buzz(10); tap(y, x, true); } }, 420);
       e.preventDefault();

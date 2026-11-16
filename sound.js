@@ -10,7 +10,7 @@
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return ctx; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
-    ctx = new AC();
+    try { ctx = new AC({ latencyHint: 'interactive' }); } catch (e) { ctx = new AC(); }   // the shortest output delay the device offers
     setTimeout(preloadSamples, 0);
     master = ctx.createGain(); master.gain.value = 0.6;
     const comp = ctx.createDynamicsCompressor();
@@ -115,7 +115,10 @@
     (f, t) => { osc('square', f * 2, t, 0.18, 0.1); osc('sine', f * 4, t, 0.3, 0.2); osc('sine', f * 3, t + 0.05, 0.3, 0.14); }       // 9 macaron: squeaky chime
   ];
 
+  // a sound played the moment the finger lands (pre) is not played a second time when the click itself fires
+  const preAt = {};
   const S = {
+    pre(name) { if (!on || !S[name]) return; S[name](); preAt[name] = performance.now(); },
     unlock() { ready(); },
     ctx() { return on ? init() : null; },
     dest() { return master; },
@@ -131,9 +134,9 @@
       [0, 4, 7].forEach((x, n) => bell(hz(root + 12 + x), t + 0.018 + n * 0.055, 0.9 - n * 0.1, 0.16 - n * 0.02));
       sparkle(t + 0.02, 0.07);
     },
-    x() { if (!ready()) return; const t = ctx.currentTime, f = pickV('x', [520, 494, 554, 466]) * jit(); pluck(f, t, 0.07, 0.16); noise(t, 0.035, 0.12, 3000 + Math.random() * 600, 2); },
+    x() { if (preAt.x && performance.now() - preAt.x < 380) { preAt.x = 0; return; } if (!ready()) return; const t = ctx.currentTime, f = pickV('x', [520, 494, 554, 466]) * jit(); pluck(f, t, 0.07, 0.16); noise(t, 0.035, 0.12, 3000 + Math.random() * 600, 2); },
     // one soft, round click (a single voice: no second layer)
-    tap() { if (!ready()) return; const t = ctx.currentTime, f = pickV('tap', [620, 587, 660]) * jit(); osc('sine', f, t, 0.085, 0.2, f * 0.72); },
+    tap() { if (preAt.tap && performance.now() - preAt.tap < 380) { preAt.tap = 0; return; } if (!ready()) return; const t = ctx.currentTime, f = pickV('tap', [620, 587, 660]) * jit(); osc('sine', f, t, 0.085, 0.2, f * 0.72); },
     // a coin drops into the purse: two bright metal pings and a tiny jingle
     coin() { if (!ready()) return; const t = ctx.currentTime, k = pickV('coin', [1, 1.06, 0.95]) * jit(); bell(1568 * k, t, 0.22, 0.13, 0.15); bell(2093 * k, t + 0.055, 0.3, 0.11, 0.2); noise(t, 0.03, 0.05, 7000, 3); },
     // hearts: a warm double thump, lub-dub

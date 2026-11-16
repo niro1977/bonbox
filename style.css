@@ -1585,11 +1585,7 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 .card ::-webkit-scrollbar-track,.card::-webkit-scrollbar-track{background:rgba(90,50,10,.16);border-radius:9px;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
 .card ::-webkit-scrollbar-thumb,.card::-webkit-scrollbar-thumb{border-radius:9px;background:linear-gradient(90deg,#ffd76a,#ff9a1f);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px rgba(0,0,0,.3)}
 .card ::-webkit-scrollbar-button,.card::-webkit-scrollbar-button{display:none}
-/* the board tiles: a little more depth and a sharper highlight */
-.cell{box-shadow:inset 0 -5px 0 rgba(0,0,0,.2),inset 0 3px 0 rgba(255,255,255,.55),0 2px 2px rgba(0,0,30,.25)!important;background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.08) 42%,rgba(0,0,0,.14))!important}
 .found{box-shadow:0 3px 0 rgba(120,80,30,.35),inset 0 2px 0 #fff,inset 0 -5px 8px rgba(200,150,80,.18)}
-/* the helper highlight keeps its black frame on the new glossy tiles */
-.board.spot .cell.lit{box-shadow:0 0 0 4px #000,0 0 10px 4px rgba(0,0,0,.55),inset 0 3px 0 rgba(255,255,255,.55)!important}
 
 /* =====================================================================
    3D + GLOSS PASS, the mini-games: Memory Match, Odd One Out, Sugar Jars and the frame of the canvas games
@@ -1667,3 +1663,15 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 /* audit fixes, third round */
 #quests .card,#ranking .card,#gifts .card,#pass .card{max-height:calc(100svh - 124px)!important}
 #rwTitle{white-space:normal!important;font-size:clamp(13px,4.3vw,20px)!important;line-height:1.05!important;text-wrap:balance;max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ---------- board placement ---------- */
+/* every board sits a little lower, closer to the middle of the screen */
+@media (min-height:660px){#game .boardwrap{margin-top:14px}}
+/* 10x10: the board runs from edge to edge of the screen, so every square is as big as the phone allows */
+#game.full{padding-left:0!important;padding-right:0!important}
+#game.full .bar,#game.full .tools,#game.full .found,#game.full .bosshud,#game.full .tier{margin-left:12px;margin-right:12px}
+#game.full .found,#game.full .bosshud,#game.full .tier{margin-left:auto;margin-right:auto}
+#game.full .boardwrap{margin-left:0;margin-right:0;padding:0}
+#game.full .board{width:min(100vw,calc(100dvh - 262px))!important;max-width:none!important;gap:2px!important;padding:5px 2px!important;border-left-width:0!important;border-right-width:0!important;border-top-width:4px!important;border-bottom-width:4px!important;border-radius:0!important}
+#game.full .board .cell{border-radius:16%}
+@media (min-width:560px){#game.full .board{width:min(540px,calc(100dvh - 262px))!important;border-radius:18px!important;border-left-width:4px!important;border-right-width:4px!important;padding:5px!important}}
