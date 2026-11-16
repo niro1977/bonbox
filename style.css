@@ -1487,3 +1487,49 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 .node.ultra::after{box-shadow:none}
 .node.locked.hard::after,.node.locked.veryhard::after,.node.locked.extreme::after{box-shadow:0 0 0 3px rgba(255,216,74,.55)}
 .node.locked.ultra::after{box-shadow:none}
+
+/* ---------- Baron Sour's bigger role ---------- */
+/* speech bubble under the health bar */
+.bosssay{position:absolute;left:54px;top:calc(100% + 5px);max-width:min(230px,64vw);padding:5px 12px;border-radius:14px 14px 14px 4px;background:#fff;color:#3a1466;font:900 13px/1.15 Nunito,system-ui,sans-serif;box-shadow:0 3px 0 rgba(40,0,90,.35),0 0 0 2px #7a4ad0;opacity:0;transform:translateY(-6px) scale(.8);transform-origin:10% 0;pointer-events:none;z-index:6;white-space:normal}
+.bosssay.on{animation:bsay 2.4s cubic-bezier(.23,1,.32,1) both}
+@keyframes bsay{0%{opacity:0;transform:translateY(-6px) scale(.7)}10%{opacity:1;transform:translateY(0) scale(1.06)}16%,84%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-4px) scale(.9)}}
+/* the small Sour Cloud on Hard levels */
+.bosshud.minion{width:min(250px,70vw);background:linear-gradient(180deg,#3a5a9a,#1c2f5e);border-color:#bfe0ff}
+.bosshud.minion>img{width:52px;height:52px;margin-top:-28px;left:-2px}
+.bosshud.minion .bossbar b{color:#d6ecff}
+.bosshud.minion .hp u{background:linear-gradient(180deg,#bfe9ff,#58a8ff)}
+/* fog and the peeking Baron */
+.boardwrap{position:relative}
+.bfog{position:absolute;z-index:4;pointer-events:none;border-radius:40%;background:radial-gradient(circle at 35% 35%,#fff,#d9d0f2 45%,rgba(150,130,210,.85) 75%,rgba(120,100,190,0) 100%);filter:blur(1.5px);transform:scale(1.25);animation:fogIn 8s ease both}
+@keyframes fogIn{0%{opacity:0;transform:scale(.3)}7%{opacity:.97;transform:scale(1.35)}12%{transform:scale(1.22)}80%{opacity:.95;transform:scale(1.25)}100%{opacity:0;transform:scale(1.5)}}
+.boss-peek{position:absolute;right:-6px;top:-34px;z-index:7;pointer-events:none;display:flex;align-items:center;gap:4px;flex-direction:row-reverse;animation:peek 3.2s cubic-bezier(.23,1,.32,1) both}
+.boss-peek img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(20,0,60,.5))}
+.boss-peek b{max-width:170px;padding:6px 12px;border-radius:14px 14px 4px 14px;background:#fff;color:#3a1466;font:900 13px/1.15 Nunito,system-ui,sans-serif;box-shadow:0 3px 0 rgba(40,0,90,.35),0 0 0 2px #7a4ad0}
+@keyframes peek{0%{transform:translateX(120%)}12%{transform:translateX(-4%)}18%,84%{transform:none}100%{transform:translateX(130%)}}
+.boss-card.steal b{font-size:clamp(18px,5.4vw,24px);max-width:86vw}
+/* Sour Storm window */
+#storm .storm-boss{display:block;width:120px;height:120px;object-fit:contain;margin:-8px auto -4px;filter:drop-shadow(0 6px 6px rgba(20,0,60,.4));animation:bossBob 2.6s ease-in-out infinite}
+.storm-hp{display:flex;align-items:center;gap:8px;width:86%;margin:0 auto 4px}
+.storm-hp i{flex:1;height:14px;border-radius:14px;background:#2a1458;overflow:hidden;box-shadow:inset 0 2px 3px rgba(0,0,0,.5)}
+.storm-hp u{display:block;height:100%;border-radius:14px;background:linear-gradient(180deg,#d6ff4d,#7bd41a);transition:width .6s cubic-bezier(.23,1,.32,1)}
+.storm-hp b{font:900 14px Nunito,system-ui,sans-serif;color:#5a2a00;white-space:nowrap}
+.storm-rows{display:flex;flex-direction:column;gap:6px;width:100%;margin:4px 0}
+.stormrow{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:14px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 2px rgba(120,80,30,.18)}
+.stormrow.got{background:rgba(255,236,150,.8)}
+.stormrow>b{font:900 14px Nunito,system-ui,sans-serif;color:#5a2a00;min-width:62px;text-align:left;white-space:nowrap}
+.stormrow .rwd{flex:1;display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-start}
+.stormrow .rwd img{width:24px;height:24px}
+.stormrow .rwd em{font:900 13px Nunito,system-ui,sans-serif;font-style:normal;color:#5a2a00;margin-right:4px}
+.stormrow .btn{min-width:0;padding:6px 12px;font-size:13px;margin:0}
+#storm .card{max-height:calc(100svh - 150px);overflow-y:auto}
+
+/* Sour Storm window: compact, the title plate stays in place */
+#storm .card{max-height:none!important;overflow:visible!important}
+#storm .storm-boss{width:92px;height:92px;margin:-6px auto -6px}
+#storm #stormInfo{margin:2px 0;font-size:13px;line-height:1.2}
+.stormrow{padding:3px 8px;gap:6px}
+.stormrow>b{min-width:54px;font-size:13px}
+.stormrow .rwd{flex-wrap:nowrap;gap:2px}
+.stormrow .rwd img{width:20px;height:20px}
+.stormrow .rwd em{font-size:12px;margin-right:3px}
+.stormrow .btn{padding:5px 10px!important;font-size:12px!important;min-height:0!important;height:auto!important;width:auto!important}

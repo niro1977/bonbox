@@ -277,7 +277,7 @@
   }
   function scrollToLevel(lv) {
     const g = mapGeom(), map = $('map');
-    const y = map.getBoundingClientRect().top + window.scrollY + g.pos(lv).y;
+    const y = map.getBoundingClientRect().top + window.scrollY + g.pos(Math.min(lv, g.count)).y;
     window.scrollTo(0, Math.max(0, y - window.innerHeight * 0.55));
   }
   let pendingHop = null;   // set when a win moves you on, played the next time the map is shown
@@ -442,6 +442,12 @@
     show('game');
     preSpoken = false;
     if (lv % 10 === 0 && !resumed) setTimeout(bossEnter, 1000);
+    clearTimeout(mischiefT); clearFog();
+    if (!resumed) {
+      stealCheck(lv);
+      if (foeKind() === 'minion') setTimeout(() => { if (foeKind() === 'minion' && !cur.done) bossSay('start'); }, 1300);
+      if (!foeKind() && lv >= 12 && lv % 10 !== 1 && (Math.imul(lv, 2654435761) >>> 9) % 4 === 0) mischiefT = setTimeout(mischief, 22000 + Math.random() * 20000);
+    }
     if (lv === 1 && (forceCoach || !store.get('seenCoach', false))) setTimeout(openTutorial, 900);
     if (lv > 1 && sizeFor(lv) === baseSize(lv) && baseSize(lv) > baseSize(lv - 1)) {
       const id = sizeFor(lv) - 1;
@@ -567,19 +573,35 @@
   }
   function placedCount() { let c = 0; for (const r of cur.state) for (const v of r) if (v === 2) c++; return c; }
   /* ---------- Baron Sour: the storm king waits on every 10th level ---------- */
-  const isBoss = () => !!(cur && cur.meta && cur.meta.kind === 'level' && cur.meta.level % 10 === 0);
+  const foeKind = () => (!(cur && cur.meta && cur.meta.kind === 'level') ? null : cur.meta.level % 10 === 0 ? 'boss' : cur.meta.level % 5 === 0 && cur.meta.level < ULTRA_FROM ? 'minion' : null);
+  const isBoss = () => foeKind() === 'boss';
+  const nervous = () => !!(cur && cur.meta && cur.meta.level > 300);   // near his castle the Baron is not so sure of himself any more
+  const foeImg = (k) => (foeKind() === 'minion' ? 'art/minion_' + (k === 'laugh' ? 'idle' : k) + '.webp' : 'art/boss_' + (k === 'idle' && nervous() ? 'worried' : k) + '.webp');
+  // what he says: cocky in the first 30 worlds, rattled on the road to his castle
+  const SAY = {
+    boss: { start: ["You'll never fix my mess!", 'Sweet things make me sick!', 'This board is mine!'], miss: ['Ha! Wrong!', "Sour, isn't it?", 'Hehehe!'], hit: ['Ouch!', 'Hey! Stop that!', 'Too sweet!'], lose: ["Noooo! I'll be back!"] },
+    scared: { start: ['N-not you again!', 'Stay away from my castle!', 'You just got lucky before!'], miss: ['Phew... wrong!', 'Yes! Keep missing!'], hit: ['Eek!', 'Not again!', 'Stop, please!'], lose: ['Why are you so good at this?!'] },
+    minion: { start: ['The Baron sent me!', 'Bleh!'], miss: ['Nyah nyah!'], hit: ['Ow!'], lose: ['Waaah!'] }
+  };
+  let sayT = null;
+  function bossSay(kind) {
+    const k = foeKind(); if (!k) return; const set = SAY[k === 'minion' ? 'minion' : nervous() ? 'scared' : 'boss'][kind]; if (!set) return;
+    const el = $('bossSay'); el.textContent = set[Math.floor(Math.random() * set.length)]; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+    clearTimeout(sayT); sayT = setTimeout(() => el.classList.remove('on'), 2400);
+  }
   let bossT = null;
   function bossFace(k, ms) {
-    const im = $('bossImg'), h = $('bossHud'); im.src = 'art/boss_' + k + '.webp';
+    const im = $('bossImg'), h = $('bossHud'); im.src = foeImg(k);
     h.classList.remove('hit', 'laugh'); void h.offsetWidth; if (k === 'hit' || k === 'laugh') h.classList.add(k);
-    clearTimeout(bossT); if (ms) bossT = setTimeout(() => { if (isBoss() && !cur.done) { im.src = 'art/boss_idle.webp'; h.classList.remove('hit', 'laugh'); } }, ms);
+    clearTimeout(bossT); if (ms) bossT = setTimeout(() => { if (foeKind() && !cur.done) { im.src = foeImg('idle'); h.classList.remove('hit', 'laugh'); } }, ms);
   }
   function bossUpdate() {
-    const h = $('bossHud'), on = isBoss(); h.hidden = !on; $('game').classList.toggle('bossfight', on); if (!on) return;
+    const h = $('bossHud'), kind = foeKind(), on = !!kind; h.hidden = !on; $('game').classList.toggle('bossfight', on); if (!on) return;
+    h.classList.toggle('minion', kind === 'minion'); $('bossName').textContent = kind === 'minion' ? 'Sour Cloud' : 'Baron Sour';
     let c = 0; for (let y = 0; y < cur.n; y++) if (cur.state[y][cur.solution[y]] === 2) c++;
     const hp = cur.n - c; $('bossHp').style.width = (hp / cur.n * 100) + '%'; $('bossHpN').textContent = hp + ' / ' + cur.n;
-    if (cur.bossC === undefined) { h.classList.remove('defeat'); $('bossImg').src = 'art/boss_idle.webp'; }
-    else if (c > cur.bossC && !cur.done) { bossFace('hit', 900); S.x(); }
+    if (cur.bossC === undefined) { h.classList.remove('defeat'); $('bossImg').src = foeImg('idle'); $('bossSay').classList.remove('on'); }
+    else if (c > cur.bossC && !cur.done) { bossFace('hit', 900); S.x(); if (Math.random() < 0.6) bossSay('hit'); }
     cur.bossC = c;
   }
   function bossCard(img, text, cls) {
@@ -587,9 +609,34 @@
     const d = document.createElement('div'); d.className = 'boss-card ' + cls; d.innerHTML = '<i class="bc-flash"></i><img src="art/boss_' + img + '.webp" alt="" draggable="false"><b>' + text + '</b>';
     document.body.appendChild(d); setTimeout(() => d.remove(), 2700);
   }
-  function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard('idle', 'Baron Sour blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => V.say('boss1', true), 250); }
-  function bossMiss() { bossFace('laugh', 1400); const b = $('board'); b.classList.remove('zap'); void b.offsetWidth; b.classList.add('zap'); setTimeout(() => b.classList.remove('zap'), 600); }
-  function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'); h.classList.remove('hit', 'laugh'); $('bossImg').src = 'art/boss_lose.webp'; $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; h.classList.add('defeat'); bossCard('lose', 'Baron Sour is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); }
+  function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard(nervous() ? 'worried' : 'idle', 'Baron Sour blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => V.say('boss1', true), 250); setTimeout(() => { if (isBoss() && !cur.done) bossSay('start'); }, 2800); }
+  function bossMiss() { bossFace('laugh', 1400); bossSay('miss'); const b = $('board'); b.classList.remove('zap'); void b.offsetWidth; b.classList.add('zap'); setTimeout(() => b.classList.remove('zap'), 600); }
+  function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'), big = isBoss(); h.classList.remove('hit', 'laugh'); $('bossImg').src = foeImg('lose'); $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; bossSay('lose'); h.classList.add('defeat'); if (big) { bossCard('lose', 'Baron Sour is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); } }
+
+  /* on some ordinary levels the Baron peeks in and blows a little fog over a few empty squares. It only hides them for a moment: nothing on the board changes. */
+  let mischiefT = null, fogT = null;
+  function clearFog() { clearTimeout(fogT); document.querySelectorAll('.bfog,.boss-peek').forEach((e) => e.remove()); }
+  function mischief() {
+    if (!cur || cur.done || foeKind() || $('game').hidden || document.querySelector('.overlay:not([hidden])')) return;
+    const wrap = document.querySelector('#game .boardwrap'), free = [];
+    for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 0) free.push([y, x]);
+    if (!wrap || free.length < 6) return;
+    const wr = wrap.getBoundingClientRect();
+    for (let k = 0; k < 4 && free.length; k++) {
+      const [y, x] = free.splice(Math.floor(Math.random() * free.length), 1)[0], r = cellEl(y, x).getBoundingClientRect(), f = document.createElement('i');
+      f.className = 'bfog'; f.style.cssText = 'left:' + (r.left - wr.left) + 'px;top:' + (r.top - wr.top) + 'px;width:' + r.width + 'px;height:' + r.height + 'px;animation-delay:' + (k * 0.12) + 's'; wrap.appendChild(f);
+    }
+    const p = document.createElement('div'); p.className = 'boss-peek'; p.innerHTML = '<img src="art/boss_laugh.webp" alt="" draggable="false"><b>' + ['Hehe! A little fog for you!', 'Can you see now? Hehe!', 'Boo! Miss me?'][Math.floor(Math.random() * 3)] + '</b>'; wrap.appendChild(p);
+    S.whoosh(); buzz([15, 30, 15]);
+    setTimeout(() => p.remove(), 3200); fogT = setTimeout(clearFog, 8000);
+  }
+  // at the start of a new world he has run off with that world's sticker
+  let stolen = store.get('stolen', {});
+  function stealCheck(lv) {
+    const w = Math.floor((lv - 1) / 10); if (lv < 11 || lv % 10 !== 1 || lv !== level || lv > LAST_LEVEL || stolen[w]) return;
+    stolen[w] = 1; store.set('stolen', stolen);
+    setTimeout(() => { if (cur && !cur.done && !$('game').hidden) { bossCard('laugh', "Baron Sour stole this world's sticker! Beat him on level " + (lv + 9) + ' to win it back!', 'in steal'); S.whoosh(); buzz([30, 40, 30]); } }, 900);
+  }
 
   function paint() {
     const n = cur.n; setTimeout(saveGame, 0); bossUpdate();
@@ -680,7 +727,7 @@
   function mistake(y, x) {
     if (infOn()) { toast('♾️ Unlimited hearts: no heart lost!'); S.x(); buzz(20); bearReact('happy'); return; }
     if (cur.shield) { cur.shield = false; toast('🛡 The shield saved your heart!'); S.hint(); buzz([20, 20]); bearReact('happy'); saveGame(); return; }
-    cur.hearts--; buzz([40, 30, 40]); S.wrong(); if (isBoss()) bossMiss();
+    cur.hearts--; buzz([40, 30, 40]); S.wrong(); if (foeKind()) bossMiss();
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
@@ -786,7 +833,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), party: () => candyParty(), bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), party: () => candyParty(), mischief: () => mischief(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1007,7 +1054,8 @@
   /* ---------- win ---------- */
   function win() {
     cur.done = true; saveGame(); buzz([30, 40, 60]); S.win();
-    if (isBoss()) bossDefeat();
+    if (foeKind()) bossDefeat();
+    clearTimeout(mischiefT); clearFog();
     if (V) setTimeout(() => V.win(cur.hearts), isBoss() ? 4200 : 3100);   // after the three stars have landed
     const m = cur.meta, earned = Math.max(1, cur.hearts);
     let reward = false, wandReward = false;
@@ -1025,7 +1073,7 @@
     if (m.kind === 'level') {
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
-        level = m.level + 1; store.set('level', level); pendingHop = { from: m.level, to: level };
+        level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
         cleared++; store.set('cleared', cleared);                       // only a first-time pass counts toward the reward
         if (cleared % HINT_EVERY === 0) { give({ hints: 1 }); reward = true; setTimeout(() => announce({ hints: 1 }, 'Level reward!'), 3600); }
         checkUnlocks(m);
@@ -1050,7 +1098,7 @@
       wr.innerHTML = '👑 Baron Sour defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
     updateHintUi();
-    $('nextBtn').textContent = m.kind === 'level' ? 'Next level' : 'Back to map';
+    $('nextBtn').textContent = m.kind === 'level' && m.level < LAST_LEVEL ? 'Next level' : 'Back to map';
     setTimeout(() => {
       $('win').hidden = false; celebrate(); candyParty();
       const els = $('winStars').querySelectorAll('img.star');
@@ -1192,12 +1240,18 @@
   }
 
   /* ---------- opening story ---------- */
-  const PANELS = [
+  const STORY = [
     { text: 'Candy Land was the sweetest place in the world. Every candy had its own perfect spot.', img: 'story1', fx: 'calm' },
     { text: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!', img: 'story2p', fx: 'dark' },
     { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of place!', img: 'story3', fx: 'storm' },
     { text: 'Only Gumi can fix it! Help him put the candies back: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
   ];
+  const ENDING = [
+    { text: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.', img: 'end1', fx: 'flash' },
+    { text: 'Baron Sour took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!', img: 'end2', fx: 'calm' },
+    { text: 'From that day on he was Baron Sweet, and Candy Land was sweeter than ever. Thank you for playing!', img: 'end3', fx: 'hero' }
+  ];
+  let PANELS = STORY;
   // what moves on top of each story picture
   function storyFx(kind) {
     let h = '';
@@ -1212,7 +1266,7 @@
     if (kind === 'hero') h += '<i class="st-rays"></i>';
     return h;
   }
-  function preloadStory() { PANELS.map((p) => p.img + '.jpg').concat(['boss_idle_l.webp', 'boss_laugh_l.webp']).forEach((f) => { const im = new Image(); im.src = 'art/' + f; }); }
+  function preloadStory() { STORY.map((p) => p.img + '.jpg').concat(['boss_idle_l.webp', 'boss_laugh_l.webp']).forEach((f) => { const im = new Image(); im.src = 'art/' + f; }); }
   let introStep = 0, rainTimer = null;
   const logoHtml = () => '<div class="logo big" aria-label="Candoku"><img src="art/logo.webp" alt="Candoku" draggable="false"></div>';
   function sceneHtml(kind) {
@@ -1263,12 +1317,15 @@
     if (p.fx === 'storm') { S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === 3 && !$('intro').hidden) S.whoosh(); }, 700); }
     else if (p.fx === 'dark') buzz([30, 60, 30]);
     ctl.hidden = false;
-    $('introNext').textContent = introStep === PANELS.length ? "Let's play!" : 'Next';
+    $('introNext').textContent = introStep === PANELS.length ? (PANELS === ENDING ? 'Back to map' : "Let's play!") : 'Next';
     $('introDots').innerHTML = PANELS.map((_, i) => '<i class="' + (i === introStep - 1 ? 'on' : '') + '"></i>').join('');
     if (V) V.say(p.text, true);
   }
-  function showIntro() { introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; renderIntro(); }
+  function showEnding() { store.set('seenEnd', true); PANELS = ENDING; ENDING.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); introStep = 1; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; if (M) M.start('menu'); renderIntro(); const rb = $('replayEnd'); if (rb) rb.hidden = false; }
+  function maybeEnding() { if (level > LAST_LEVEL && !store.get('seenEnd', false)) setTimeout(showEnding, 700); }
+  function showIntro() { PANELS = STORY; introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; renderIntro(); }
   function endIntro() {
+    const wasEnd = PANELS === ENDING; PANELS = STORY;
     store.set('seenIntro', true); store.set('seenHow', true);
     if (V) V.cancel();
     $('intro').hidden = true; $('introRain').innerHTML = '';
@@ -1292,7 +1349,7 @@
   }
   async function nextLevel() {
     $('win').hidden = true;
-    if (cur.meta.kind !== 'level') { await toMap(); return; }
+    if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL) { await toMap(); maybeEnding(); return; }
     const from = cur.meta.level, to = level; pendingHop = null;
     try {
       mascotAt = from;
@@ -1354,11 +1411,12 @@
   $('optAll').onclick = toggleSound;
   $('optHaptic').onclick = () => { hapticOn = !hapticOn; store.set('haptic', hapticOn); syncOpts(); if (hapticOn) { try { navigator.vibrate && navigator.vibrate(25); } catch (_) {} } };
   $('replayIntro').onclick = () => { $('how').hidden = true; showIntro(); };
-  $('introNext').onclick = () => { S.tap(); if (introStep >= PANELS.length) { if (V) V.say("Let's play!", true); endIntro(); } else { introStep++; renderIntro(); } };
+  { const rb = $('replayEnd'); rb.hidden = !store.get('seenEnd', false); rb.onclick = () => { $('how').hidden = true; showEnding(); }; }
+  $('introNext').onclick = () => { S.tap(); if (introStep >= PANELS.length) { if (V && PANELS !== ENDING) V.say("Let's play!", true); endIntro(); } else { introStep++; renderIntro(); } };
   $('introSkip').onclick = () => { S.tap(); endIntro(); };
   document.addEventListener('pointerdown', () => { S.unlock(); if (M && $('intro').hidden) M.sync(); }, { once: true });
   $('sndHome').onclick = toggleSound; $('sndGame').onclick = toggleSound;
-  $('homeBtn').onclick = () => { $('win').hidden = true; toMap(); };
+  $('homeBtn').onclick = () => { $('win').hidden = true; toMap().then(maybeEnding); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
   $('reviveBtn').onclick = () => { S.tap(); watchAd(() => {
     cur.revived = true; cur.done = false; cur.hearts = 1; addLives(1); if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
@@ -1579,7 +1637,7 @@
     if (lv % 50 === 0) { const n = lv / 50; extra.push({ t: 'Rare sticker!', html: '<div class="rw-it"><div class="sticker big rare">💀</div><b>Extreme Champion ' + n + '</b></div>', p: { coins: 20 }, big: true }); give({ coins: 20 }); }
     FRAMES.filter((f) => f.at === lv && f.at > 0).forEach((f) => extra.push({ t: 'New board frame!', html: '<div class="rw-it"><div class="swatch big" style="background:' + f.bg + '"><u></u><u></u><u></u><u></u></div><b>' + f.name + '</b></div>' }));
     if (lv % 10 === 0 && lv / 10 <= WORLD_NAMES.length) {
-      const i = lv / 10 - 1; extra.push({ t: 'New sticker!', html: '<div class="rw-it"><div class="sticker big" style="background-image:url(art/bg_' + i + '.jpg)"></div><b>' + WORLD_NAMES[i] + '</b></div>' });
+      const i = lv / 10 - 1; extra.push({ t: lv >= 20 ? 'Sticker won back!' : 'New sticker!', html: '<div class="rw-it"><div class="sticker big" style="background-image:url(art/bg_' + i + '.jpg)"></div><b>' + WORLD_NAMES[i] + '</b></div>' });
       const n = lv / 10; if (stkPrize(n)) extra.push({ p: {}, t: 'Album prize ready! ' + n + ' stickers', html: '<div class="rw-it"><b>Open My Collection → Stickers to claim it</b></div>', big: false });
     }
     extra.forEach((e, k) => setTimeout(() => announce(e.p || {}, e.t, e.big, e.html), 5200 + k * 100));
@@ -1604,7 +1662,7 @@
     { id: 'a10', text: 'Daily Bonus streak of 7 days', goal: 7, get: () => Math.max(bonus.streak || 0, 0), prize: { hints: 1, coins: 10 } }];
   function freshWeek() { const k = weekKey(); if (!weekly || weekly.week !== k) { weekly = { week: k, solved: 0, hard: 0, flawless: 0, claimed: {} }; store.set('weekly', weekly); } }
   function trackSolved() {
-    freshWeek(); const flawless = cur.hearts >= MAX_HEARTS; climbWin();
+    freshWeek(); const flawless = cur.hearts >= MAX_HEARTS; climbWin(); stormWin();
     stats.solved++; if (flawless) { passAdvance(); stats.flawless++; stats.run++; stats.maxRun = Math.max(stats.maxRun, stats.run); } else stats.run = 0; if (!cur.hints) stats.nohint++;
     if (cur.meta && cur.meta.kind === 'level' && cur.meta.level % 10 === 0) stats.bosses++;
     weekly.solved++; if (cur.tier !== 'normal') weekly.hard++; if (flawless) weekly.flawless++;
@@ -1645,7 +1703,7 @@
   let quests = store.get('quests', null), chest = store.get('chest', { n: 0 }), wheel = store.get('wheel', { date: '', extra: 0 });
   let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0, odd: 0, jars: 0, shoot: 0, hoop: 0, cart: 0 });
 
-  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb'].forEach((id) => { $(id).hidden = true; }); };
+  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm'].forEach((id) => { $(id).hidden = true; }); };
   const QDEF = [
     { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 3 },
     { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 3 },
@@ -2000,6 +2058,33 @@
   }
   function openClimb() { S.unlock(); S.tap(); closeAll(); $('climb').hidden = false; renderClimb(); }
 
+  /* ---------- Sour Storm: every few days the Baron attacks for 24 hours; each level you win is a hit on him ---------- */
+  const STORM_GOAL = 12, STORM_MS = 24 * 3600e3, STORM_REST = 72 * 3600e3, STORM_PRIZE = [[4, { coins: 5 }], [8, { coins: 5, hints: 1 }], [12, { coins: 10, wands: 1, inf: 15 }]];
+  let storm = Object.assign({ start: 0, hits: 0, cl: [] }, store.get('storm', {})), stormTick = null;
+  const stormOn = () => storm.start > 0 && Date.now() < storm.start + STORM_MS;
+  const stormFree = () => !stormOn() && Date.now() > storm.start + STORM_REST;
+  const stormClaim = () => (storm.start ? STORM_PRIZE.filter((p, i) => storm.hits >= p[0] && !storm.cl[i]).length : 0);
+  function stormWin() { if (!stormOn() || storm.hits >= STORM_GOAL) return; storm.hits++; store.set('storm', storm); }
+  function stormStart() { if (!stormFree()) return; storm = { start: Date.now(), hits: 0, cl: [] }; store.set('storm', storm); S.unlock2(); buzz([20, 30, 40]); renderStorm(); updateSides(); }
+  function renderStorm() {
+    const on = stormOn(), free = stormFree(), hp = STORM_GOAL - storm.hits, shown = on || stormClaim() > 0;
+    $('stormBoss').src = 'art/boss_' + (!shown ? 'idle' : hp <= 0 ? 'lose' : hp <= 4 ? 'worried' : hp <= 8 ? 'hit' : 'idle') + '.webp';
+    $('stormHp').style.width = (shown ? hp / STORM_GOAL * 100 : 100) + '%'; $('stormHpN').textContent = (shown ? hp : STORM_GOAL) + ' / ' + STORM_GOAL;
+    $('stormInfo').textContent = shown && hp <= 0 ? 'You knocked him out! Claim your prizes.' : on ? 'Baron Sour is storming Candy Land! Every level you win on the map is one hit. Knock him out before the time ends!'
+      : free ? 'A 24-hour battle. Press Start, then win levels on the map: every win is one hit on Baron Sour!' : 'Baron Sour is hiding. He will be back in a few days.';
+    const box = $('stormRows'); box.innerHTML = '';
+    STORM_PRIZE.forEach((p, i) => {
+      const d = document.createElement('div'), got = shown && storm.hits >= p[0], done = !!storm.cl[i]; d.className = 'stormrow' + (got ? ' got' : '');
+      d.innerHTML = '<b>' + p[0] + ' hits</b><span class="rwd">' + prizeChips(p[1]) + '</span>';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy'; b.textContent = done ? 'Claimed ✓' : 'Claim'; b.disabled = !got || done;
+      b.onclick = () => { storm.cl[i] = true; store.set('storm', storm); giveReward(p[1], i === STORM_PRIZE.length - 1 ? 'Baron Sour is defeated!' : 'Sour Storm!', i === STORM_PRIZE.length - 1); renderStorm(); updateSides(); };
+      d.appendChild(b); box.appendChild(d);
+    });
+    $('stormStart').hidden = !free; $('stormPlay').hidden = !on || hp <= 0; $('stormPlay').textContent = 'Play level ' + Math.min(level, LAST_LEVEL);
+    const t = $('stormTimer'); t.hidden = !on; if (on) t.textContent = '⏱ ' + fmtClock(STORM_MS - (Date.now() - storm.start));
+  }
+  function openStorm() { S.unlock(); S.tap(); closeAll(); $('storm').hidden = false; renderStorm(); clearInterval(stormTick); stormTick = setInterval(() => { if ($('storm').hidden) { clearInterval(stormTick); return; } const t = $('stormTimer'); if (stormOn()) t.textContent = '⏱ ' + fmtClock(STORM_MS - (Date.now() - storm.start)); else if (!t.hidden) renderStorm(); }, 1000); }
+
   /* ---------- Coin Rush: once a day, 30 minutes of double coins on level wins ---------- */
   let rush = store.get('rush', { until: 0, day: '' }), rushWas = false;
   const rushActive = () => Date.now() < rush.until;
@@ -2114,6 +2199,7 @@
       { name: 'Candy Chest', img: () => chestImg(chest.q ? chest.q.tier : chestTier()).replace('art/', '').replace('.webp', ''), a: '#c98a4d', b: '#6b3e17', tag: () => chest.q ? (chestLeft() <= 0 ? 'OPEN!' : '⏳ ' + fmtWait(chestLeft())) : chest.n >= CHEST_AT ? 'START' : chest.n + ' / ' + CHEST_AT, hot: () => chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT, go: openChest },
       { name: 'Lucky Wheel', img: 'ic_wheel', a: '#b58aff', b: '#5a2fb8', tag: () => (wheel.date !== today() || wheel.extra > 0) ? 'FREE SPIN' : 'Soon', hot: () => wheel.date !== today() || wheel.extra > 0, go: openWheel },
       { name: 'Candy Climb', img: 'ev_climb', a: '#ff7ac4', b: '#7a2bd0', tag: () => climbOn() ? (climbClaim() ? 'CLAIM ' + climbClaim() : '⏱ ' + fmtClock(climbLeft())) : climb.day === today() ? 'Back tomorrow' : 'START', hot: () => (climbOn() && climbClaim() > 0) || (!climbOn() && climb.day !== today()), go: openClimb },
+      { name: 'Sour Storm', img: 'boss_idle', a: '#8a6cff', b: '#2a1458', tag: () => stormOn() ? (stormClaim() ? 'CLAIM ' + stormClaim() : '⏱ ' + fmtClock(STORM_MS - (Date.now() - storm.start))) : stormClaim() ? 'CLAIM ' + stormClaim() : stormFree() ? 'START' : 'Soon', hot: () => stormClaim() > 0 || stormFree(), go: openStorm },
       { name: 'Coin Rush', img: 'ev_rush', a: '#ffd23a', b: '#d9780a', tag: () => rushActive() ? '⚡ ' + Math.ceil((rush.until - Date.now()) / 60000) + ' min left' : rush.day === today() ? 'Back tomorrow' : 'START', hot: () => rushActive() || rush.day !== today(), go: () => { startRush(); refreshEvents(); } }
     ].concat(GAMES.map((g) => ({ name: g[1], img: g[2], a: g[3], b: g[4], key: g[0],
       tag: () => { const l = MAX_PLAYS - (plays[g[0]] || 0), w = gameWait(g[0]); return l <= 0 ? 'Back tomorrow' : w > 0 ? '⏳ ' + fmtWait(w) : 'PLAY · ' + l + ' left'; },
@@ -2121,7 +2207,7 @@
   }
   function eventsHot() {
     const passClaim = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
-    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + ((climbOn() && climbClaim() > 0) || (!climbOn() && climb.day !== today()) ? 1 : 0);
+    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + ((climbOn() && climbClaim() > 0) || (!climbOn() && climb.day !== today()) ? 1 : 0) + (stormClaim() > 0 || stormFree() ? 1 : 0);
   }
   function renderEvents() {
     freshDay(); buildEventItems(); const grid = $('evGrid'); grid.innerHTML = '';
@@ -2528,6 +2614,7 @@
     $('livesBuy').onclick = () => { S.tap(); buyPack('lives'); };
     $('livesShop').onclick = () => { $('lives').hidden = true; openShop(); };
     { const hc = $('heartN') && $('heartN').closest('.chip'); if (hc) { hc.style.cursor = 'pointer'; hc.onclick = openLives; } }
+    $('stormStart').onclick = stormStart; $('stormPlay').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); openPrelevel(Math.min(level, LAST_LEVEL)); }; $('stormClose').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); };
     $('climbStart').onclick = climbStart; $('climbPlay').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); openPrelevel(level); }; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
     $('medRush').onclick = startRush; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === T('Done'); $('quick').hidden = true; updateSides(); if (was) openEvents(); };
     setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (!$('climb').hidden && climbOn()) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft()); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
