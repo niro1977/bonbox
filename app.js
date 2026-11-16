@@ -976,7 +976,7 @@
   const PNAME = { inf: 'min of unlimited hearts', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier' };
   const prizeKeys = (p) => Object.keys(PICO).filter((k) => p[k]);
   function prizeHtml(p) {
-    return prizeKeys(p).map((k) => '<img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>+' + p[k] + (k === 'inf' ? 'm ∞' : '') + '</b>').join('');
+    return prizeKeys(p).map((k) => '<span class="pz"><img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + p[k] + 'm' : '+' + p[k]) + '</b></span>').join('');
   }
   function prizeText(p) { return prizeKeys(p).map((k) => p[k] + ' ' + PNAME[k] + (p[k] > 1 && k !== 'coins' && k !== 'inf' ? 's' : '') + (k === 'coins' && p[k] > 1 ? 's' : '')).join(' and '); }
   /* every prize pops up with a message and the narrator, one after another */

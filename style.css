@@ -1638,3 +1638,13 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 
 /* the winning bear stands a little lower, so his jump does not climb over the title */
 #win .win-gumi{margin-top:2px!important;margin-bottom:-12px!important}
+
+/* prize lists: every prize is one unit (icon + amount) and the row wraps inside its frame instead of spilling out */
+.rwd{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 8px;max-width:100%;min-width:0}
+.rwd .pz{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;flex:none}
+.rwd.big{gap:6px 8px;width:100%;box-sizing:border-box;padding:0 4px}
+.rwd.big .pz{padding:4px 10px 4px 6px;border-radius:16px;background:linear-gradient(180deg,#fff,#eaf4ff 55%,#cfe4fa);border:2px solid #fff;box-shadow:0 3px 0 #9cbfe0,inset 0 2px 0 #fff}
+.rwd.big .pz img{width:30px!important;height:30px!important}
+.rwd.big .pz b{font-size:19px!important;line-height:1}
+#chestPrize{max-width:100%;overflow:hidden}
+#chestMsg{max-width:100%;overflow-wrap:anywhere}
