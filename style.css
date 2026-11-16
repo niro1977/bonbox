@@ -1453,3 +1453,13 @@ html[lang="es"] .med .tag{font-size:11px;letter-spacing:0;padding:4px 8px 6px!im
 .wallet.topbar{gap:1px!important;padding-left:4px!important;padding-right:4px!important}
 .wallet.topbar .chip{padding:3px 6px 7px 4px!important;gap:2px!important}
 @media (max-width:380px){.wallet.topbar .chip{padding:3px 4px 7px 3px!important;font-size:12px!important}.wallet.topbar .chip img,.wallet.topbar .chip svg{width:20px!important;height:20px!important}}
+
+/* a helper was used: dim the board a little, keep the squares it changed lit */
+.board .cell{transition:transform .12s,filter .28s ease}
+.board.spot .cell:not(.lit){filter:brightness(.62) saturate(.7)}
+.board.spot .cell.lit{z-index:3;animation:spotPulse .8s ease-in-out 4;box-shadow:0 0 0 3px #fff,0 0 14px 5px rgba(255,230,90,.95)}
+.board.spot .cell.lit.hinted{animation:spotPulse .8s ease-in-out 4}
+@keyframes spotPulse{0%,100%{transform:scale(1);filter:brightness(1.05)}50%{transform:scale(1.09);filter:brightness(1.3)}}
+@media (prefers-reduced-motion:reduce){.board.spot .cell.lit{animation:none}}
+/* messages while playing sit under the helper buttons, never on the board or the buttons */
+body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
