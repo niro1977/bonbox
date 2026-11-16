@@ -1741,7 +1741,7 @@
   let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
   function passAdvance() {
     if (pass.step >= PASS.length) return;
-    pass.step++; store.set('pass', pass); setTimeout(() => toast('🎟️ Candy Pass: step ' + pass.step + ' / ' + PASS.length), 1800); updateSides();
+    pass.step++; store.set('pass', pass); updateSides();
   }
   function openPass() {
     S.unlock(); S.tap(); closeAll(); renderPass(); $('pass').hidden = false;
@@ -1861,7 +1861,7 @@
   const climbLeft = () => Math.max(0, climb.start + CLIMB_MS - Date.now());
   const climbClaim = () => CLIMB.filter((x, i) => i < climb.step && !climb.cl[i]).length;
   const fmtClock = (ms) => { const t = Math.floor(ms / 1000), hh = Math.floor(t / 3600), mm = Math.floor((t % 3600) / 60), ss = t % 60; return hh + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'); };
-  function climbWin() { if (!climbOn() || climb.step >= CLIMB.length) return; climb.step++; climb.moved = 1; store.set('climb', climb); setTimeout(() => toast('🧗 Candy Climb: platform ' + climb.step + ' / ' + CLIMB.length + '!'), 2400); }
+  function climbWin() { if (!climbOn() || climb.step >= CLIMB.length) return; climb.step++; climb.moved = 1; store.set('climb', climb); }
   function climbLose() { if (!climbOn() || climb.step <= 0) return; climb.step--; climb.moved = -1; store.set('climb', climb); setTimeout(() => toast('🧗 Candy Climb: down to platform ' + climb.step), 1400); }
   function climbStart() {
     if (climbOn()) return; if (climb.day === today()) { toast('Candy Climb is back tomorrow'); return; }
