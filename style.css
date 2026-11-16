@@ -1323,3 +1323,45 @@ body.in-game .toast.gtoast{bottom:150px}
 
 /* Spanish: longer words on the small round tags */
 html[lang="es"] .med .tag{font-size:11px;letter-spacing:0;padding:4px 8px 6px!important;white-space:nowrap}
+
+/* ---------- opening story: full-screen pictures with motion on top ---------- */
+.intro{background:#1a0b3a;padding:0}
+.intro-body{position:static;max-width:none}
+.st-panel{position:absolute;inset:0;overflow:hidden;animation:stIn .7s ease both}
+.st-img{position:absolute;inset:-4%;background:center/cover no-repeat;animation:stZoom 14s ease-out both;will-change:transform}
+.st-panel::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,6,50,.25) 0,transparent 22%,transparent 52%,rgba(20,6,50,.88) 84%,#14062e 100%);pointer-events:none}
+.st-open::after{background:linear-gradient(180deg,transparent 55%,rgba(20,6,50,.7) 100%)}
+.st-open .st-img{inset:0;animation:none}
+.st-cap{position:absolute;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,430px);margin:0;z-index:2;text-align:center;color:#fff;font-family:var(--display);font-weight:800;font-size:clamp(19px,5.4vw,25px);line-height:1.22;text-shadow:0 2px 0 #2a0b5e,0 0 14px rgba(20,0,60,.9);animation:stCap .6s .35s cubic-bezier(.23,1,.32,1) both}
+.intro-ctl{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:3;padding:0 14px;box-sizing:border-box}
+.st-splash{position:absolute;left:0;right:0;bottom:calc(9vh + env(safe-area-inset-bottom));z-index:2;display:flex;flex-direction:column;align-items:center;gap:20px}
+.st-logo{width:min(78vw,340px);filter:drop-shadow(0 8px 10px rgba(20,0,60,.55));animation:stCap .7s cubic-bezier(.23,1,.32,1) both}
+@keyframes stIn{from{opacity:0}to{opacity:1}}
+@keyframes stZoom{from{transform:scale(1.02)}to{transform:scale(1.12) translateY(-1.5%)}}
+@keyframes stCap{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
+.st-logo{animation-name:stLogo}
+@keyframes stLogo{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+/* 1: sparkles */
+.st-spk{position:absolute;width:10px;height:10px;background:radial-gradient(circle,#fff 0,#fff7b0 35%,transparent 70%);border-radius:50%;animation:stSpk 2.6s ease-in-out infinite;z-index:1}
+@keyframes stSpk{0%,100%{opacity:0;transform:scale(.3)}50%{opacity:1;transform:scale(1.5)}}
+/* 2: lightning and a slow push in on the villain */
+.st-dark .st-img{animation:stLoom 9s ease-out both;transform-origin:50% 28%}
+@keyframes stLoom{from{transform:scale(1.02)}to{transform:scale(1.2)}}
+.st-flash{position:absolute;inset:0;background:#fff;opacity:0;z-index:1;pointer-events:none;animation:stFlash 3.4s linear infinite .5s}
+.st-flash.b{animation-delay:2.1s;background:#f4ff9a}
+@keyframes stFlash{0%,100%{opacity:0}2%{opacity:.75}4%{opacity:.05}6%{opacity:.5}10%{opacity:0}}
+/* 3: the sneeze storm */
+.st-storm .st-img{animation:stQuake .5s linear 3,stSway 2.4s ease-in-out 1.5s infinite}
+@keyframes stQuake{0%{transform:scale(1.14) translate(0,0)}20%{transform:scale(1.14) translate(-10px,6px) rotate(-.8deg)}40%{transform:scale(1.14) translate(9px,-7px) rotate(.7deg)}60%{transform:scale(1.14) translate(-7px,-5px) rotate(-.5deg)}80%{transform:scale(1.14) translate(8px,6px) rotate(.6deg)}100%{transform:scale(1.14) translate(0,0)}}
+@keyframes stSway{0%,100%{transform:scale(1.14) translate(-5px,0) rotate(-.4deg)}50%{transform:scale(1.14) translate(5px,-4px) rotate(.4deg)}}
+.st-gust{position:absolute;left:-90px;top:var(--y);width:var(--s);height:var(--s);z-index:1;animation:stGust var(--d) linear infinite}
+.st-gust svg{width:100%;height:100%;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4));animation:spin .7s linear infinite}
+@keyframes stGust{0%{transform:translate(0,0)}50%{transform:translate(60vw,var(--w))}100%{transform:translate(calc(100vw + 180px),0)}}
+.st-wind{position:absolute;left:-60%;width:55%;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);z-index:1;animation:stWind 1s linear infinite}
+@keyframes stWind{to{transform:translateX(320%)}}
+.st-achoo{position:absolute;left:50%;top:40%;z-index:2;background:#fff;color:#c01868;font-family:var(--display);font-weight:800;font-size:clamp(34px,11vw,50px);padding:6px 24px;border-radius:26px;border:5px solid #ff4fb0;box-shadow:0 8px 0 rgba(60,0,60,.35);animation:stAchoo 2.6s cubic-bezier(.23,1,.32,1) .25s both}
+@keyframes stAchoo{0%{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-14deg)}14%{opacity:1;transform:translate(-50%,-50%) scale(1.25) rotate(6deg)}24%{transform:translate(-50%,-50%) scale(1) rotate(-4deg)}80%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-4deg)}100%{opacity:0;transform:translate(-50%,-70%) scale(.9) rotate(-4deg)}}
+/* 4: sun rays on the hero */
+.st-rays{position:absolute;left:50%;top:-20%;width:200vmax;height:200vmax;margin-left:-100vmax;z-index:1;background:repeating-conic-gradient(from 0deg at 50% 30%,rgba(255,240,170,.07) 0 5deg,transparent 5deg 20deg);animation:spin 40s linear infinite;mix-blend-mode:screen;pointer-events:none}
+.st-hero .st-img{transform-origin:50% 45%}
+@media (prefers-reduced-motion:reduce){.st-img,.st-storm .st-img,.st-dark .st-img{animation:none}.st-gust,.st-wind,.st-flash,.st-rays{display:none}}

@@ -1078,10 +1078,26 @@
 
   /* ---------- opening story ---------- */
   const PANELS = [
-    { text: 'Candy Land was the sweetest place in the world.', scene: 'happy' },
-    { text: 'Then came a giant sneeze. Achoo! Every candy got mixed up!', scene: 'sneeze' },
-    { text: 'Help Gumi put them back. One candy in every color, and no two candies can touch!', scene: 'mission' }
+    { text: 'Candy Land was the sweetest place in the world. Every candy had its own perfect spot.', img: 'story1', fx: 'calm' },
+    { text: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!', img: 'story2', fx: 'dark' },
+    { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of place!', img: 'story3', fx: 'storm' },
+    { text: 'Only Gumi can fix it! Help him put the candies back: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
   ];
+  // what moves on top of each story picture
+  function storyFx(kind) {
+    let h = '';
+    if (kind === 'calm') for (let i = 0; i < 12; i++) h += '<i class="st-spk" style="left:' + (6 + Math.random() * 88) + '%;top:' + (8 + Math.random() * 60) + '%;animation-delay:-' + (Math.random() * 3).toFixed(2) + 's"></i>';
+    if (kind === 'dark') h += '<i class="st-flash"></i><i class="st-flash b"></i>';
+    if (kind === 'storm') {
+      h += '<i class="st-flash"></i>';
+      for (let i = 0; i < 10; i++) h += '<span class="st-gust" style="--y:' + (5 + Math.random() * 46) + '%;--s:' + (34 + Math.random() * 34) + 'px;--d:' + (1.1 + Math.random() * 1.3).toFixed(2) + 's;--w:' + (Math.random() * 30 - 15).toFixed(0) + 'vh;animation-delay:-' + (Math.random() * 2.4).toFixed(2) + 's"><svg><use href="#c' + (i % 10) + '"/></svg></span>';
+      for (let i = 0; i < 7; i++) h += '<i class="st-wind" style="top:' + (8 + i * 11) + '%;animation-delay:-' + (i * 0.23).toFixed(2) + 's"></i>';
+      h += '<div class="st-achoo">ACHOO!</div>';
+    }
+    if (kind === 'hero') h += '<i class="st-rays"></i>';
+    return h;
+  }
+  function preloadStory() { PANELS.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); }
   let introStep = 0, rainTimer = null;
   const logoHtml = () => '<div class="logo big" aria-label="Candoku"><img src="art/logo.webp" alt="Candoku" draggable="false"></div>';
   function sceneHtml(kind) {
@@ -1113,7 +1129,8 @@
   function renderIntro() {
     const body = $('introBody'), ctl = $('introCtl');
     if (introStep === 0) {
-      body.innerHTML = '<div class="splash">' + logoHtml() + '<svg class="hero-gumi bounce"><use href="#gumi"/></svg><button id="introStart" class="play" type="button">Tap to start</button></div>';
+      body.innerHTML = '<div class="st-panel st-open"><div class="st-img" style="background-image:url(art/splash_tall.jpg)"></div></div><div class="st-splash"><img class="st-logo" src="art/logo_cut.webp" alt="Candoku" draggable="false"><button id="introStart" class="play" type="button">Tap to start</button></div>';
+      preloadStory();
       ctl.hidden = true;
       $('introStart').onclick = () => {
         S.unlock(); S.tap(); if (M) M.start('menu');
@@ -1124,13 +1141,15 @@
       return;
     }
     const p = PANELS[introStep - 1];
-    body.innerHTML = '<div class="panel">' + sceneHtml(p.scene) + '<p class="cap">' + p.text + '</p></div>';
+    body.innerHTML = '<div class="st-panel st-' + p.fx + '"><div class="st-img" style="background-image:url(art/' + p.img + '.jpg)"></div>' + storyFx(p.fx) + '</div><p class="st-cap">' + p.text + '</p>';
+    if (p.fx === 'storm') { S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === 3 && !$('intro').hidden) S.whoosh(); }, 700); }
+    else if (p.fx === 'dark') buzz([30, 60, 30]);
     ctl.hidden = false;
     $('introNext').textContent = introStep === PANELS.length ? "Let's play!" : 'Next';
     $('introDots').innerHTML = PANELS.map((_, i) => '<i class="' + (i === introStep - 1 ? 'on' : '') + '"></i>').join('');
     if (V) V.say(p.text, true);
   }
-  function showIntro() { introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); startRain(); renderIntro(); }
+  function showIntro() { introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; renderIntro(); }
   function endIntro() {
     store.set('seenIntro', true); store.set('seenHow', true);
     if (V) V.cancel();

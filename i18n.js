@@ -90,6 +90,10 @@
     // ---- intro, tutorial, how to play ----
     'Candy Land was the sweetest place in the world.': 'El País de los Dulces era el lugar más dulce del mundo.', 'Then came a giant sneeze. Achoo! Every candy got mixed up!': 'Entonces llegó un estornudo gigante. ¡Achú! ¡Todos los dulces se revolvieron!',
     'Help Gumi put them back. One candy in every color, and no two candies can touch!': 'Ayuda a Gumi a ponerlos en su lugar. ¡Un dulce en cada color, y dos dulces nunca se pueden tocar!',
+    'Candy Land was the sweetest place in the world. Every candy had its own perfect spot.': 'El País de los Dulces era el lugar más dulce del mundo. Cada dulce tenía su lugar perfecto.',
+    'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!': 'Pero en las nubes vivía el Barón Agrio, el gruñón rey de la tormenta. ¡No soportaba tanta dulzura!',
+    'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of place!': 'Tomó aire y... ¡ACHÚ! ¡Una tormenta salvaje sacó a todos los dulces de su lugar!',
+    'Only Gumi can fix it! Help him put the candies back: one in every color, and no two candies touching!': '¡Solo Gumi puede arreglarlo! Ayúdalo a poner los dulces en su lugar: ¡uno en cada color, y que nunca se toquen!',
     'ACHOO!': '¡ACHÚ!', 'Tap to start': 'Toca para empezar', 'Welcome to Candoku!': '¡Bienvenido a Candoku!', "Let's play!": '¡A jugar!', 'Next': 'Siguiente', 'Skip': 'Saltar', 'Got it': 'Entendido',
     'Welcome! Your goal: put exactly ONE candy in every color. The row up here shows which candies you still need.': '¡Bienvenido! Tu meta: poner exactamente UN dulce en cada color. La fila de arriba muestra los dulces que te faltan.',
     'Tap a square to mark an X, a square that cannot hold a candy. Tap the X again to remove it. Drag across squares to mark many.': 'Toca una casilla para marcar una X: ahí no puede ir un dulce. Toca la X otra vez para quitarla. Arrastra el dedo para marcar varias.',
