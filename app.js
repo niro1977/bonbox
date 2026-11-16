@@ -655,7 +655,7 @@
 
   let toastTimer = null;
   function toast(text) {
-    const t = $('toast'); t.textContent = text; t.classList.add('show');
+    const t = $('toast'); if (t.parentElement !== document.body) { document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.add('show');
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
   }
   /* ---------- wallet: coins, hints, wands, helpers ---------- */
@@ -1746,7 +1746,9 @@
       bear.animate(kf, { duration: 800, delay: 350, fill: 'backwards' }); setTimeout(() => { if (climb.moved > 0) S.hop(); else S.wrong(); }, 350);
       climb.moved = 0; store.set('climb', climb);
     }
-    $('climbInfo').textContent = on ? 'Win a level: up one platform. Lose a level: down one. ' + st + ' / ' + n : climb.day === today() ? 'Today\'s climb is over. A new one opens tomorrow.' : 'You get 24 hours. Every win lifts you one platform to a bigger prize!';
+    $('climbInfo').innerHTML = on ? 'Play the normal levels on the map. <b>Every level you win</b> lifts the bear one platform, <b>every level you lose</b> drops him one. Come back here to claim the prizes. <b>' + st + ' / ' + n + '</b>'
+      : climb.day === today() ? 'Today is over. A new climb opens tomorrow.' : 'A 24-hour challenge. Press Start, then play the normal levels: every win lifts the bear one platform to a bigger prize!';
+    { const pb = $('climbPlay'); pb.hidden = !on; pb.textContent = 'Play level ' + level; }
     const b = $('climbStart'); b.hidden = on || climb.day === today(); $('climbTimer').hidden = !on; if (on) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft());
     const sc = $('climbScroll'); if (sc) sc.scrollTop = Math.max(0, by - sc.clientHeight * 0.6);
   }
@@ -1893,9 +1895,11 @@
   let quickKey = null;
   document.addEventListener('keydown', (e) => { if (quickKey && !$('quick').hidden) quickKey(e); });
   function quickCanvas() {
-    const body = $('quickBody'); body.innerHTML = '<canvas class="qcv" width="300" height="360"></canvas>'; const cv = body.firstChild;
-    const xy = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height]; };
-    return { cv, g: cv.getContext('2d'), xy };
+    const K = Math.max(2, Math.min(3, Math.ceil(window.devicePixelRatio || 1)));   // draw at 2-3x so nothing is blurry
+    const body = $('quickBody'); body.innerHTML = '<canvas class="qcv" width="' + 300 * K + '" height="' + 360 * K + '"></canvas>'; const cv = body.firstChild;
+    const xy = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * 300 / r.width, (e.clientY - r.top) * 360 / r.height]; };
+    const g = cv.getContext('2d'); g.setTransform(K, 0, 0, K, 0, 0); g.imageSmoothingQuality = 'high';
+    return { cv, g, xy };
   }
   const rr = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
   const glossBall = (g, x, y, r, c, dark) => {
@@ -2230,7 +2234,7 @@
     $('tossClose').onclick = () => { S.tap(); stopToss(); $('toss').hidden = true; updateSides(); };
     $('medPass').onclick = openPass; $('passClose').onclick = () => { S.tap(); $('pass').hidden = true; updateSides(); };
     $('medEvents').onclick = openEvents; $('eventsClose').onclick = () => { S.tap(); $('events').hidden = true; updateSides(); };
-    $('climbStart').onclick = climbStart; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
+    $('climbStart').onclick = climbStart; $('climbPlay').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); openPrelevel(level); }; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
     $('medRush').onclick = startRush; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === 'Done'; $('quick').hidden = true; updateSides(); if (was) openEvents(); };
     setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (!$('climb').hidden && climbOn()) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft()); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
   }

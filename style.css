@@ -1257,3 +1257,9 @@ body.inf-on #heartN{color:#e0245e;font-size:12px}
 #win .win-gumi .gbody,#win .win-gumi .g-air,#win .win-gumi .g-ground,#win .win-gumi .gshadow{animation:none!important}
 #win .win-gumi .g-air{opacity:0}
 #win .win-gumi .gshadow{transform-origin:50% 50%}
+
+/* messages are visible on every screen */
+.toast.gtoast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(10px);width:max-content;max-width:min(340px,calc(100vw - 32px));z-index:70;min-height:0;padding:10px 16px;background:rgba(30,0,70,.92);border:2px solid #ffc247;box-shadow:0 6px 16px rgba(0,0,0,.4);pointer-events:none;opacity:0;transition:opacity .2s,transform .2s cubic-bezier(.23,1,.32,1);font-weight:800}
+.toast.gtoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+body.in-game .toast.gtoast{bottom:150px}
+#climbInfo b{color:#7a2fd0}
