@@ -1133,7 +1133,7 @@
     const P = [], G = 620;
     const shoot = (left, delay) => {
       const ang = (left ? -62 : -118) + (Math.random() - 0.5) * 46, sp = H * (1.05 + Math.random() * 0.75), a = ang * Math.PI / 180;
-      P.push({ x: left ? -10 : W + 10, y: H * 0.86, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, sz: 26 + Math.random() * 28, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 12, flip: 2 + Math.random() * 5, fp: Math.random() * 6.28,
+      P.push({ x: left ? -10 : W + 10, y: H * 0.86, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, sz: 30 + Math.random() * 30, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 9, flip: 2 + Math.random() * 5, fp: Math.random() * 6.28,
         sway: 10 + Math.random() * 22, sf: 1.5 + Math.random() * 2, i: (P.length * 5 + Math.floor(Math.random() * 3)) % 21, t: -delay, life: 0 });
     };
     for (let k = 0; k < 44; k++) shoot(k % 2 === 0, Math.random() * 0.35);
@@ -1152,7 +1152,7 @@
         if (p.y - p.sz > H && p.vy > 0) { P.splice(n, 1); continue; }
         const im = partyArt[p.i]; if (!im.complete || !im.naturalWidth) continue;
         const sx = Math.cos(p.fp + p.life * p.flip), fade = clock > 5.4 ? Math.max(0, 1 - (clock - 5.4) / 1.4) : 1;
-        g.globalAlpha = fade; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.scale(Math.abs(sx) < 0.14 ? 0.14 * (sx < 0 ? -1 : 1) : sx, 1); g.drawImage(im, -p.sz / 2, -p.sz / 2, p.sz, p.sz); g.restore();
+        g.globalAlpha = fade; g.save(); g.translate(p.x, p.y); g.rotate(p.r); const pu = 1 + sx * 0.06; g.scale(pu, pu); g.drawImage(im, -p.sz / 2, -p.sz / 2, p.sz, p.sz); g.restore();   // solid 3D sweets spin, they do not flip like paper
       }
       g.globalAlpha = 1;
       requestAnimationFrame(tick);
