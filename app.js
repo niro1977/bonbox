@@ -1023,7 +1023,7 @@
     updateHintUi();
     $('nextBtn').textContent = m.kind === 'level' ? 'Next level' : 'Back to map';
     setTimeout(() => {
-      $('win').hidden = false; confetti(); celebrate();
+      $('win').hidden = false; confetti(); celebrate(); candyParty();
       const els = $('winStars').querySelectorAll('img.star');
       const box = $('winStars'), card = document.querySelector('#win .card');
       const burst = (el, good) => {
@@ -1059,6 +1059,32 @@
     const out = 'cubic-bezier(.23,1,.32,1)', inn = 'cubic-bezier(.5,0,.9,.4)', soft = 'cubic-bezier(.45,.05,.55,.95)';
     const A = (el, kf, ms, ease) => { const an = el.animate(kf, { duration: ms, easing: ease || 'linear', fill: 'forwards' }); return an.finished.catch(() => {}); };
     const tf = (y, sx, sy, r) => 'translateY(' + y + 'px) scale(' + sx + ',' + sy + ') rotate(' + (r || 0) + 'deg)';
+    if (body.classList.contains('frames')) {
+      // real drawn poses: cheer, crouch, take-off, peak, fall, landing. The picture changes with the motion, the way a hand-animated character does.
+      const F = [...body.querySelectorAll('.gf')], show = (k) => F.forEach((im, i) => { im.style.opacity = i === k - 1 ? 1 : 0; });
+      const shadowF = (s, o, ms, ease) => { if (sh) sh.animate([{}, { transform: 'scale(' + s + ')', opacity: o }], { duration: ms, easing: ease || 'linear', fill: 'forwards' }); };
+      body.style.animation = 'none'; if (sh) sh.style.animation = 'none'; show(1);
+      await A(body, [{ transform: tf(-60, 0.7, 0.7, 0), opacity: 0 }, { transform: tf(3, 1.06, 0.94, 0), opacity: 1, offset: 0.7 }, { transform: tf(0, 1, 1, 0), opacity: 1 }], 480, out);
+      let side = 1;
+      while (live()) {
+        const H = 40 + Math.random() * 14, lean = (2 + Math.random() * 3) * side; side = -side;
+        show(1);
+        await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(-3, 0.99, 1.02, lean) }, { transform: tf(0, 1.01, 0.99, -lean * 0.6) }, { transform: tf(-2, 0.99, 1.01, lean * 0.4) }, { transform: tf(0, 1, 1, 0) }], 760 + Math.random() * 380, soft); if (!live()) break;
+        show(2); await A(body, [{ transform: tf(0, 0.97, 1.04, 0) }, { transform: tf(0, 1.05, 0.93, 0) }], 150, out); if (!live()) break;
+        show(3); S.hop(); shadowF(0.6, 0.5, 300, out);
+        await A(body, [{ transform: tf(0, 1.02, 0.97, 0) }, { transform: tf(-H * 0.34, 0.97, 1.05, lean * 0.3) }], 85, 'linear'); if (!live()) break;
+        show(4);
+        await A(body, [{ transform: tf(-H * 0.34, 0.98, 1.04, lean * 0.3) }, { transform: tf(-H, 1, 1, lean) }], 240, out); if (!live()) break;
+        await A(body, [{ transform: tf(-H, 1, 1, lean) }, { transform: tf(-H - 2, 1.01, 0.99, lean * 0.5) }, { transform: tf(-H + 1, 1, 1, 0) }], 130, soft); if (!live()) break;
+        show(5); shadowF(1, 1, 220, inn);
+        await A(body, [{ transform: tf(-H + 1, 1, 1, 0) }, { transform: tf(-3, 0.97, 1.05, -lean * 0.3) }], 220, inn); if (!live()) break;
+        show(6); buzz(10);
+        await A(body, [{ transform: tf(0, 0.98, 1.03, 0) }, { transform: tf(0, 1.07, 0.92, 0) }, { transform: tf(0, 1.02, 0.98, 0) }], 170, out); if (!live()) break;
+        show(1);
+        await A(body, [{ transform: tf(0, 0.97, 1.04, 0) }, { transform: tf(-5, 0.99, 1.02, 0) }, { transform: tf(0, 1.02, 0.98, 0) }, { transform: tf(0, 1, 1, 0) }], 300, soft);
+      }
+      return;
+    }
     const pose = (up) => { air.animate([{ opacity: up ? 0 : 1 }, { opacity: up ? 1 : 0 }], { duration: 90, fill: 'forwards' }); gnd.animate([{ opacity: up ? 1 : 0 }, { opacity: up ? 0 : 1 }], { duration: 90, fill: 'forwards' }); };
     const shadow = (s, o, ms, ease) => { if (sh) sh.animate([{}, { transform: 'scale(' + s + ')', opacity: o }], { duration: ms, easing: ease || 'linear', fill: 'forwards' }); };
     air.style.animation = gnd.style.animation = body.style.animation = 'none'; if (sh) sh.style.animation = 'none'; pose(false);
@@ -1088,6 +1114,49 @@
         await A(body, [{ transform: tf(-H * 0.35, 0.97, 1.05, -lean * 0.5) }, { transform: tf(0, 1.1, 0.88, 0) }, { transform: tf(0, 1, 1, 0) }], 240, inn);
       }
     }
+  }
+  /* candies jump for joy behind the win card: they shoot up from the floor, fall, bounce with squash and stretch, and new ones keep hopping in */
+  const partyArt = []; let partyRun = 0;
+  function candyParty() {
+    const cv = $('winParty'); if (!cv || !cv.getContext) return; const run = ++partyRun;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (!partyArt.length) ['lollipop', 'candy', 'doughnut', 'cupcake', 'cookie', 'cherries', 'shortcake', 'dango'].forEach((n) => { const im = new Image(); im.src = 'art/cd_' + n + '.webp'; partyArt.push(im); });
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, g = cv.getContext('2d');
+    cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const FLOOR = H - 10, G = 2300, P = [];
+    const spawn = (x, vx, vy, sz, delay) => P.push({ x, y: FLOOR + 40, vx, vy, sz, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 9, sq: 0, i: Math.floor(Math.random() * partyArt.length), t: -delay, b: 0, a: 1, up: true });
+    // the opening burst: two fountains from the bottom corners and a row of hoppers
+    for (let k = 0; k < 14; k++) { const left = k % 2 === 0; spawn(left ? W * 0.08 : W * 0.92, (left ? 1 : -1) * (60 + Math.random() * 260), -(1250 + Math.random() * 650), 34 + Math.random() * 22, k * 0.045); }
+    for (let k = 0; k < 9; k++) spawn(W * (0.08 + 0.84 * Math.random()), (Math.random() - 0.5) * 160, -(900 + Math.random() * 500), 30 + Math.random() * 18, 0.5 + k * 0.07);
+    let last = performance.now(), next = 1.6, clock = 0;
+    const tick = (now) => {
+      if (run !== partyRun || $('win').hidden) { g.clearRect(0, 0, W, H); return; }
+      const dt = Math.min(0.033, (now - last) / 1000); last = now; clock += dt;
+      if (clock > next && P.length < 26) { next = clock + 0.35 + Math.random() * 0.5; spawn(W * (0.05 + 0.9 * Math.random()), (Math.random() - 0.5) * 220, -(800 + Math.random() * 600), 28 + Math.random() * 20, 0); }
+      g.clearRect(0, 0, W, H);
+      for (let n = P.length - 1; n >= 0; n--) {
+        const p = P[n]; p.t += dt; if (p.t < 0) continue;
+        p.vy += G * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt; p.sq *= Math.pow(0.0009, dt);
+        if (p.up && p.vy > 0) p.up = false;
+        const rad = p.sz / 2;
+        if (!p.up && p.y + rad > FLOOR) {                    // landing: squash, lose energy, hop again
+          p.y = FLOOR - rad; p.sq = Math.min(0.45, p.vy / 2600); p.vy = -p.vy * (0.5 - p.b * 0.08); p.vx *= 0.8; p.vr *= 0.6; p.b++;
+          if (p.b > 3 || Math.abs(p.vy) < 170) p.dead = true;
+        }
+        if (p.x < rad) { p.x = rad; p.vx = Math.abs(p.vx) * 0.7; } else if (p.x > W - rad) { p.x = W - rad; p.vx = -Math.abs(p.vx) * 0.7; }
+        if (p.dead) { p.a -= dt * 2.4; p.vy = 0; p.y = FLOOR - rad; if (p.a <= 0) { P.splice(n, 1); continue; } }
+        // stretch along the motion while flying fast, squash flat on impact
+        const st = Math.min(0.22, Math.abs(p.vy) / 5200), sx = 1 + p.sq * 0.9 - st * 0.5, sy = 1 - p.sq * 0.8 + st;
+        const hgt = Math.max(0, Math.min(1, (FLOOR - p.y) / 260));
+        g.globalAlpha = p.a * 0.28 * (1 - hgt * 0.8); g.fillStyle = '#1a0540'; g.beginPath(); g.ellipse(p.x, FLOOR + 2, rad * (1.05 - hgt * 0.45), rad * 0.2, 0, 0, 6.283); g.fill();
+        g.globalAlpha = p.a; g.save(); g.translate(p.x, p.y + rad * (1 - sy)); g.scale(sx, sy); g.rotate(p.sq > 0.05 ? p.r * 0.2 : p.r);
+        const im = partyArt[p.i]; if (im.complete && im.naturalWidth) g.drawImage(im, -rad, -rad, p.sz, p.sz);
+        g.restore();
+      }
+      g.globalAlpha = 1;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame((t) => { last = t; tick(t); });
   }
   function confetti() {
     const box = $('confetti'); box.innerHTML = '';
@@ -1399,6 +1468,8 @@
   const passed = () => Math.max(0, level - 1);
   let outfit = store.get('outfit', 'hero'), frame = store.get('frame', 'cream');
   const outfitOf = (id) => OUTFITS.find((o) => o.id === id) || OUTFITS[0], frameOf = (id) => FRAMES.find((f) => f.id === id) || FRAMES[0];
+  // outfits that have a hand-drawn six-pose victory jump (art/jump_<id>_1..6.webp)
+  const JUMPSETS = ['hero', 'chef', 'fire', 'pirate', 'cowboy', 'wizard', 'king', 'ninja'];
   function applyLook() {
     if (passed() < outfitOf(outfit).at) outfit = 'hero'; if (passed() < frameOf(frame).at) frame = 'cream';
     if (passed() < bearColorOf(bearColor).at) bearColor = 'pink';
@@ -1409,6 +1480,16 @@
       const iw = document.querySelector('#gumiwin image'); if (iw) iw.setAttribute('href', wn);
       const ib = document.querySelector('#gumiblink image'); if (ib) ib.setAttribute('href', bl);
       const gg = document.querySelector('#win .g-ground'), ga = document.querySelector('#win .g-air'); if (gg) gg.src = wn; if (ga) ga.src = ar;
+      const gb = document.querySelector('#win .gbody');
+      if (gb) {
+        gb.querySelectorAll('.gf').forEach((e) => e.remove()); gb.classList.remove('frames');
+        if (JUMPSETS.includes(o.id)) Promise.all([1, 2, 3, 4, 5, 6].map((k) => recolor('jump_' + o.id + '_' + k, hue))).then((fr) => {
+          if (outfitOf(outfit).id !== o.id || bearColorOf(bearColor).hue !== hue) return;
+          gb.querySelectorAll('.gf').forEach((e) => e.remove());
+          fr.forEach((src, k) => { const im = new Image(); im.className = 'gf'; im.alt = ''; im.draggable = false; im.decoding = 'sync'; im.src = src; im.style.opacity = k ? 0 : 1; gb.appendChild(im); });
+          gb.classList.add('frames');
+        });
+      }
       const ls = document.querySelector('.lose-gumi img'); if (ls) ls.src = sd;
     });
     document.body.dataset.outfit = o.id;
@@ -1804,6 +1885,8 @@
     { id: 'coins_s', name: 'Bag of Coins', price: '$1.99', img: '3d_chest_small', give: { coins: 150 } },
     { id: 'coins_m', name: 'Jar of Coins', price: '$4.99', img: '3d_chest_med', tag: 'POPULAR', give: { coins: 500 } },
     { id: 'coins_l', name: 'Chest of Coins', price: '$9.99', img: '3d_chest_large', tag: 'BEST VALUE', give: { coins: 1500 } },
+    { id: 'lives', name: 'Full Lives', price: '$0.99', img: 'ic_heart', lives: true, give: {} },
+    { id: 'inf2h', name: 'Unlimited Lives', price: '$1.99', img: 'ic_heart', tag: '2 HOURS', give: { inf: 120 } },
     { id: 'helpers', name: 'Helper Pack', price: '$3.99', img: 'ic_wand', give: { hints: 10, wands: 5, shield: 3, sweeper: 3, lens: 3, double: 3 } },
     { id: 'noads', name: 'No Ads', price: '$9.99', img: 'ic_shield', once: true, give: {}, noads: true }
   ];
@@ -1812,6 +1895,7 @@
   function grantPack(id) {
     const p = PACKS.find((x) => x.id === id); if (!p) return false;
     if (p.once) { if (owned[id]) return false; owned[id] = true; store.set('owned', owned); }
+    if (p.lives) { addLives(MAX_LIVES); toast('❤️ Lives refilled!'); if (!$('lives').hidden) renderLives(); }
     if (p.noads) { adsOff = true; store.set('adsOff', true); toast('Ads removed. Thank you!'); }
     if (prizeKeys(p.give).length) giveReward(p.give, p.name + '!', true);
     updateHintUi(); if (!$('shop').hidden) openShop();
@@ -1820,6 +1904,7 @@
   window.CandokuGrant = grantPack;
   function buyPack(id) {
     const p = PACKS.find((x) => x.id === id); if (!p) return; if (p.once && owned[id]) { toast('You already have this'); return; }
+    if (p.lives && (infOn() || livesNow() >= MAX_LIVES)) { toast('You are full of lives. Go play!'); return; }
     const nat = NATIVE();
     if (nat && nat.purchase) { Promise.resolve(nat.purchase(id)).then((done) => { if (done) grantPack(id); }).catch(() => toast('The purchase did not go through')); return; }
     if (DBG) { toast('(test) purchase approved'); setTimeout(() => grantPack(id), 600); return; }
@@ -1829,7 +1914,7 @@
     const box = $('shopPacks'); if (!box) return; box.innerHTML = '';
     PACKS.forEach((p) => {
       const gone = p.once && owned[p.id], d = document.createElement('div'); d.className = 'pack' + (p.tag ? ' tagged' : '') + (gone ? ' gone' : '');
-      d.innerHTML = (p.tag ? '<i class="ptag">' + p.tag + '</i>' : '') + '<img src="art/' + p.img + '.webp" alt="" draggable="false"><b>' + p.name + '</b><small>' + (p.noads ? 'Remove the ads forever' : prizeChipsHtml(p.give)) + '</small>';
+      d.innerHTML = (p.tag ? '<i class="ptag">' + p.tag + '</i>' : '') + '<img src="art/' + p.img + '.webp" alt="" draggable="false"><b>' + p.name + '</b><small>' + (p.noads ? 'Remove the ads forever' : p.lives ? 'Refill all 5 lives' : prizeChipsHtml(p.give)) + '</small>';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main pbuy'; b.textContent = gone ? 'Owned ✓' : p.price; b.disabled = !!gone; b.onclick = () => { S.tap(); buyPack(p.id); }; d.appendChild(b); box.appendChild(d);
     });
     const fr = $('shopFree'); fr.innerHTML = '';
@@ -1846,7 +1931,7 @@
     const n = livesNow(), full = n >= MAX_LIVES;
     $('livesRow').innerHTML = Array.from({ length: MAX_LIVES }, (x, i) => '<img src="art/ic_heart' + (i < n ? '' : '_off') + '.webp" alt="" draggable="false">').join('');
     $('livesMsg').textContent = infOn() ? 'Unlimited hearts are on!' : full ? 'You are full of lives. Go play!' : n === 0 ? 'No lives left. Next life in ' + fmtMS(nextLifeIn()) : 'Next life in ' + fmtMS(nextLifeIn());
-    $('livesAd').disabled = full; $('livesCoins').disabled = full || coins < 30; $('livesCoins').innerHTML = 'Refill all · 30 ' + coinSvg;
+    $('livesBuy').disabled = full || infOn(); $('livesAd').disabled = full; $('livesCoins').disabled = full || coins < 30; $('livesCoins').innerHTML = 'Refill all · 30 ' + coinSvg;
   }
 
   /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
@@ -2409,6 +2494,7 @@
     $('livesClose').onclick = () => { S.tap(); $('lives').hidden = true; };
     $('livesAd').onclick = () => { S.tap(); watchAd(() => { addLives(1); renderLives(); toast('❤️ +1 life'); }); };
     $('livesCoins').onclick = () => { if (coins < 30 || livesNow() >= MAX_LIVES) return; coins -= 30; saveWallet(); addLives(MAX_LIVES); updateHintUi(); S.ui('buy', 1, 1); renderLives(); };
+    $('livesBuy').onclick = () => { S.tap(); buyPack('lives'); };
     $('livesShop').onclick = () => { $('lives').hidden = true; openShop(); };
     { const hc = $('heartN') && $('heartN').closest('.chip'); if (hc) { hc.style.cursor = 'pointer'; hc.onclick = openLives; } }
     $('climbStart').onclick = climbStart; $('climbPlay').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); openPrelevel(level); }; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
@@ -2445,5 +2531,6 @@
     const ready = () => setTimeout(bye, Math.max(0, 7000 - (Date.now() - t0)));
     const hero = new Image(); hero.onload = hero.onerror = () => { if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready); }; hero.src = 'art/bg_' + (Math.floor((level - 1) / 10) % 30) + '.jpg';
     setTimeout(bye, 12000); }
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').catch(() => {}), 1500));
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) navigator.serviceWorker.addEventListener('controllerchange', () => { if (!sessionStorage.getItem('swr') && document.getElementById('splash')) { sessionStorage.setItem('swr', '1'); location.reload(); } });
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').then((r) => r.update && r.update()).catch(() => {}), 300));
 })();
