@@ -1127,14 +1127,14 @@
   function candyParty() {
     const cv = $('winParty'); if (!cv || !cv.getContext) return; const run = ++partyRun;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!partyArt.length) for (let k = 1; k <= 12; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; partyArt.push(im); }
+    if (!partyArt.length) for (let k = 1; k <= 21; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; partyArt.push(im); }
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, g = cv.getContext('2d');
     cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); cv.style.opacity = 1;
     const P = [], G = 620;
     const shoot = (left, delay) => {
       const ang = (left ? -62 : -118) + (Math.random() - 0.5) * 46, sp = H * (1.05 + Math.random() * 0.75), a = ang * Math.PI / 180;
-      P.push({ x: left ? -10 : W + 10, y: H * 0.86, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, sz: 20 + Math.random() * 26, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 12, flip: 2 + Math.random() * 5, fp: Math.random() * 6.28,
-        sway: 10 + Math.random() * 22, sf: 1.5 + Math.random() * 2, i: Math.floor(Math.random() * 12), t: -delay, life: 0 });
+      P.push({ x: left ? -10 : W + 10, y: H * 0.86, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, sz: 26 + Math.random() * 28, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 12, flip: 2 + Math.random() * 5, fp: Math.random() * 6.28,
+        sway: 10 + Math.random() * 22, sf: 1.5 + Math.random() * 2, i: (P.length * 5 + Math.floor(Math.random() * 3)) % 21, t: -delay, life: 0 });
     };
     for (let k = 0; k < 44; k++) shoot(k % 2 === 0, Math.random() * 0.35);
     for (let k = 0; k < 30; k++) shoot(k % 2 === 0, 0.55 + Math.random() * 0.45);
