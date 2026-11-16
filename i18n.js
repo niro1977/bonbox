@@ -136,6 +136,7 @@
     'Baron Sour is storming Candy Land! Every level you win on the map is one hit. Knock him out before the time ends!': '¡El Barón Agrio ataca el País de los Dulces! Cada nivel que ganas en el mapa es un golpe. ¡Véncelo antes de que se acabe el tiempo!',
     'A 24-hour battle. Press Start, then win levels on the map: every win is one hit on Baron Sour!': 'Una batalla de 24 horas. Presiona Iniciar y gana niveles en el mapa: ¡cada victoria es un golpe al Barón Agrio!',
     'Baron Sour is hiding. He will be back in a few days.': 'El Barón Agrio se esconde. Volverá en unos días.',
+    'Pfff! Bye bye, X marks!': '¡Pfff! ¡Adiós, tus X!', 'One puff... and your X marks are gone!': 'Un soplido... ¡y tus X desaparecen!',
     'ACHOO!': '¡ACHÚ!', 'Tap to start': 'Toca para empezar', 'Welcome to Candoku!': '¡Bienvenido a Candoku!', "Let's play!": '¡A jugar!', 'Next': 'Siguiente', 'Skip': 'Saltar', 'Got it': 'Entendido',
     'Welcome! Your goal: put exactly ONE candy in every color. The row up here shows which candies you still need.': '¡Bienvenido! Tu meta: poner exactamente UN dulce en cada color. La fila de arriba muestra los dulces que te faltan.',
     'Tap a square to mark an X, a square that cannot hold a candy. Tap the X again to remove it. Drag across squares to mark many.': 'Toca una casilla para marcar una X: ahí no puede ir un dulce. Toca la X otra vez para quitarla. Arrastra el dedo para marcar varias.',

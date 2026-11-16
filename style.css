@@ -1533,3 +1533,7 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 .stormrow .rwd img{width:20px;height:20px}
 .stormrow .rwd em{font-size:12px;margin-right:3px}
 .stormrow .btn{padding:5px 10px!important;font-size:12px!important;min-height:0!important;height:auto!important;width:auto!important}
+
+/* the puff of smoke that wipes an X */
+.bfog.smoke{background:radial-gradient(circle at 40% 40%,#f4f0ff,#a99cc9 50%,rgba(70,55,110,.9) 78%,rgba(60,45,100,0) 100%);animation:smokeIn 2.6s ease both}
+@keyframes smokeIn{0%{opacity:0;transform:scale(.2)}18%{opacity:1;transform:scale(1.45)}60%{opacity:.9;transform:scale(1.3) translateY(-4px)}100%{opacity:0;transform:scale(1.9) translateY(-16px)}}

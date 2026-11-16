@@ -88,7 +88,7 @@
   const varietySize = (lv) => { if (lv < 21 || lv % 5 === 0) return 0; const h = Math.imul(lv, 2654435761) >>> 0; const r = (h >>> 8) % 100; return r < 16 ? 9 : r < 30 ? 8 : 0; };
   const LAST_LEVEL = 500, ULTRA_FROM = 301;   // 301-500: only the hardest boards
   const sizeFor = (lv) => (lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
-  const tierOf = (lv) => (lv >= ULTRA_FROM ? (lv % 10 === 0 ? 'extreme' : 'veryhard') : lv % 50 === 0 ? 'extreme' : lv % 10 === 0 ? 'veryhard' : lv % 5 === 0 ? 'hard' : 'normal');
+  const tierOf = (lv) => (lv % 10 === 0 ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : lv % 5 === 0 ? 'hard' : 'normal');   // every world ends with an Extremely Hard level
   const dailySize = () => [6, 7, 8, 9, 10, 8, 7][new Date().getDay()];
   const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard' };
 
@@ -337,7 +337,7 @@
 
   /* ---------- boards ---------- */
   // every Hard / Very Hard / Extreme level (and the mixed-in hard 9x9 / 8x8 boards) takes its own board from the pool: no level repeats an earlier one
-  const POOL_KEY = (lv) => { if (lv >= ULTRA_FROM) return 'ultra'; const t = tierOf(lv); return t !== 'normal' ? t : varietySize(lv) ? 'hard' : null; };
+  const POOL_KEY = (lv) => (lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : lv % 10 === 0 ? 'veryhard' : lv % 5 === 0 || varietySize(lv) ? 'hard' : null);
   const POOL_IDX = (() => { const c = {}, o = {}; for (let lv = 1; lv <= LAST_LEVEL; lv++) { const k = POOL_KEY(lv); if (!k) continue; const id = k + sizeFor(lv); o[lv] = c[id] || 0; c[id] = o[lv] + 1; } return o; })();
   function boardFor(lv) {
     const n = sizeFor(lv), key = POOL_KEY(lv);
@@ -419,7 +419,7 @@
   function openPrelevel(lv, after) {
     const n = sizeFor(lv), tier = tierOf(lv), best = stars[lv] || 0, resume = !!savedFor({ kind: 'level', level: lv });
     $('plTitle').textContent = 'Level ' + lv;
-    const t = $('plTier'), boss = lv % 10 === 0; t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'veryhard boss' : tier); t.textContent = boss ? '👑 Baron Sour' : tierLabel[tier] || '';
+    const t = $('plTier'), boss = lv % 10 === 0; t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'extreme boss' : tier); t.textContent = tierLabel[tier] || '';
     $('plBoss').hidden = !boss;
     $('plStars').innerHTML = [1, 2, 3].map((i) => '<span class="slot"><img class="star ' + (i <= best ? '' : 'off') + '" src="art/star_' + (i <= best ? 'gold' : 'grey') + '.webp" alt="" draggable="false"></span>').join('');
     $('plInfo').textContent = n + '×' + n + ' board · ' + n + ' candies to find' + (best ? '' : ' · first time!');
@@ -442,7 +442,8 @@
     show('game');
     preSpoken = false;
     if (lv % 10 === 0 && !resumed) setTimeout(bossEnter, 1000);
-    clearTimeout(mischiefT); clearFog();
+    clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
+    if (foeKind()) blowT = setTimeout(foeBlow, 26000 + Math.random() * 14000);
     if (!resumed) {
       stealCheck(lv);
       if (foeKind() === 'minion') setTimeout(() => { if (foeKind() === 'minion' && !cur.done) bossSay('start'); }, 1300);
@@ -629,6 +630,20 @@
     const p = document.createElement('div'); p.className = 'boss-peek'; p.innerHTML = '<img src="art/boss_laugh.webp" alt="" draggable="false"><b>' + ['Hehe! A little fog for you!', 'Can you see now? Hehe!', 'Boo! Miss me?'][Math.floor(Math.random() * 3)] + '</b>'; wrap.appendChild(p);
     S.whoosh(); buzz([15, 30, 15]);
     setTimeout(() => p.remove(), 3200); fogT = setTimeout(clearFog, 8000);
+  }
+  let blowT = null;
+  function foeBlow() {
+    clearTimeout(blowT); if (!cur || cur.done || cur.blown || !foeKind() || $('game').hidden) return;
+    if (document.querySelector('.overlay:not([hidden])') || document.querySelector('.boss-card')) { blowT = setTimeout(foeBlow, 5000); return; }
+    const xs = []; for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 1) xs.push([y, x]);
+    if (xs.length < 6) { blowT = setTimeout(foeBlow, 7000); return; }   // wait until there is something to blow away
+    cur.blown = true; snapshot();
+    const wrap = document.querySelector('#game .boardwrap'), wr = wrap.getBoundingClientRect(), n = xs.length >= 14 ? 4 : 3, hit = [];
+    for (let k = 0; k < n; k++) hit.push(xs.splice(Math.floor(Math.random() * xs.length), 1)[0]);
+    bossFace('laugh', 2200); const el = $('bossSay'); el.textContent = T(foeKind() === 'minion' ? 'Pfff! Bye bye, X marks!' : 'One puff... and your X marks are gone!'); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(sayT); sayT = setTimeout(() => el.classList.remove('on'), 2400);
+    S.whoosh(); buzz([20, 40, 20]);
+    hit.forEach(([y, x], k) => { const r = cellEl(y, x).getBoundingClientRect(), f = document.createElement('i'); f.className = 'bfog smoke'; f.style.cssText = 'left:' + (r.left - wr.left) + 'px;top:' + (r.top - wr.top) + 'px;width:' + r.width + 'px;height:' + r.height + 'px;animation-delay:' + (k * 0.15) + 's'; wrap.appendChild(f); setTimeout(() => f.remove(), 2600 + k * 150); });
+    setTimeout(() => { if (!cur || cur.done) return; hit.forEach(([y, x]) => { if (cur.state[y][x] === 1) cur.state[y][x] = 0; }); paint(); }, 700);
   }
   // at the start of a new world he has run off with that world's sticker
   let stolen = store.get('stolen', {});
@@ -833,7 +848,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), party: () => candyParty(), mischief: () => mischief(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1055,7 +1070,7 @@
   function win() {
     cur.done = true; saveGame(); buzz([30, 40, 60]); S.win();
     if (foeKind()) bossDefeat();
-    clearTimeout(mischiefT); clearFog();
+    clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     if (V) setTimeout(() => V.win(cur.hearts), isBoss() ? 4200 : 3100);   // after the three stars have landed
     const m = cur.meta, earned = Math.max(1, cur.hearts);
     let reward = false, wandReward = false;
