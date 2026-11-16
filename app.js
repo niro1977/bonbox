@@ -2182,43 +2182,75 @@
   /* candy toss */
   let tossRaf = 0;
   function stopToss() { cancelAnimationFrame(tossRaf); tossRaf = 0; }
+  // Candy Toss: a glass jar slides along the shelf of a carnival booth. Tap to launch the candy from the spring;
+  // it flies up in an arc and drops, so you have to lead the jar. 8 candies.
+  const tossArt = {};
+  function loadToss() {
+    if (tossArt.bg) return;
+    [['bg', 'toss_bg.jpg'], ['jar', 'toss_jar.webp'], ['stand', 'toss_stand.webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + f[1]; tossArt[f[0]] = im; });
+    tossArt.c = ['lollipop', 'candy', 'doughnut', 'cupcake', 'cookie', 'cherries', 'shortcake', 'dango'].map((n) => { const im = new Image(); im.src = 'art/cd_' + n + '.webp'; return im; });
+  }
   function startToss() {
-    freshDay(); if (plays.toss >= MAX_PLAYS) return;
-    plays.toss++; store.set('plays', plays); updateSides(); closeAll();
-    $('tossMsg').textContent = 'Tap to toss when the jar is above the candy!'; $('tossClose').textContent = 'Give up'; $('toss').hidden = false;
-    const cv = $('tossCv'), g = cv.getContext('2d'), W = cv.width = 270, H = cv.height = 330, img = new Image(); img.src = 'art/cd_candy.webp';
-    const JY = 64, JW = 64, SX = W / 2, SY = H - 46;
-    let shot = 0, hits = 0, perfect = 0, flying = null, note = '', noteT = 0, over = false, t0 = performance.now(), lastT = t0, jx = W / 2;
-    const jarPos = (t) => W / 2 + Math.sin(t / 1000 * (1.5 + shot * 0.5)) * (W / 2 - JW / 2 - 8);
-    const end = () => {
-      over = true; const reward = Math.floor((hits + perfect) / 2); give({ coins: reward }, true); S.win(); updateSides();
-      $('tossMsg').innerHTML = hits + ' in the jar! +' + reward + ' ' + coinSvg; $('tossClose').textContent = 'Done';
+    loadToss();
+    freshDay(); if (plays.toss >= MAX_PLAYS) return; plays.toss++; store.set('plays', plays); updateSides();
+    quickOpen('Candy Toss', 'Tap to launch. The candy takes a moment to fly, so aim ahead of the jar!');
+    const { cv, g } = quickCanvas(), ok = (im) => im && im.complete && im.naturalWidth;
+    const N = 8, SX = 150, SY = 292, SHELF = 136, JW = 76, JH = 90, TOP = 26, FLY = 0.72;
+    let shot = 0, hits = 0, perfect = 0, fly = null, over = false, last = performance.now(), t = 0, jx = 150, spring = 0, wob = 0; const inJar = [], parts = [], texts = [], loose = [];
+    const speed = () => 1.25 + shot * 0.22, jarAt = (tt) => 150 + Math.sin(tt * speed()) * 96;
+    const candy = (i, x, y, sz, rot) => { const im = tossArt.c[i % tossArt.c.length]; g.save(); g.translate(x, y); g.rotate(rot || 0); if (ok(im)) g.drawImage(im, -sz / 2, -sz / 2, sz, sz); else glossBall(g, 0, 0, sz / 2, '#ff5fa8', '#a8123a'); g.restore(); };
+    const burst = (x, y, n) => { const col = ['#fff', '#ffe14d', '#ff8fd0', '#7fe3ff']; for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, v = 40 + Math.random() * 110; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, l: 0.6, c: col[k % 4] }); } };
+    const say = (s, x, y, c) => texts.push({ t: s, x, y, a: 1.3, c });
+    const finish = () => { if (over) return; over = true; quickEnd(hits + ' / ' + N + ' in the jar', Math.floor((hits + perfect) / 2), hits >= N ? { hints: 1 } : null); };
+    cv.onpointerdown = (e) => { e.preventDefault(); if (over || fly || shot >= N) return; fly = { u: 0, i: shot, x: SX, y: SY - 30, rot: 0, st: 'up' }; spring = 1; S.whoosh(); buzz(8); };
+    const draw = () => {
+      if (ok(tossArt.bg)) g.drawImage(tossArt.bg, -30, 0, 360, 360); else { g.fillStyle = '#c86ad0'; g.fillRect(0, 0, 300, 360); }
+      const jy = SHELF - JH + 4, tilt = Math.sin(wob * 18) * wob * 0.09;
+      g.fillStyle = 'rgba(60,20,0,.3)'; g.beginPath(); g.ellipse(jx, SHELF + 3, 34, 6, 0, 0, 6.283); g.fill();
+      g.save(); g.translate(jx, SHELF); g.rotate(tilt); g.translate(-jx, -SHELF);
+      inJar.forEach((c, n) => candy(c.i, jx - 17 + (n % 3) * 17 + (Math.floor(n / 3) % 2) * 6, SHELF - 16 - Math.floor(n / 3) * 15 - Math.abs(Math.sin(c.b * 10)) * c.b * 10, 21, c.r));
+      if (fly && fly.st === 'in') candy(fly.i, fly.x, fly.y, 22, fly.rot);
+      if (ok(tossArt.jar)) g.drawImage(tossArt.jar, jx - JW / 2, jy, JW, JH);
+      g.restore();
+      loose.forEach((b) => candy(b.i, b.x, b.y, b.sz, b.rot));
+      // launcher
+      const sq = 1 - spring * 0.35 + Math.sin(spring * 14) * spring * 0.1;
+      g.fillStyle = 'rgba(60,20,0,.3)'; g.beginPath(); g.ellipse(SX, SY + 26, 30, 7, 0, 0, 6.283); g.fill();
+      if (ok(tossArt.stand)) g.drawImage(tossArt.stand, SX - 31, SY + 26 - 55 * sq, 62, 55 * sq);
+      if (!fly && shot < N) candy(shot, SX, SY - 30 + Math.sin(t * 3) * 1.5 + (1 - sq) * 40, 34, Math.sin(t * 2) * 0.08);
+      if (fly && fly.st !== 'in') { const sz = 34 - 12 * Math.min(1, fly.u); candy(fly.i, fly.x, fly.y, sz, fly.rot); }
+      // candies left
+      for (let k = shot + (fly ? 1 : 0) + (fly ? 0 : 1); k < N; k++) candy(k, 18 + (k - shot - 1) * 19, 344, 17, 0);
+      parts.forEach((p) => { g.globalAlpha = Math.max(0, p.l / 0.6); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, 3, 0, 6.283); g.fill(); }); g.globalAlpha = 1;
+      texts.forEach((x) => { g.globalAlpha = Math.max(0, Math.min(1, x.a)); g.font = '900 24px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = '#5a2a00'; g.strokeText(x.t, x.x, x.y); g.fillStyle = x.c; g.fillText(x.t, x.x, x.y); }); g.globalAlpha = 1;
     };
-    cv.onpointerdown = (e) => { e.preventDefault(); S.unlock(); if (over || flying) return; flying = { y: SY }; };
-    function frame(now) {
-      const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; if (!over) jx = jarPos(now - t0);
-      if (flying) {
-        flying.y -= 560 * dt;
-        if (flying.y <= JY + 6) {
-          const d = Math.abs(jx - SX);
-          if (d <= JW / 2 - 6) { hits++; if (d <= 9) { perfect++; note = 'Perfect!'; } else note = 'Nice!'; S.candy(shot % 6, hits); buzz(15); } else { note = 'Miss'; S.tap(); }
-          noteT = now; flying = null; shot++; if (shot >= 5) end();
+    const tick = (now) => {
+      if (over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt; jx = jarAt(t); spring = Math.max(0, spring - dt * 2.4); wob = Math.max(0, wob - dt * 1.6);
+      if (fly) {
+        fly.rot += dt * 9;
+        if (fly.st === 'up') {
+          fly.u += dt / FLY; const u = Math.min(1, fly.u), top = SHELF - JH - 2;
+          fly.y = (SY - 30) + (top - (SY - 30)) * u - 70 * 4 * u * (1 - u) * 0.9; fly.x = SX;
+          if (fly.u >= 1) {
+            const d = Math.abs(jx - SX);
+            if (d <= 17) { fly.st = 'in'; fly.vy = 60; hits++; const pf = d <= 6; if (pf) perfect++; say(pf ? 'Perfect!' : 'Sweet!', jx, SHELF - JH - 14, pf ? '#ffe14d' : '#fff'); burst(jx, SHELF - JH + 6, pf ? 16 : 9); S.candy(shot % 9, Math.min(8, 2 + hits)); buzz(pf ? [10, 20, 30] : 14); wob = 0.6; }
+            else if (d <= 40) { loose.push({ i: fly.i, x: fly.x, y: fly.y, sz: 22, rot: fly.rot, vx: (SX > jx ? 1 : -1) * 90, vy: -170 }); say('Rim!', SX, SHELF - JH - 14, '#fff'); S.x(); buzz(14); wob = 1; fly = null; shot++; }
+            else { loose.push({ i: fly.i, x: fly.x, y: fly.y, sz: 22, rot: fly.rot, vx: 0, vy: 30 }); say('Miss', SX, SHELF - JH - 14, '#ffb3b3'); S.wrong(); fly = null; shot++; }
+          }
+        } else {
+          fly.vy += 900 * dt; fly.y += fly.vy * dt; fly.x = jx;
+          if (fly.y >= SHELF - 18) { inJar.push({ i: fly.i, r: (Math.random() - 0.5) * 0.9, b: 0.5 }); fly = null; shot++; }
         }
+        if (!fly && shot >= N) setTimeout(finish, 900);
       }
-      g.clearRect(0, 0, W, H);
-      const bg = g.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#9fe3ff'); bg.addColorStop(1, '#ffe3f4'); g.fillStyle = bg; g.fillRect(0, 0, W, H);
-      // jar
-      g.fillStyle = 'rgba(255,255,255,.55)'; g.strokeStyle = '#fff'; g.lineWidth = 4; g.beginPath(); g.moveTo(jx - JW / 2, JY - 16); g.lineTo(jx - JW / 2 + 6, JY + 34); g.quadraticCurveTo(jx, JY + 46, jx + JW / 2 - 6, JY + 34); g.lineTo(jx + JW / 2, JY - 16); g.closePath(); g.fill(); g.stroke();
-      g.fillStyle = '#ff5fa8'; g.fillRect(jx - JW / 2 - 4, JY - 22, JW + 8, 8);
-      for (let i = 0; i < hits; i++) { g.fillStyle = ['#ffb347', '#7be37a', '#45d0ff', '#b07bff', '#ffe14d'][i % 5]; g.beginPath(); g.arc(jx - 18 + (i % 3) * 18, JY + 24 - Math.floor(i / 3) * 12, 8, 0, 7); g.fill(); }
-      // candy and ground
-      const cy = flying ? flying.y : SY; if (img.complete && img.naturalWidth) g.drawImage(img, SX - 18, cy - 18, 36, 36); else { g.fillStyle = '#ff5fa8'; g.beginPath(); g.arc(SX, cy, 14, 0, 7); g.fill(); }
-      g.fillStyle = '#7be37a'; g.fillRect(0, H - 18, W, 18);
-      g.fillStyle = '#4a1a8f'; g.font = '800 15px Baloo 2, sans-serif'; g.textAlign = 'left'; g.fillText('Candy ' + Math.min(shot + (flying ? 1 : 0), 5) + ' / 5', 10, H - 26);
-      if (note && now - noteT < 900) { g.textAlign = 'center'; g.font = '800 26px Baloo 2, sans-serif'; g.fillStyle = '#ff3f66'; g.fillText(note, W / 2, H / 2); }
-      tossRaf = requestAnimationFrame(frame);
-    }
-    stopToss(); tossRaf = requestAnimationFrame(frame);
+      inJar.forEach((c) => { c.b = Math.max(0, c.b - dt); });
+      loose.forEach((b) => { b.vy += 620 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.rot += dt * 8; b.sz = Math.min(34, b.sz + dt * 14); }); for (let i = loose.length - 1; i >= 0; i--) if (loose[i].y > 400) loose.splice(i, 1);
+      parts.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.l -= dt; }); for (let i = parts.length - 1; i >= 0; i--) if (parts[i].l <= 0) parts.splice(i, 1);
+      texts.forEach((x) => { x.y -= 22 * dt; x.a -= dt * 1.1; }); for (let i = texts.length - 1; i >= 0; i--) if (texts[i].a <= 0) texts.splice(i, 1);
+      $('quickBar').style.width = ((N - shot) / N * 100) + '%'; $('quickInfo').textContent = 'Candies left ' + (N - shot) + ' · in the jar ' + hits;
+      draw(); quickRaf = requestAnimationFrame(tick);
+    };
+    quickRaf = requestAnimationFrame((x) => { last = x; tick(x); });
   }
   function wireExtras() {
     $('medDaily').onclick = () => { S.unlock(); S.tap(); if (daily.last === today()) { alert('Daily Candy is done for today. Come back tomorrow!'); return; } transition(() => startDaily()); };
