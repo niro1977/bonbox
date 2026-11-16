@@ -14,6 +14,7 @@
     story2: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!',
     story3: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of place!',
     story4: 'Only Gumi can fix it! Help him put the candies back: one in every color, and no two candies touching!',
+    boss1: 'Baron Sour blocks the way! You can beat him!', boss2: 'You defeated Baron Sour! Amazing!',
     letsplay: "Let's play!",
     first: 'Sweet!', yummy: 'Yummy!', tasty: 'Tasty!', nice: 'Nice one!', delicious: 'Delicious!',
     perfect: 'Delicious! Perfect!', divine: 'Divine! Perfect!', sugartastic: 'Sugar-tastic! Perfect!',

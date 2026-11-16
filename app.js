@@ -240,7 +240,7 @@
       const p = g.pos(lv), tier = tierOf(lv), n = sizeFor(lv);
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tier) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
-      b.dataset.lv = lv;
+      b.dataset.lv = lv; if (lv % 10 === 0) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting');
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
       if (tier === 'normal') { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); }
       let html = '' + lv;
@@ -397,7 +397,8 @@
   function openPrelevel(lv, after) {
     const n = sizeFor(lv), tier = tierOf(lv), best = stars[lv] || 0, resume = !!savedFor({ kind: 'level', level: lv });
     $('plTitle').textContent = 'Level ' + lv;
-    const t = $('plTier'); t.hidden = tier === 'normal'; t.className = 'pl-tier ' + tier; t.textContent = tierLabel[tier] || '';
+    const t = $('plTier'), boss = lv % 10 === 0; t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'veryhard boss' : tier); t.textContent = boss ? '👑 Baron Sour' : tierLabel[tier] || '';
+    $('plBoss').hidden = !boss;
     $('plStars').innerHTML = [1, 2, 3].map((i) => '<span class="slot"><img class="star ' + (i <= best ? '' : 'off') + '" src="art/star_' + (i <= best ? 'gold' : 'grey') + '.webp" alt="" draggable="false"></span>').join('');
     $('plInfo').textContent = n + '×' + n + ' board · ' + n + ' candies to find' + (best ? '' : ' · first time!');
     $('plRow').innerHTML = '<span class="chip"><img src="art/ic_heart.webp" alt="" draggable="false"><b>' + MAX_HEARTS + '</b></span><span class="chip"><img src="art/ic_hint.webp" alt="" draggable="false"><b>' + hintsLeft + '</b></span><span class="chip"><img src="art/ic_wand.webp" alt="" draggable="false"><b>' + wands + '</b></span>';
@@ -423,7 +424,7 @@
     if (infOn()) setTimeout(() => toast('♾️ Unlimited hearts for ' + fmtMS(infUntil - Date.now()) + '!'), 1500);
     if (V && !preSpoken) setTimeout(() => V.start(lv, tierOf(lv)), 700);
     preSpoken = false;
-    if (lv % 10 === 0) setTimeout(() => toast('👑 Boss level! Beat it for a big prize.'), 1200);
+    if (lv % 10 === 0 && !resumed) setTimeout(bossEnter, 1000);
     if (lv === 1 && (forceCoach || !store.get('seenCoach', false))) setTimeout(openTutorial, 900);
     if (lv > 1 && sizeFor(lv) === baseSize(lv) && baseSize(lv) > baseSize(lv - 1)) {
       const id = sizeFor(lv) - 1;
@@ -549,8 +550,33 @@
     return b;
   }
   function placedCount() { let c = 0; for (const r of cur.state) for (const v of r) if (v === 2) c++; return c; }
+  /* ---------- Baron Sour: the storm king waits on every 10th level ---------- */
+  const isBoss = () => !!(cur && cur.meta && cur.meta.kind === 'level' && cur.meta.level % 10 === 0);
+  let bossT = null;
+  function bossFace(k, ms) {
+    const im = $('bossImg'), h = $('bossHud'); im.src = 'art/boss_' + k + '.webp';
+    h.classList.remove('hit', 'laugh'); void h.offsetWidth; if (k === 'hit' || k === 'laugh') h.classList.add(k);
+    clearTimeout(bossT); if (ms) bossT = setTimeout(() => { if (isBoss() && !cur.done) { im.src = 'art/boss_idle.webp'; h.classList.remove('hit', 'laugh'); } }, ms);
+  }
+  function bossUpdate() {
+    const h = $('bossHud'), on = isBoss(); h.hidden = !on; $('game').classList.toggle('bossfight', on); if (!on) return;
+    let c = 0; for (let y = 0; y < cur.n; y++) if (cur.state[y][cur.solution[y]] === 2) c++;
+    const hp = cur.n - c; $('bossHp').style.width = (hp / cur.n * 100) + '%'; $('bossHpN').textContent = hp + ' / ' + cur.n;
+    if (cur.bossC === undefined) { h.classList.remove('defeat'); $('bossImg').src = 'art/boss_idle.webp'; }
+    else if (c > cur.bossC && !cur.done) { bossFace('hit', 900); S.x(); }
+    cur.bossC = c;
+  }
+  function bossCard(img, text, cls) {
+    document.querySelectorAll('.boss-card').forEach((e) => e.remove());
+    const d = document.createElement('div'); d.className = 'boss-card ' + cls; d.innerHTML = '<i class="bc-flash"></i><img src="art/boss_' + img + '.webp" alt="" draggable="false"><b>' + text + '</b>';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 2700);
+  }
+  function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard('idle', 'Baron Sour blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => V.say('boss1', true), 250); }
+  function bossMiss() { bossFace('laugh', 1400); const b = $('board'); b.classList.remove('zap'); void b.offsetWidth; b.classList.add('zap'); setTimeout(() => b.classList.remove('zap'), 600); }
+  function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'); h.classList.remove('hit', 'laugh'); $('bossImg').src = 'art/boss_lose.webp'; $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; h.classList.add('defeat'); bossCard('lose', 'Baron Sour is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); }
+
   function paint() {
-    const n = cur.n; setTimeout(saveGame, 0);
+    const n = cur.n; setTimeout(saveGame, 0); bossUpdate();
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
       const el = cellEl(y, x), s = cur.state[y][x];
       const wrongX = s === 1 && cur.wrongMarks.has(y + ',' + x);   // black X: only after a wrong candy attempt
@@ -638,11 +664,11 @@
   function mistake(y, x) {
     if (infOn()) { toast('♾️ Unlimited hearts: no heart lost!'); S.x(); buzz(20); bearReact('happy'); return; }
     if (cur.shield) { cur.shield = false; toast('🛡 The shield saved your heart!'); S.hint(); buzz([20, 20]); bearReact('happy'); saveGame(); return; }
-    cur.hearts--; buzz([40, 30, 40]); S.wrong();
+    cur.hearts--; buzz([40, 30, 40]); S.wrong(); if (isBoss()) bossMiss();
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; saveGame(); freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); setTimeout(() => { S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); setTimeout(() => { S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -744,7 +770,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -956,7 +982,8 @@
   /* ---------- win ---------- */
   function win() {
     cur.done = true; saveGame(); buzz([30, 40, 60]); S.win();
-    if (V) setTimeout(() => V.win(cur.hearts), 3100);   // after the three stars have landed
+    if (isBoss()) bossDefeat();
+    if (V) setTimeout(() => V.win(cur.hearts), isBoss() ? 4200 : 3100);   // after the three stars have landed
     const m = cur.meta, earned = Math.max(1, cur.hearts);
     let reward = false, wandReward = false;
     freshScore();
@@ -994,8 +1021,8 @@
     else wr.hidden = true;
     if (m.kind === 'level' && m.level % 10 === 0) {
       const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
-      give(bp); setTimeout(() => announce(bp, '👑 Boss defeated!', true), 3600); wr.hidden = false;
-      wr.innerHTML = '👑 Boss defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
+      give(bp); setTimeout(() => announce(bp, '👑 Baron Sour defeated!', true, '<div class="rw-it"><img class="rw-boss" src="art/boss_lose.webp" alt="" draggable="false"></div>'), 3600); wr.hidden = false;
+      wr.innerHTML = '👑 Baron Sour defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
     updateHintUi();
     $('nextBtn').textContent = m.kind === 'level' ? 'Next level' : 'Back to map';
