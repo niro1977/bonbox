@@ -1313,7 +1313,7 @@
   function renderIntro() {
     const body = $('introBody'), ctl = $('introCtl');
     if (introStep === 0) {
-      body.innerHTML = '<div class="st-panel st-open"><div class="st-img" style="background-image:url(art/splash_tall.jpg)"></div></div><div class="st-splash"><img class="st-logo" src="art/logo_bonbox.webp" alt="Bonbox" draggable="false"><button id="introStart" class="play" type="button">Tap to start</button></div>';
+      body.innerHTML = '<div class="st-panel st-open"><div class="st-img" style="background-image:url(art/splash_4k.jpg)"></div></div><div class="st-splash"><img class="st-logo" src="art/logo_bonbox_hd.webp" alt="Bonbox" draggable="false"><button id="introStart" class="play" type="button">Tap to start</button></div>';
       preloadStory();
       ctl.hidden = true;
       $('introStart').onclick = () => {
