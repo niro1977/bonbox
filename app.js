@@ -679,7 +679,7 @@
   let toastTimer = null;
   function toast(text) {
     const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; { const tl = document.querySelector('#game .tools'), r = !$('game').hidden && tl ? tl.getBoundingClientRect() : null; if (r && r.width) { t.style.bottom = 'auto'; t.style.top = Math.max(r.bottom + 8, 0) + 'px'; const hh = t.offsetHeight; if (r.bottom + 8 + hh > innerHeight - 6) t.style.top = Math.max(innerHeight - hh - 6, r.bottom + 2) + 'px'; } else { t.style.top = ''; t.style.bottom = ''; } } t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), $('board') && $('board').classList.contains('spot') ? 6000 : 4200);
   }
   /* ---------- wallet: coins, hints, wands, helpers ---------- */
   const MAX_LIVES_FALLBACK = 5;
@@ -833,7 +833,7 @@
     for (const [y, x] of h.cells) { cur.state[y][x] = h.type === 'candy' ? 2 : 1; cur.wrongMarks.delete(y + ',' + x); }
     paint();
     for (const [y, x] of h.cells) { const el = cellEl(y, x); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted'); }
-    spotlight(h.cells, 3800); toast(h.text); buzz(15);
+    spotlight(h.cells, 5800); toast(h.text); buzz(15);
     if (h.type === 'candy') { const [y, x] = h.cells[0]; S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount()); } else S.hint();
     if (solved()) win();
   }
@@ -851,7 +851,7 @@
     if (!mark.length) { toast('Place a candy first, then sweep!'); return; }   // nothing is spent
     items.sweeper--; saveWallet(); updateHintUi(); snapshot();
     mark.forEach(([yy, xx], k) => { cur.state[yy][xx] = 1; cur.wrongMarks.delete(yy + ',' + xx); setTimeout(() => { const el = cellEl(yy, xx); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted'); }, Math.min(k * 14, 500)); });
-    paint(); spotlight(mark, 2800); buzz(18); S.hint(); S.praise(1);
+    paint(); spotlight(mark, 4800); buzz(18); S.hint(); S.praise(1);
   }
   function armLens() {
     if (!cur || cur.done || items.lens <= 0) return;
@@ -862,7 +862,7 @@
     items.lens--; saveWallet(); updateHintUi(); snapshot(); const k = y + ',' + x;
     if (cur.solution[y] === x) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); paint(); toast('✅ Yes! A candy goes right here'); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc); if (solved()) win(); }
     else { cur.state[y][x] = 1; cur.wrongMarks.delete(k); paint(); toast('❌ Not here. Marked with an X'); S.x(); }
-    spotlight([[y, x]], 2400); buzz(16);
+    spotlight([[y, x]], 4400); buzz(16);
   }
   function useWand() {
     if (!cur || cur.done || wands <= 0) return;
@@ -874,7 +874,7 @@
     cur.state[y][x] = 2; cur.wrongMarks.delete(y + ',' + x);
     paint();
     const el = cellEl(y, x); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted');
-    spotlight([[y, x]], 2400); buzz(20); S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount());
+    spotlight([[y, x]], 4400); buzz(20); S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount());
     if (solved()) win();
   }
   /* ---------- daily bonus: pick one of nine cards ---------- */
