@@ -1680,3 +1680,11 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 #win .win-gumi{margin-top:10px!important;margin-bottom:-20px!important}
 /* 10x10: a thin strip of the frame stays visible on both sides */
 #game.full .board{border-left-width:4px!important;border-right-width:4px!important;padding:5px 2px!important;border-radius:12px!important}
+
+/* top bar: the counters sit a little closer together, and the profile button on the left is wider with a bigger bear */
+.wallet.topbar{justify-content:space-evenly!important}
+.wallet.topbar .chip.me{width:50px!important;padding:0 0 4px!important;overflow:hidden;justify-content:center}
+.wallet.topbar .chip.me svg,.wallet.topbar .chip.me .gum{width:44px!important;height:44px!important;flex:none;margin:6px 0 -14px;filter:drop-shadow(0 1px 1px rgba(90,30,0,.35))}
+@media (max-width:380px){.wallet.topbar .chip.me svg,.wallet.topbar .chip.me .gum{width:44px!important;height:44px!important}}
+/* the bear in the profile button: head and shoulders, cut cleanly at the inner edge of the pill */
+.wallet.topbar .chip.me svg,.wallet.topbar .chip.me .gum{margin:3px 0 -14px!important;clip-path:inset(0 0 17px 0 round 0 0 13px 13px)}
