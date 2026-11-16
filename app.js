@@ -997,8 +997,8 @@
   function prizeText(p) { return prizeKeys(p).map((k) => p[k] + ' ' + PNAME[k] + (p[k] > 1 && k !== 'coins' && k !== 'inf' ? 's' : '') + (k === 'coins' && p[k] > 1 ? 's' : '')).join(' and '); }
   /* every prize pops up with a message and the narrator, one after another */
   const rewardQueue = []; let rewardOpen = false, curReward = null;
-  function announce(p, title, big, html) {
-    rewardQueue.push({ p, title, big, html }); if (!rewardOpen) nextReward();
+  function announce(p, title, big, html, voice) {
+    rewardQueue.push({ p, title, big, html, voice }); if (!rewardOpen) nextReward();
   }
   function nextReward() {
     const r = rewardQueue.shift(); curReward = r; if (!r) { rewardOpen = false; return; }
@@ -1009,7 +1009,7 @@
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
     $('reward').hidden = false; S.win(); buzz([25, 30, 45]);
     r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900); setTimeout(() => flyItems(r), 1000);
-    if (V) setTimeout(() => V.say(r.big ? 'bigreward' : r.p.wands ? 'wandget' : V.pick('reward', ['reward1', 'reward2', 'reward3']), true), 350);
+    if (V && r.voice) setTimeout(() => V.say('bigreward', true), 350);   // the narrator speaks only for the big prize of a world's last level; every other prize just flies to its counter
   }
   // the coins of a prize fly up into the top-bar wallet by themselves while the card is showing
   function flyReward(r) {
@@ -1087,7 +1087,7 @@
     cur.done = true; saveGame(); buzz([30, 40, 60]); S.win();
     if (foeKind()) bossDefeat();
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
-    if (V) setTimeout(() => V.win(cur.hearts), isBoss() ? 4200 : 3100);   // after the three stars have landed
+    if (V && !isBoss()) setTimeout(() => V.win(cur.hearts), 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
     const m = cur.meta, earned = Math.max(1, cur.hearts);
     let reward = false, wandReward = false;
     freshScore();
@@ -1125,7 +1125,7 @@
     else wr.hidden = true;
     if (m.kind === 'level' && m.level % 10 === 0) {
       const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
-      give(bp); setTimeout(() => announce(bp, '👑 Vinegar defeated!', true, '<div class="rw-it"><img class="rw-boss" src="art/boss_lose.webp" alt="" draggable="false"></div>'), 3600); wr.hidden = false;
+      give(bp); setTimeout(() => announce(bp, '👑 Vinegar defeated!', true, '<div class="rw-it"><img class="rw-boss" src="art/boss_lose.webp" alt="" draggable="false"></div>', true), 3600); wr.hidden = false;
       wr.innerHTML = '👑 Vinegar defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
     updateHintUi();

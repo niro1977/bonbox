@@ -19,6 +19,8 @@
     end2: 'Vinegar took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!',
     end3: 'From that day on, Vinegar was the sweetest cloud in Candy Land, and the Bonbox was full again. Thank you for playing!',
     perfectword: 'Perfect!',
+    two1: 'Nicely done!', two2: 'Great job!', two3: 'Well played!', two4: 'So close to perfect!',
+    one1: 'Phew! That was close!', one2: 'Wow, you just made it!', one3: 'By a whisker!', one4: 'What a narrow escape!',
     letsplay: "Let's play!",
     first: 'Sweet!', yummy: 'Yummy!', tasty: 'Tasty!', nice: 'Nice one!', delicious: 'Delicious!',
     perfect: 'Delicious! Perfect!', divine: 'Divine! Perfect!', sugartastic: 'Sugar-tastic! Perfect!',
@@ -112,7 +114,8 @@
     praise() { V.say(any('praise', PRAISE)); },
     pick(key, list) { return any(key, list); },
     first() { V.say(any('praise', PRAISE)); },
-    win() { V.say('perfectword', true); },   // a finished level is always "Perfect!"
+    // three hearts: Perfect. Two hearts: a warm well-done. One heart left: a close call.
+    win(hearts) { V.say(hearts >= 3 ? 'perfectword' : hearts === 2 ? any('two', ['two1', 'two2', 'two3', 'two4']) : any('one', ['close', 'one1', 'one2', 'one3', 'one4']), true); },   // a finished level is always "Perfect!"
     lose() { V.say('lose', true); },
     start(lv, tier) { V.say(tier === 'extreme' ? 'extremehard' : tier === 'veryhard' ? 'veryhard' : tier === 'hard' ? 'hard' : any('go', ['go', 'ready']), true); }
   };
