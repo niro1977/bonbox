@@ -2267,8 +2267,8 @@
   }
   { const sp = document.getElementById('splash'), t0 = window.__t0 || Date.now(); let gone = false;
     const bye = () => { if (gone || !sp) return; gone = true; sp.classList.add('out'); setTimeout(() => sp.remove(), 450); if ($('game').hidden) scrollToLevel(level); };
-    const ready = () => setTimeout(bye, Math.max(0, 1600 - (Date.now() - t0)));
+    const ready = () => setTimeout(bye, Math.max(0, 7000 - (Date.now() - t0)));
     const hero = new Image(); hero.onload = hero.onerror = () => { if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready); }; hero.src = 'art/bg_' + (Math.floor((level - 1) / 10) % 30) + '.jpg';
-    setTimeout(bye, 6000); }
+    setTimeout(bye, 12000); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').catch(() => {}), 1500));
 })();

@@ -1270,3 +1270,8 @@ body.in-game .toast.gtoast{bottom:150px}
 
 .node.locked::after{background-image:url(art/node_lock.webp)!important}
 .map .ribbon.zlazy:not([style*='background-image']){background-image:none!important}
+/* world backgrounds: a clearly visible slow drift in every world (was too subtle to notice) */
+.zone{animation:zonepan2 20s ease-in-out infinite alternate}
+.zone:nth-child(odd){animation-direction:alternate-reverse;animation-duration:24s}
+@keyframes zonepan2{from{background-position:4% 50%}to{background-position:96% 50%}}
+@media (prefers-reduced-motion:reduce){.zone{animation:none}}
