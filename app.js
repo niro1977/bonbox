@@ -97,6 +97,9 @@
   let hapticOn = store.get('haptic', true);
   function buzz(p) { try { if (hapticOn && navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
   document.addEventListener('pointerdown', (e) => { if (hapticOn && e.target.closest && e.target.closest('button,.cell,.node,.bcard,.mcard,.med,.chip,.colcell,.bst')) { try { if (navigator.vibrate) navigator.vibrate(7); } catch (_) {} } }, true);
+  // the ranking day turns over at midnight in the server's zone; show that zone as a plain GMT offset (it moves between +2 and +3 with summer time)
+  { let off = 2; try { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', timeZoneName: 'shortOffset' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName'); const m = p && p.value.match(/GMT([+-]\d+)/); if (m) off = +m[1]; } catch (e) {}
+    const el = $('rankNote'); if (el) el.textContent = 'Top players today. Resets every day at midnight (GMT' + (off >= 0 ? '+' : '') + off + ').'; }
   /* ---------- window titles: always one line, centred on the plate, shrunk just enough to fit inside it ---------- */
   function fitTitle(h) {
     if (!h || !h.getBoundingClientRect().width) return;

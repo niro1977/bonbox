@@ -35,7 +35,7 @@
     'No one has scored yet today. Be the first!': 'Nadie ha anotado hoy. ¡Sé el primero!', 'Solve a board to join the ranking today': 'Resuelve un tablero para entrar al ranking de hoy',
     'Top rank reached!': '¡Rango máximo alcanzado!', 'Hard': 'Difícil', '👑 Very Hard': '👑 Muy difícil', '💀 Extremely Hard': '💀 Extremadamente difícil',
     'HARD': 'DIFÍCIL', 'VERY HARD': 'MUY DIFÍCIL', 'EXTREME': 'EXTREMO', 'Solved today ✓ come back tomorrow': 'Resuelto hoy ✓ vuelve mañana', 'new board today': 'tablero nuevo hoy',
-    'Top players today. Resets every day at midnight (Israel time).': 'Los mejores jugadores de hoy. Se reinicia cada día a la medianoche (hora de Israel).', 'Your name': 'Tu nombre',
+ 'Your name': 'Tu nombre',
     'Quests': 'Misiones', 'Home': 'Inicio', 'Ranking': 'Ranking', 'Shop': 'Tienda', 'Gifts': 'Regalos', 'Sound': 'Sonido', 'Profile': 'Perfil', 'Settings': 'Ajustes', 'Main': 'Principal',
     // ---- level screen ----
     'Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ?': 'Toca: X (toca otra vez para quitarla). Doble toque: dulce. Mantén presionada una casilla o usa Quizás para marcar un ?',
@@ -221,7 +221,7 @@
 
   // phrases with numbers / names. $1 = as is, a function gets the match
   const P = [
-    [/^Level (\d+)$/, 'Nivel $1'], [/^(\d+) hits$/, '$1 golpes'], [/^Vinegar stole this world's sticker! Beat him on level (\d+) to win it back!$/, '¡Vinagre robó la calcomanía de este mundo! ¡Véncelo en el nivel $1 para recuperarla!'], [/^WORLD (\d+)$/, 'MUNDO $1'], [/^(\d+) NEW$/, (m) => m[1] + (+m[1] === 1 ? ' NUEVO' : ' NUEVOS')],
+    [/^Level (\d+)$/, 'Nivel $1'], [/^Top players today\. Resets every day at midnight \((GMT[+-]\d+)\)\.$/, 'Los mejores jugadores de hoy. Se reinicia cada día a la medianoche ($1).'], [/^(\d+) hits$/, '$1 golpes'], [/^Vinegar stole this world's sticker! Beat him on level (\d+) to win it back!$/, '¡Vinagre robó la calcomanía de este mundo! ¡Véncelo en el nivel $1 para recuperarla!'], [/^WORLD (\d+)$/, 'MUNDO $1'], [/^(\d+) NEW$/, (m) => m[1] + (+m[1] === 1 ? ' NUEVO' : ' NUEVOS')],
     [/^You are #(\d+) of (\d+) today with (\d+) pts$/, 'Eres el #$1 de $2 hoy con $3 pts'], [/^(\d+) pts to (.+)$/, (m) => 'Faltan ' + m[1] + ' pts para ' + tr(m[2])],
     [/^next board ×(\d+)$/, 'próximo tablero ×$1'], [/^best day (\d+)$/, 'mejor día $1'], [/^(\d+) pts$/, '$1 pts'], [/^(\d+×\d+)$/, '$1'],
     [/^🔥 (\d+) day streak$/, '🔥 Racha de $1 días'], [/^(\d+)×(\d+) board$/, 'Tablero $1×$2'], [/^(\d+) candies to find$/, '$1 dulces por encontrar'],
