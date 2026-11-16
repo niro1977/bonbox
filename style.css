@@ -1252,3 +1252,8 @@ body.inf-on #heartN{color:#e0245e;font-size:12px}
 .ttools img{width:54px;height:54px;margin:0 8px;animation:evbob 1.6s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.tc.hi,.tc.red,.tc.red::after,.thearts .brk,.ttools img{animation:none}}
 .tb{grid-template-rows:repeat(4,1fr)}.tc{min-height:0;min-width:0;overflow:hidden}
+
+/* the win bear is animated from JS now (celebrate()); the old fixed loop is off */
+#win .win-gumi .gbody,#win .win-gumi .g-air,#win .win-gumi .g-ground,#win .win-gumi .gshadow{animation:none!important}
+#win .win-gumi .g-air{opacity:0}
+#win .win-gumi .gshadow{transform-origin:50% 50%}

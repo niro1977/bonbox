@@ -997,7 +997,7 @@
     updateHintUi();
     $('nextBtn').textContent = m.kind === 'level' ? 'Next level' : 'Back to map';
     setTimeout(() => {
-      $('win').hidden = false; confetti();
+      $('win').hidden = false; confetti(); celebrate();
       const els = $('winStars').querySelectorAll('img.star');
       const box = $('winStars'), card = document.querySelector('#win .card');
       const burst = (el, good) => {
@@ -1020,6 +1020,48 @@
         }, t0 + 420);
       });
     }, 450);
+  }
+
+  /* ---------- win celebration: the bear moves like a character, not a loop. Each cycle is a little different:
+     he sways while cheering, crouches (anticipation), springs up, hangs for a beat in the tucked pose, falls faster than he
+     rose, squashes on landing, rebounds, and sometimes adds a small second hop. Poses cross-fade instead of snapping. ---------- */
+  let celebRun = 0;
+  async function celebrate() {
+    const run = ++celebRun, body = document.querySelector('#win .gbody'), gnd = document.querySelector('#win .g-ground'), air = document.querySelector('#win .g-air'), sh = document.querySelector('#win .gshadow');
+    if (!body || !body.animate) return; const live = () => run === celebRun && !$('win').hidden;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { air.style.opacity = 0; gnd.style.opacity = 1; return; }
+    const out = 'cubic-bezier(.23,1,.32,1)', inn = 'cubic-bezier(.5,0,.9,.4)', soft = 'cubic-bezier(.45,.05,.55,.95)';
+    const A = (el, kf, ms, ease) => { const an = el.animate(kf, { duration: ms, easing: ease || 'linear', fill: 'forwards' }); return an.finished.catch(() => {}); };
+    const tf = (y, sx, sy, r) => 'translateY(' + y + 'px) scale(' + sx + ',' + sy + ') rotate(' + (r || 0) + 'deg)';
+    const pose = (up) => { air.animate([{ opacity: up ? 0 : 1 }, { opacity: up ? 1 : 0 }], { duration: 90, fill: 'forwards' }); gnd.animate([{ opacity: up ? 1 : 0 }, { opacity: up ? 0 : 1 }], { duration: 90, fill: 'forwards' }); };
+    const shadow = (s, o, ms, ease) => { if (sh) sh.animate([{}, { transform: 'scale(' + s + ')', opacity: o }], { duration: ms, easing: ease || 'linear', fill: 'forwards' }); };
+    air.style.animation = gnd.style.animation = body.style.animation = 'none'; if (sh) sh.style.animation = 'none'; pose(false);
+    await A(body, [{ transform: tf(-70, 0.6, 0.6, -20), opacity: 0 }, { transform: tf(4, 1.1, 0.9, 4), opacity: 1, offset: 0.7 }, { transform: tf(0, 1, 1, 0), opacity: 1 }], 520, out);
+    let dir = 1;
+    while (live()) {
+      const H = 38 + Math.random() * 16, lean = (3 + Math.random() * 4) * dir; dir = -dir;
+      // cheer and sway
+      await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(-2, 0.99, 1.02, lean * 0.8) }, { transform: tf(0, 1.01, 0.99, -lean * 0.5) }, { transform: tf(0, 1, 1, 0) }], 620 + Math.random() * 260, soft); if (!live()) break;
+      // anticipation
+      await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(0, 1.13, 0.82, 0) }], 190, out); if (!live()) break;
+      // spring up
+      pose(true); shadow(0.55, 0.45, 300, out); S.hop();
+      await A(body, [{ transform: tf(0, 1.13, 0.82, 0) }, { transform: tf(-H * 0.3, 0.9, 1.14, lean * 0.4), offset: 0.25 }, { transform: tf(-H, 1, 1, lean) }], 300, out); if (!live()) break;
+      // hang
+      await A(body, [{ transform: tf(-H, 1, 1, lean) }, { transform: tf(-H - 2, 1.02, 0.99, lean * 0.6) }, { transform: tf(-H, 1, 1, 0) }], 150, soft); if (!live()) break;
+      // fall
+      shadow(1, 1, 250, inn); setTimeout(() => { if (live()) pose(false); }, 190);
+      await A(body, [{ transform: tf(-H, 1, 1, 0) }, { transform: tf(0, 0.94, 1.1, -lean * 0.3) }], 250, inn); if (!live()) break;
+      // land, rebound, settle
+      buzz(10);
+      await A(body, [{ transform: tf(0, 0.94, 1.1, 0) }, { transform: tf(0, 1.18, 0.78, 0) }], 90, out);
+      await A(body, [{ transform: tf(0, 1.18, 0.78, 0) }, { transform: tf(-7, 0.96, 1.06, 0) }, { transform: tf(0, 1.05, 0.95, 0) }, { transform: tf(0, 1, 1, 0) }], 360, soft); if (!live()) break;
+      if (Math.random() < 0.5) {   // a small extra hop, arms still up
+        shadow(0.8, 0.7, 150, out);
+        await A(body, [{ transform: tf(0, 1.08, 0.9, 0) }, { transform: tf(-H * 0.35, 0.97, 1.05, -lean * 0.5) }], 170, out); shadow(1, 1, 150, inn);
+        await A(body, [{ transform: tf(-H * 0.35, 0.97, 1.05, -lean * 0.5) }, { transform: tf(0, 1.1, 0.88, 0) }, { transform: tf(0, 1, 1, 0) }], 240, inn);
+      }
+    }
   }
   function confetti() {
     const box = $('confetti'); box.innerHTML = '';
@@ -2063,10 +2105,10 @@
         else { const sx = Math.abs(Math.cos(t * 5 + it.y / 40)); if (ok(A.coin)) g.drawImage(A.coin, x - 13 * sx, it.y - 13, 26 * sx, 26); else glossBall(g, x, it.y, 11, '#ffd21f', '#c28a00'); }
       });
       // the rival runs in a ghost lane beside you, ahead or behind by the real gap
-      const ry = CART_Y - (rival - dist) * 5; if (ry > -80 && ry < 420 && ok(A.cart_rival)) { g.globalAlpha = 0.9; g.drawImage(A.cart_rival, (cx < 150 ? 252 : 12), ry - 44, 40, 51); g.globalAlpha = 1; }
+      const ry = CART_Y - (rival - dist) * 5; if (ry > -80 && ry < 420 && ok(A.cart_rival)) { g.globalAlpha = 0.9; g.drawImage(A.cart_rival, (cx < 150 ? 252 : 8), ry - 44, 40, 52.5); g.globalAlpha = 1; }
       const bx = cx + (shake > 0 ? (Math.random() - 0.5) * 8 : 0), lean = Math.max(-0.16, Math.min(0.16, (tx - cx) * 0.01)), bob = Math.sin(t * 22) * 1.2;
       g.fillStyle = 'rgba(20,8,0,.4)'; g.beginPath(); g.ellipse(bx, CART_Y + 30, 30, 9, 0, 0, 6.283); g.fill();
-      if (ok(A.cart_bear)) { g.save(); g.translate(bx, CART_Y + 26); g.rotate(lean); g.drawImage(A.cart_bear, -31, -78 + bob, 62, 79.5); g.restore(); }
+      if (ok(A.cart_bear)) { g.save(); g.translate(bx, CART_Y + 26); g.rotate(lean); g.drawImage(A.cart_bear, -30, -76 + bob, 60, 78.7); g.restore(); }
       if (v > 20) { g.fillStyle = 'rgba(255,220,120,.8)'; for (let k = 0; k < 3; k++) { g.beginPath(); g.arc(bx - 24 + Math.random() * 48, CART_Y + 28 + Math.random() * 8, 1.6, 0, 6.283); g.fill(); } }
       g.fillStyle = 'rgba(0,0,0,.45)'; rr(g, 26, 8, 248, 14, 7); g.fill(); g.fillStyle = '#fff'; g.font = '900 11px Nunito'; g.textAlign = 'center'; g.fillText('🏁', 270, 19);
       const mp = 30 + 232 * Math.min(1, dist / GOAL), rp = 30 + 232 * Math.min(1, rival / GOAL);
