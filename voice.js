@@ -6,18 +6,18 @@
   try { const v = localStorage.getItem('candoku.voice'); if (v !== null) enabled = JSON.parse(v); } catch (e) {}
 
   const CLIPS = {
-    welcome: 'Welcome to Candoku!',
+    welcome: 'Welcome to Bonbox!',
     intro1: 'Candy Land was the sweetest place in the world.',
     intro2: 'Then came a giant sneeze. Achoo! Every candy got mixed up!',
     intro3: 'Help Gumi put them back. One candy in every color, and no two candies can touch!',
-    story1: 'Candy Land was the sweetest place in the world. Every candy had its own perfect spot.',
+    story1: 'In Candy Land, every sweet lived in the great Bonbox, each one in its own perfect spot.',
     story2: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!',
-    story3: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of place!',
-    story4: 'Only Gumi can fix it! Help him put the candies back: one in every color, and no two candies touching!',
+    story3: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!',
+    story4: 'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!',
     boss1: 'Baron Sour blocks the way! You can beat him!', boss2: 'You defeated Baron Sour! Amazing!',
     end1: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.',
     end2: 'Baron Sour took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!',
-    end3: 'From that day on he was Baron Sweet, and Candy Land was sweeter than ever. Thank you for playing!',
+    end3: 'From that day on he was Baron Sweet, and the Bonbox was full and sweeter than ever. Thank you for playing!',
     letsplay: "Let's play!",
     first: 'Sweet!', yummy: 'Yummy!', tasty: 'Tasty!', nice: 'Nice one!', delicious: 'Delicious!',
     perfect: 'Delicious! Perfect!', divine: 'Divine! Perfect!', sugartastic: 'Sugar-tastic! Perfect!',

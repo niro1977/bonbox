@@ -1,4 +1,4 @@
-/* Candoku app: level map, play logic, hearts, hints, sound hooks, transitions. */
+/* Bonbox app: level map, play logic, hearts, hints, sound hooks, transitions. */
 (function () {
   const T = window.T || ((x) => x);
   const E = window.CandokuEngine, H = window.CandokuHints, S = window.CandokuSound;
@@ -1256,15 +1256,15 @@
 
   /* ---------- opening story ---------- */
   const STORY = [
-    { text: 'Candy Land was the sweetest place in the world. Every candy had its own perfect spot.', img: 'story1', fx: 'calm' },
+    { text: 'In Candy Land, every sweet lived in the great Bonbox, each one in its own perfect spot.', img: 'story1', fx: 'calm' },
     { text: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!', img: 'story2p', fx: 'dark' },
-    { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of place!', img: 'story3', fx: 'storm' },
-    { text: 'Only Gumi can fix it! Help him put the candies back: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
+    { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!', img: 'story3', fx: 'storm' },
+    { text: 'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
   ];
   const ENDING = [
     { text: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.', img: 'end1', fx: 'flash' },
     { text: 'Baron Sour took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!', img: 'end2', fx: 'calm' },
-    { text: 'From that day on he was Baron Sweet, and Candy Land was sweeter than ever. Thank you for playing!', img: 'end3', fx: 'hero' }
+    { text: 'From that day on he was Baron Sweet, and the Bonbox was full and sweeter than ever. Thank you for playing!', img: 'end3', fx: 'hero' }
   ];
   let PANELS = STORY;
   // what moves on top of each story picture
@@ -1313,12 +1313,12 @@
   function renderIntro() {
     const body = $('introBody'), ctl = $('introCtl');
     if (introStep === 0) {
-      body.innerHTML = '<div class="st-panel st-open"><div class="st-img" style="background-image:url(art/splash_tall.jpg)"></div></div><div class="st-splash"><img class="st-logo" src="art/logo_cut.webp" alt="Candoku" draggable="false"><button id="introStart" class="play" type="button">Tap to start</button></div>';
+      body.innerHTML = '<div class="st-panel st-open"><div class="st-img" style="background-image:url(art/splash_tall.jpg)"></div></div><div class="st-splash"><img class="st-logo" src="art/logo_bonbox.webp" alt="Bonbox" draggable="false"><button id="introStart" class="play" type="button">Tap to start</button></div>';
       preloadStory();
       ctl.hidden = true;
       $('introStart').onclick = () => {
         S.unlock(); S.tap(); if (M) M.start('menu');
-        if (V) V.say('Welcome to Candoku!', true);
+        if (V) V.say('Welcome to Bonbox!', true);
         setTimeout(() => { introStep = 1; renderIntro(); }, 1500);
         $('introStart').disabled = true;
       };
@@ -1440,7 +1440,7 @@
   $('retryBtn').onclick = () => { S.tap(); if (!canPlay()) { $('lose').hidden = true; toMap(); setTimeout(openLives, 900); return; } $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily())); };
   $('nextBtn').onclick = () => { S.tap(); nextLevel(); };
   $('shareBtn').onclick = async () => {
-    const text = T('Candoku 🍬 ' + cur.label + ' ' + cur.n + '×' + cur.n + ' solved' + (cur.hints ? '' : ' with no hints'));
+    const text = T('Bonbox 🍬 ' + cur.label + ' ' + cur.n + '×' + cur.n + ' solved' + (cur.hints ? '' : ' with no hints'));
     try {
       if (navigator.share) await navigator.share({ text, url: location.href });
       else { await navigator.clipboard.writeText(text + ' ' + location.href); $('shareBtn').textContent = 'Copied!'; setTimeout(() => { $('shareBtn').textContent = 'Share'; }, 1500); }
@@ -1973,7 +1973,7 @@
     const nat = NATIVE();
     if (nat && nat.showRewarded) { Promise.resolve(nat.showRewarded()).then((done) => { if (done) ok(); else toast('Watch the whole video to get the reward'); }).catch(() => toast('No video available right now')); return; }
     if (DBG) { toast('▶ (test) video playing…'); setTimeout(ok, 1500); return; }
-    toast('Video rewards arrive with the Candoku app on Google Play');
+    toast('Video rewards arrive with the Bonbox app on Google Play');
   }
   /* products sold for real money; ids match the ones to create in Google Play Console */
   const PACKS = [
@@ -2004,7 +2004,7 @@
     const nat = NATIVE();
     if (nat && nat.purchase) { Promise.resolve(nat.purchase(id)).then((done) => { if (done) grantPack(id); }).catch(() => toast('The purchase did not go through')); return; }
     if (DBG) { toast('(test) purchase approved'); setTimeout(() => grantPack(id), 600); return; }
-    toast('Purchases open with the Candoku app on Google Play');
+    toast('Purchases open with the Bonbox app on Google Play');
   }
   function renderPacks() {
     const box = $('shopPacks'); if (!box) return; box.innerHTML = '';

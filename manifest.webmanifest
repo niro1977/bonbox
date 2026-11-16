@@ -1,7 +1,7 @@
 {
-  "name": "Candoku",
-  "short_name": "Candoku",
-  "description": "Sweet logic puzzles with candy and chocolate.",
+  "name": "Bonbox",
+  "short_name": "Bonbox",
+  "description": "Sweet logic puzzles: put every candy back in the box.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
