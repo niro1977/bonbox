@@ -95,6 +95,26 @@
   let hapticOn = store.get('haptic', true);
   function buzz(p) { try { if (hapticOn && navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
   document.addEventListener('pointerdown', (e) => { if (hapticOn && e.target.closest && e.target.closest('button,.cell,.node,.bcard,.mcard,.med,.chip,.colcell,.bst')) { try { if (navigator.vibrate) navigator.vibrate(7); } catch (_) {} } }, true);
+  /* ---------- polish: every button answers the finger; every window pops in with a sound ---------- */
+  const PRESSABLE = 'button,.node,.bcard,.mcard,.med,.chip,.colcell,.bst,.evcard';
+  let pressedEl = null;
+  document.addEventListener('pointerdown', (e) => { const b = e.target.closest && e.target.closest(PRESSABLE); if (!b || b.disabled || b.closest('#board')) return; pressedEl = b; b.classList.add('pressing'); S.press(); }, true);
+  const liftPress = () => { if (!pressedEl) return; pressedEl.classList.remove('pressing'); pressedEl = null; S.release(); };
+  document.addEventListener('pointerup', liftPress, true); document.addEventListener('pointercancel', liftPress, true);
+  function watchOverlays() {
+    const quiet = { wipe: 1, coach: 1 }; let lastPop = 0;
+    document.querySelectorAll('.overlay').forEach((ov) => {
+      new MutationObserver(() => {
+        const now = performance.now(), card = ov.querySelector('.card');
+        if (!ov.hidden) {
+          if (card) { card.classList.remove('popin'); void card.offsetWidth; card.classList.add('popin'); }
+          ov.classList.remove('fadein'); void ov.offsetWidth; ov.classList.add('fadein');
+          if (!quiet[ov.id] && now - lastPop > 120) { lastPop = now; S.popIn(); }
+        } else if (!quiet[ov.id] && now - lastPop > 120) { lastPop = now; S.popOut(); }
+      }).observe(ov, { attributes: true, attributeFilter: ['hidden'] });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchOverlays); else setTimeout(watchOverlays, 0);
   function show(id) { ['home', 'game'].forEach((s) => { $(s).hidden = s !== id; }); document.body.classList.toggle('in-game', id === 'game'); if (M) M.mood(id === 'game' ? 'game' : 'menu'); window.scrollTo(0, 0); }
 
   /* ---------- screen transition: a rainbow wipe with a spinning candy ---------- */
@@ -244,6 +264,8 @@
     h.innerHTML = '<img class="hg" src="' + look.stand + '" alt="" draggable="false"><img class="ha" src="' + look.air + '" alt="" draggable="false">';
     map.appendChild(h);
     const dx = b.x - a.x, dy = b.y - a.y, T = 1000;
+    { const fn = map.querySelector('.node[data-lv="' + from + '"]'), sts = fn ? fn.querySelectorAll('.st img.star:not(.off)') : [];
+      if (sts.length) { fn.classList.add('fresh'); sts.forEach((x, n) => setTimeout(() => { S.stamp(n); buzz(8); }, 120 + n * 170)); await sleep(240 + sts.length * 170); } }
     S.hop();
     // natural jump: crouch, launch (stretched), tucked mid-air pose, fall, squash on landing, settle
     const out = 'cubic-bezier(.23,1,.32,1)', inn = 'cubic-bezier(.55,0,1,.45)';
@@ -261,7 +283,10 @@
     await anim.finished.catch(() => {});
     S.candy((to - 1) % 10, 3); buzz(15);
     const node = map.querySelector('.node[data-lv="' + to + '"]');
-    if (node) node.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 400 });
+    if (node) {
+      node.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.3)' }, { transform: 'scale(1)' }], { duration: 400 });
+      const ring = document.createElement('i'); ring.className = 'unlockring'; ring.style.left = b.x + 'px'; ring.style.top = b.y + 'px'; map.appendChild(ring); setTimeout(() => ring.remove(), 900); S.unlock2();
+    }
     // the resting bear now stands at the NEW level (it was drawn at the old one while the hop played)
     if (still) { still.style.left = b.x + 'px'; still.style.top = (b.y - 30) + 'px'; still.style.visibility = ''; }
     else map.insertAdjacentHTML('beforeend', '<div class="mascot" style="left:' + b.x + 'px;top:' + (b.y - 30) + 'px"><svg><use href="#gumi"/></svg><svg class="blink"><use href="#gumiblink"/></svg></div>');

@@ -75,6 +75,10 @@
     src.connect(g); g.connect(master); src.start(when || ctx.currentTime);
     return true;
   }
+  // variation: each sound rotates through a few variants (never the same one twice in a row) with a little random detune
+  const lastV = {};
+  function pickV(key, list) { let i; do { i = Math.floor(Math.random() * list.length); } while (list.length > 1 && i === lastV[key]); lastV[key] = i; return list[i]; }
+  const jit = () => 1 + (Math.random() - 0.5) * 0.035;
   // semitone steps -> playback rate
   const rt = (semi) => Math.pow(2, semi / 12);
 
@@ -127,9 +131,9 @@
       [0, 4, 7].forEach((x, n) => bell(hz(root + 12 + x), t + 0.018 + n * 0.055, 0.9 - n * 0.1, 0.16 - n * 0.02));
       sparkle(t + 0.02, 0.07);
     },
-    x() { if (!ready()) return; const t = ctx.currentTime; pluck(520, t, 0.07, 0.16); noise(t, 0.035, 0.12, 3200, 2); },
-    tap() { if (!ready()) return; const t = ctx.currentTime; pluck(780, t, 0.1, 0.22); bell(1560, t, 0.28, 0.07, 0.25); },
-    wrong() { if (!ready()) return; const t = ctx.currentTime; osc('sine', 220, t, 0.34, 0.34, 110); pluck(196, t, 0.28, 0.22); pluck(147, t + 0.09, 0.3, 0.2); },
+    x() { if (!ready()) return; const t = ctx.currentTime, f = pickV('x', [520, 494, 554, 466]) * jit(); pluck(f, t, 0.07, 0.16); noise(t, 0.035, 0.12, 3000 + Math.random() * 600, 2); },
+    tap() { if (!ready()) return; const t = ctx.currentTime, f = pickV('tap', [780, 740, 830, 698]) * jit(); pluck(f, t, 0.1, 0.22); bell(f * 2, t, 0.28, 0.07, 0.25); },
+    wrong() { if (!ready()) return; const t = ctx.currentTime, k = pickV('wrong', [1, 0.94, 1.06]); osc('sine', 220 * k, t, 0.34, 0.34, 110 * k); pluck(196 * k, t, 0.28, 0.22); pluck(147 * k, t + 0.09, 0.3, 0.2); },
     hint() { if (!ready()) return; const t = ctx.currentTime; reverb(); [0, 4, 7, 12, 16].forEach((s, i) => bell(hz(s + 12), t + i * 0.06, 0.8, 0.16)); sparkle(t + 0.1, 0.06); },
     win() { if (!ready()) return; if (sample('stars', 1, 0.95)) return; const t = ctx.currentTime; [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => { osc('triangle', hz(s + 12), t + i * 0.09, 0.45, 0.28); osc('sine', hz(s + 24), t + i * 0.09, 0.3, 0.1); }); },
     // a candy lands: soft thump + glassy sparkle run, the run climbs with progress
@@ -164,7 +168,16 @@
       noise(t + 0.1, 0.6, 0.12, 6000, 0.8);
     },
     lose() { if (!ready()) return; const t = ctx.currentTime; reverb(); [7, 4, 0, -5].forEach((s, i) => { pluck(hz(s), t + i * 0.2, 0.5, 0.28); bell(hz(s + 12), t + i * 0.2, 0.7, 0.07, 0.3); }); },
-    hop() { if (!ready()) return; const t = ctx.currentTime; pluck(520, t, 0.12, 0.2); pluck(780, t + 0.08, 0.14, 0.2); bell(1560, t + 0.1, 0.4, 0.06); },
+    hop() { if (!ready()) return; const t = ctx.currentTime, k = pickV('hop', [1, 1.06, 0.94]) * jit(); pluck(520 * k, t, 0.12, 0.2); pluck(780 * k, t + 0.08, 0.14, 0.2); bell(1560 * k, t + 0.1, 0.4, 0.06); },
+    // soft button feel: a low thud when the finger goes down, a tiny tick when it lifts
+    press() { if (!ready()) return; const t = ctx.currentTime, f = pickV('press', [210, 196, 224]) * jit(); osc('sine', f, t, 0.07, 0.16, f * 0.6); noise(t, 0.02, 0.05, 1800, 1.2); },
+    release() { if (!ready()) return; const t = ctx.currentTime; pluck(pickV('rel', [1180, 1250, 1110]) * jit(), t, 0.04, 0.05); },
+    // a window pops in (rising swish + soft chime) and out (falling swish)
+    popIn() { if (!ready()) return; const t = ctx.currentTime, k = pickV('pin', [1, 1.12, 0.9]); noise(t, 0.16, 0.07, 1400 * k, 0.7); osc('sine', 330 * k, t, 0.16, 0.09, 660 * k); bell(1320 * k, t + 0.09, 0.35, 0.05, 0.3); },
+    popOut() { if (!ready()) return; const t = ctx.currentTime, k = pickV('pout', [1, 1.1, 0.92]); noise(t, 0.12, 0.05, 1100 * k, 0.7); osc('sine', 520 * k, t, 0.12, 0.07, 260 * k); },
+    // a star stamps onto a level button on the map
+    stamp(i) { if (!ready()) return; const t = ctx.currentTime; reverb(); osc('sine', 150, t, 0.1, 0.2, 70); bell(hz(12 + [0, 4, 7][i % 3]), t, 0.7, 0.15); sparkle(t + 0.02, 0.05); },
+    unlock2() { if (!ready()) return; const t = ctx.currentTime; reverb(); [0, 7, 12].forEach((x, n) => bell(hz(12 + x), t + n * 0.07, 0.8, 0.13)); sparkle(t + 0.1, 0.08); },
     whoosh() { if (!ready()) return; const t = ctx.currentTime; noise(t, 0.5, 0.22, 900, 0.6); osc('sine', 300, t, 0.45, 0.1, 1200); }
   };
   root.CandokuSound = S;
