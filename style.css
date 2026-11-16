@@ -1446,7 +1446,7 @@ html[lang="es"] .med .tag{font-size:11px;letter-spacing:0;padding:4px 8px 6px!im
 #win .win-gumi .gbody .gf{position:absolute;left:0;bottom:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%;opacity:0}
 
 /* jumping candies behind the win card */
-.winparty{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.winparty{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 #win .card{z-index:1}
 
 /* seven chips in the top bar */
@@ -1466,3 +1466,6 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 
 /* long labels stay inside the wide buttons */
 #lose .btn.wide,#lives .btn.wide{font-size:clamp(13px,4.3vw,17px)!important;white-space:normal!important;line-height:1.12;padding-left:12px!important;padding-right:12px!important;overflow-wrap:anywhere}
+
+/* long prize titles fit the plate */
+#rwTitle{font-size:clamp(15px,4.9vw,21px)!important;white-space:nowrap}

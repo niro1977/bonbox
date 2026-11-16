@@ -764,7 +764,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), party: () => candyParty(), bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1122,37 +1122,37 @@
       }
     }
   }
-  /* the win screen rains sweets instead of paper confetti: three depths, each sweet sways, spins and tumbles on its way down */
+  /* sweets confetti: two cannons at the bottom corners fire a burst of sweets up over the win card; they spread, tumble, flutter down and it is over in a few seconds */
   const partyArt = []; let partyRun = 0;
   function candyParty() {
     const cv = $('winParty'); if (!cv || !cv.getContext) return; const run = ++partyRun;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (!partyArt.length) for (let k = 1; k <= 12; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; partyArt.push(im); }
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, g = cv.getContext('2d');
-    cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const P = [];
-    const spawn = (y) => {
-      const z = Math.random() < 0.3 ? 0 : Math.random() < 0.55 ? 1 : 2;        // 0 = far and small, 2 = near and big
-      P.push({ x: Math.random() * W, y, z, sz: [20, 30, 44][z] + Math.random() * [8, 10, 14][z], vy: [120, 185, 265][z] + Math.random() * 70, sway: 14 + Math.random() * 26, sf: 0.8 + Math.random() * 1.4, ph: Math.random() * 6.28,
-        r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 3.4, flip: Math.random() < 0.45 ? 1.6 + Math.random() * 2.2 : 0, fp: Math.random() * 6.28, i: Math.floor(Math.random() * 12), t: 0 });
+    cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); cv.style.opacity = 1;
+    const P = [], G = 620;
+    const shoot = (left, delay) => {
+      const ang = (left ? -62 : -118) + (Math.random() - 0.5) * 46, sp = H * (1.05 + Math.random() * 0.75), a = ang * Math.PI / 180;
+      P.push({ x: left ? -10 : W + 10, y: H * 0.86, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, sz: 20 + Math.random() * 26, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 12, flip: 2 + Math.random() * 5, fp: Math.random() * 6.28,
+        sway: 10 + Math.random() * 22, sf: 1.5 + Math.random() * 2, i: Math.floor(Math.random() * 12), t: -delay, life: 0 });
     };
-    for (let k = 0; k < 38; k++) spawn(-Math.random() * H * 0.95 - 30);          // the first shower is already on its way
-    let last = performance.now(), clock = 0, acc = 0;
+    for (let k = 0; k < 44; k++) shoot(k % 2 === 0, Math.random() * 0.35);
+    for (let k = 0; k < 30; k++) shoot(k % 2 === 0, 0.55 + Math.random() * 0.45);
+    let last = performance.now(), clock = 0;
     const tick = (now) => {
-      if (run !== partyRun || $('win').hidden) { g.clearRect(0, 0, W, H); return; }
+      if (run !== partyRun) return;
+      if ($('win').hidden || !P.length || clock > 7) { g.clearRect(0, 0, W, H); return; }
       const dt = Math.min(0.033, (now - last) / 1000); last = now; clock += dt;
-      acc += dt * (clock < 4 ? 9 : 3.5); while (acc >= 1 && P.length < 64) { acc -= 1; spawn(-40); } if (acc > 1) acc = 0;
       g.clearRect(0, 0, W, H);
-      P.sort((a, b) => a.z - b.z);
       for (let n = P.length - 1; n >= 0; n--) {
-        const p = P[n]; p.t += dt; p.y += p.vy * dt; p.r += p.vr * dt;
-        if (p.y - p.sz > H) { P.splice(n, 1); continue; }
-      }
-      for (const p of P) {
+        const p = P[n]; p.t += dt; if (p.t < 0) continue; p.life += dt;
+        // strong air drag: the shot slows fast, then the sweet flutters down at its own gentle speed
+        const drag = Math.pow(0.16, dt); p.vx *= drag; p.vy = p.vy * drag + G * dt; if (p.vy > 240) p.vy = 240;
+        p.x += p.vx * dt + Math.sin(p.fp + p.life * p.sf) * p.sway * dt * (p.vy > 0 ? 1 : 0.2); p.y += p.vy * dt; p.r += p.vr * dt; p.vr *= Math.pow(0.6, dt);
+        if (p.y - p.sz > H && p.vy > 0) { P.splice(n, 1); continue; }
         const im = partyArt[p.i]; if (!im.complete || !im.naturalWidth) continue;
-        const x = p.x + Math.sin(p.ph + p.t * p.sf) * p.sway, sx = p.flip ? Math.cos(p.fp + p.t * p.flip) : 1;
-        g.globalAlpha = [0.7, 0.88, 1][p.z];
-        g.save(); g.translate(x, p.y); g.rotate(p.r); g.scale(Math.abs(sx) < 0.12 ? 0.12 * (sx < 0 ? -1 : 1) : sx, 1); g.drawImage(im, -p.sz / 2, -p.sz / 2, p.sz, p.sz); g.restore();
+        const sx = Math.cos(p.fp + p.life * p.flip), fade = clock > 5.4 ? Math.max(0, 1 - (clock - 5.4) / 1.4) : 1;
+        g.globalAlpha = fade; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.scale(Math.abs(sx) < 0.14 ? 0.14 * (sx < 0 ? -1 : 1) : sx, 1); g.drawImage(im, -p.sz / 2, -p.sz / 2, p.sz, p.sz); g.restore();
       }
       g.globalAlpha = 1;
       requestAnimationFrame(tick);
