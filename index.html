@@ -14,11 +14,13 @@
 <link rel="apple-touch-icon" href="icon-180.png?v=85">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
-<link rel="stylesheet" href="style.css?v=135">
-<link rel="preload" as="image" href="art/splash_tall.jpg">
+<link rel="stylesheet" href="style.css?v=136">
+<link rel="preload" as="image" href="art/splash_tall.jpg"><link rel="preload" as="image" href="art/logo_cut.webp">
 <style>
 #splash{position:fixed;inset:0;z-index:999;background:#120733 url(art/splash_tall.jpg) center 42%/cover no-repeat;transition:opacity .5s;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding-bottom:max(46px,calc(env(safe-area-inset-bottom) + 34px))}
 #splash.out{opacity:0;pointer-events:none}
+#splash .slogo{width:min(78vw,340px);margin-bottom:4px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));animation:slogo .7s cubic-bezier(.23,1,.32,1) both}
+@keyframes slogo{from{opacity:0;transform:translateY(16px) scale(.9)}to{opacity:1;transform:none}}
 #splash .sbar{width:min(70vw,300px);height:18px;border-radius:99px;background:rgba(10,0,40,.6);border:3px solid #fff;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.5)}
 #splash .sbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffd84a,#ff8a14);animation:sload 7s cubic-bezier(.3,.6,.4,1) forwards}
 #splash b{color:#fff;font:900 17px system-ui,sans-serif;letter-spacing:1px;text-shadow:0 2px 5px #000}
@@ -27,7 +29,7 @@
 <script>window.__t0=Date.now()</script>
 </head>
 <body>
-<div id="splash"><div class="sbar"><i></i></div><b>Loading…</b></div>
+<div id="splash"><img class="slogo" src="art/logo_cut.webp" alt="Candoku"><div class="sbar"><i></i></div><b>Loading…</b></div>
 <div id="scene" aria-hidden="true"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -198,7 +200,7 @@
     <button class="btn" id="maybeBtn" type="button" aria-pressed="false" aria-label="Maybe" title="Maybe"><img loading="lazy" decoding="async" class="tico" src="art/tool_maybe.webp" alt="" draggable="false"></button>
     <button class="btn" id="clearBtn" type="button" aria-label="Restart" title="Restart"><img loading="lazy" decoding="async" class="tico" src="art/tool_restart_red.webp" alt="" draggable="false"></button>
   </div>
-  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v135</span></p>
+  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v136</span></p>
 </main>
 
 <!-- WIN -->
