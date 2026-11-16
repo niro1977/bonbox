@@ -1319,7 +1319,7 @@
       $('introStart').onclick = () => {
         S.unlock(); S.tap(); if (M) M.start('menu');
         if (V) V.say('Welcome to Bonbox!', true);
-        setTimeout(() => { introStep = 1; renderIntro(); }, 1500);
+        setTimeout(() => { introStep = 1; renderIntro(); }, 2700);   // let the narrator finish the welcome before the story starts
         $('introStart').disabled = true;
       };
       return;
@@ -1329,7 +1329,11 @@
     // the villain is his own layer over an empty sky, so he can drop in, float, laugh and throw lightning
     const stage = p.fx === 'dark' ? '<div class="st-stage">' + pic + bolt('b1') + bolt('b2') + bolt('b3') + '<div class="st-boss"><img class="bi" src="art/boss_idle_l.webp" alt="" draggable="false"><img class="bl" src="art/boss_laugh_l.webp" alt="" draggable="false"></div></div>' : pic;
     body.innerHTML = '<div class="st-panel st-' + p.fx + '">' + stage + storyFx(p.fx) + '</div><p class="st-cap">' + p.text + '</p>';
-    if (p.fx === 'storm') { S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === 3 && !$('intro').hidden) S.whoosh(); }, 700); }
+    if (p.fx === 'storm') {
+      // the sneeze lands on the narrator's "ACHOO": until then the Baron only breathes in, then the storm breaks
+      const panel = body.querySelector('.st-storm'), at = V && V.isEnabled() && S.isOn() ? (window.LANG === 'es' ? 2350 : 3050) : 1400, step = introStep;
+      setTimeout(() => { if (introStep !== step || $('intro').hidden || !panel.isConnected) return; panel.classList.add('go'); S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === step && !$('intro').hidden) S.whoosh(); }, 700); }, at);
+    }
     else if (p.fx === 'dark') buzz([30, 60, 30]);
     ctl.hidden = false;
     $('introNext').textContent = introStep === PANELS.length ? (PANELS === ENDING ? 'Back to map' : "Let's play!") : 'Next';
