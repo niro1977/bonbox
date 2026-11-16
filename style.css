@@ -1412,3 +1412,23 @@ html[lang="es"] .med .tag{font-size:11px;letter-spacing:0;padding:4px 8px 6px!im
 .node.bossn::before{content:"";position:absolute;left:auto;right:-58px;top:-40px;width:70px;height:70px;margin-left:0;z-index:4;transform:none;background:url(art/boss_idle.webp) center/contain no-repeat;filter:drop-shadow(0 4px 4px rgba(20,0,60,.45));animation:bossBob 2.6s ease-in-out infinite;pointer-events:none}
 .node.bossn.beaten::before{background-image:url(art/boss_lose.webp);top:-22px;right:-36px;width:46px;height:46px;animation:none;opacity:.92}
 @media (prefers-reduced-motion:reduce){.bosshud>img,.pl-boss,.node.bossn::before{animation:none}}
+
+/* story, scene 2: Baron Sour is a separate layer over the sky */
+.st-stage{position:absolute;left:50%;top:50%;width:max(100vw,calc(100vh * 768 / 1376));aspect-ratio:768/1376;transform:translate(-50%,-50%);transform-origin:50% 30%;animation:stStage 10s ease-out both}
+@supports (height:100svh){.st-stage{width:max(100vw,calc(100lvh * 768 / 1376))}}
+.st-stage .st-img,.st-dark .st-stage .st-img{inset:0;animation:none;transform:none}
+@keyframes stStage{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-50%) scale(1.09)}}
+.st-boss{position:absolute;left:9%;top:2.5%;width:82%;aspect-ratio:1;z-index:1;animation:stBossIn 1.25s cubic-bezier(.23,1,.32,1) both,stBossBob 3.4s ease-in-out 1.25s infinite;transform-origin:50% 60%;filter:drop-shadow(0 18px 22px rgba(10,0,30,.55))}
+.st-boss img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.st-boss .bi{animation:stIdle 6.4s linear 1.6s infinite}
+.st-boss .bl{opacity:0;animation:stLaugh 6.4s linear 1.6s infinite}
+@keyframes stBossIn{0%{transform:translateY(-85%) scale(.7);opacity:0}55%{transform:translateY(5%) scale(1.07,.93);opacity:1}75%{transform:translateY(-3%) scale(.98,1.03)}100%{transform:none;opacity:1}}
+@keyframes stBossBob{0%,100%{transform:translateY(0) rotate(-1.2deg) scale(1)}25%{transform:translateY(-2.4%) rotate(0deg) scale(1.02,.985)}50%{transform:translateY(0) rotate(1.2deg) scale(1)}75%{transform:translateY(2%) rotate(0deg) scale(.985,1.02)}}
+@keyframes stIdle{0%,54%{opacity:1}57%,76%{opacity:0}79%,100%{opacity:1}}
+@keyframes stLaugh{0%,54%{opacity:0;transform:none}57%{opacity:1;transform:translateY(-2%) scale(1.04)}60%{transform:translateY(1.5%) scale(1.02)}63%{transform:translateY(-2%) scale(1.04)}66%{transform:translateY(1.5%) scale(1.02)}69%{transform:translateY(-2%) scale(1.04)}72%{transform:translateY(1.5%) scale(1.02)}76%{opacity:1;transform:none}79%,100%{opacity:0;transform:none}}
+.st-bolt{position:absolute;top:35%;width:7.5%;z-index:0;fill:#ffe14d;stroke:#fff8c2;stroke-width:1.5;filter:drop-shadow(0 0 8px #fff27a) drop-shadow(0 0 18px rgba(255,220,60,.8));opacity:0;animation:stBolt 2.3s linear 1.3s infinite;transform-origin:50% 0}
+.st-bolt.b1{left:27%;transform:rotate(14deg)}
+.st-bolt.b2{left:46%;width:9.5%;top:36.5%;animation-delay:1.9s;animation-duration:1.9s}
+.st-bolt.b3{left:66%;transform:rotate(-14deg);animation-delay:2.5s;animation-duration:2.7s}
+@keyframes stBolt{0%,100%{opacity:0}6%{opacity:1}10%{opacity:.25}14%{opacity:1}26%{opacity:.9}34%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.st-stage,.st-boss,.st-boss img,.st-bolt{animation:none}.st-boss .bl{opacity:0}.st-bolt{opacity:1}}

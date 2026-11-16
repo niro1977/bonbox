@@ -1106,7 +1106,7 @@
   /* ---------- opening story ---------- */
   const PANELS = [
     { text: 'Candy Land was the sweetest place in the world. Every candy had its own perfect spot.', img: 'story1', fx: 'calm' },
-    { text: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!', img: 'story2', fx: 'dark' },
+    { text: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!', img: 'story2p', fx: 'dark' },
     { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of place!', img: 'story3', fx: 'storm' },
     { text: 'Only Gumi can fix it! Help him put the candies back: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
   ];
@@ -1124,7 +1124,7 @@
     if (kind === 'hero') h += '<i class="st-rays"></i>';
     return h;
   }
-  function preloadStory() { PANELS.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); }
+  function preloadStory() { PANELS.map((p) => p.img + '.jpg').concat(['boss_idle_l.webp', 'boss_laugh_l.webp']).forEach((f) => { const im = new Image(); im.src = 'art/' + f; }); }
   let introStep = 0, rainTimer = null;
   const logoHtml = () => '<div class="logo big" aria-label="Candoku"><img src="art/logo.webp" alt="Candoku" draggable="false"></div>';
   function sceneHtml(kind) {
@@ -1168,7 +1168,10 @@
       return;
     }
     const p = PANELS[introStep - 1];
-    body.innerHTML = '<div class="st-panel st-' + p.fx + '"><div class="st-img" style="background-image:url(art/' + p.img + '.jpg)"></div>' + storyFx(p.fx) + '</div><p class="st-cap">' + p.text + '</p>';
+    const pic = '<div class="st-img" style="background-image:url(art/' + p.img + '.jpg)"></div>', bolt = (c) => '<svg class="st-bolt ' + c + '" viewBox="0 0 40 70"><path d="M24 0 6 38h12L10 70 36 26H22z"/></svg>';
+    // the villain is his own layer over an empty sky, so he can drop in, float, laugh and throw lightning
+    const stage = p.fx === 'dark' ? '<div class="st-stage">' + pic + bolt('b1') + bolt('b2') + bolt('b3') + '<div class="st-boss"><img class="bi" src="art/boss_idle_l.webp" alt="" draggable="false"><img class="bl" src="art/boss_laugh_l.webp" alt="" draggable="false"></div></div>' : pic;
+    body.innerHTML = '<div class="st-panel st-' + p.fx + '">' + stage + storyFx(p.fx) + '</div><p class="st-cap">' + p.text + '</p>';
     if (p.fx === 'storm') { S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === 3 && !$('intro').hidden) S.whoosh(); }, 700); }
     else if (p.fx === 'dark') buzz([30, 60, 30]);
     ctl.hidden = false;
