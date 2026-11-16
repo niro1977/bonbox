@@ -97,6 +97,17 @@
   let hapticOn = store.get('haptic', true);
   function buzz(p) { try { if (hapticOn && navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
   document.addEventListener('pointerdown', (e) => { if (hapticOn && e.target.closest && e.target.closest('button,.cell,.node,.bcard,.mcard,.med,.chip,.colcell,.bst')) { try { if (navigator.vibrate) navigator.vibrate(7); } catch (_) {} } }, true);
+  /* ---------- window titles: always one line, centred on the plate, shrunk just enough to fit inside it ---------- */
+  function fitTitle(h) {
+    if (!h || !h.getBoundingClientRect().width) return;
+    const max = Math.min(24, Math.max(15, h.clientHeight * 0.5)), room = h.clientWidth * 0.8, rg = document.createRange();
+    let f = max; h.style.fontSize = f + 'px'; rg.selectNodeContents(h);
+    while (f > 10 && rg.getBoundingClientRect().width > room) { f -= 0.5; h.style.fontSize = f + 'px'; }
+  }
+  const fitTitles = () => document.querySelectorAll('.overlay:not([hidden]) .card h2').forEach(fitTitle);
+  { let q = 0; const later = () => { if (q) return; q = setTimeout(() => { q = 0; fitTitles(); }, 0); };
+    new MutationObserver(later).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true });
+    window.addEventListener('resize', later); if (document.fonts && document.fonts.ready) document.fonts.ready.then(later); }
   /* ---------- polish: every button answers the finger; every window pops in with a sound ---------- */
   const PRESSABLE = 'button,.node,.bcard,.mcard,.med,.chip,.colcell,.bst,.evcard', SCROLLS = '#map,.shopscroll,#evGrid,#questList,.rlist,#colGrid,#passList,#giftList,#gameList,.cl-scroll,#stormRows';
   let pressedEl = null;
@@ -1682,7 +1693,7 @@
     FRAMES.filter((f) => f.at === lv && f.at > 0).forEach((f) => extra.push({ t: 'New board frame!', html: '<div class="rw-it"><div class="swatch big" style="background:' + f.bg + '"><u></u><u></u><u></u><u></u></div><b>' + f.name + '</b></div>' }));
     if (lv % 10 === 0 && lv / 10 <= WORLD_NAMES.length) {
       const i = lv / 10 - 1; extra.push({ t: lv >= 20 ? 'Sticker won back!' : 'New sticker!', html: '<div class="rw-it"><div class="sticker big" style="background-image:url(art/bg_' + i + '.jpg)"></div><b>' + WORLD_NAMES[i] + '</b></div>' });
-      const n = lv / 10; if (stkPrize(n)) extra.push({ p: {}, t: 'Album prize ready! ' + n + ' stickers', html: '<div class="rw-it"><b>Open My Collection → Stickers to claim it</b></div>', big: false });
+      const n = lv / 10; if (stkPrize(n)) extra.push({ p: {}, t: 'Album prize ready!', html: '<div class="rw-it"><b>Open My Collection → Stickers to claim it</b></div>', big: false });
     }
     extra.forEach((e, k) => setTimeout(() => announce(e.p || {}, e.t, e.big, e.html), 5200 + k * 100));
   }
