@@ -1275,3 +1275,11 @@ body.in-game .toast.gtoast{bottom:150px}
 .zone:nth-child(odd){animation-direction:alternate-reverse;animation-duration:24s}
 @keyframes zonepan2{from{background-position:4% 50%}to{background-position:96% 50%}}
 @media (prefers-reduced-motion:reduce){.zone{animation:none}}
+/* short screens: every window fits; if it still cannot, the window itself scrolls so its buttons are always reachable */
+.overlay{overflow-y:auto;align-items:safe center;overscroll-behavior:contain}
+.cl-scroll{max-height:max(150px,calc(100dvh - 440px))}
+.evgrid{max-height:max(180px,calc(100dvh - 300px))}
+.cl-prize em{white-space:normal}
+#climb .card{gap:6px}
+#climbInfo{font-size:13px;line-height:1.25;margin:0}
+.overlay{overflow-x:hidden;scrollbar-width:none}.overlay::-webkit-scrollbar{display:none}
