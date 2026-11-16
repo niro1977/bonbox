@@ -1977,7 +1977,7 @@
     return lives.n;
   }
   const nextLifeIn = () => (livesNow() >= MAX_LIVES ? 0 : Math.max(0, lives.t + LIFE_MS - Date.now()));
-  function addLives(n) { livesNow(); lives.n = Math.min(MAX_LIVES, lives.n + n); if (lives.n >= MAX_LIVES) lives.t = 0; store.set('lives', lives); infTick(); }
+  function addLives(n) { if (n > 0) setTimeout(() => S.heart(), 60); livesNow(); lives.n = Math.min(MAX_LIVES, lives.n + n); if (lives.n >= MAX_LIVES) lives.t = 0; store.set('lives', lives); infTick(); }
   function loseLife() { if (infOn()) return; livesNow(); if (lives.n <= 0) return; if (lives.n >= MAX_LIVES) lives.t = Date.now(); lives.n--; store.set('lives', lives); infTick(); }
   const canPlay = () => infOn() || livesNow() > 0;
 
@@ -2148,7 +2148,7 @@
       const tx = ok ? tb.left + tb.width / 2 - 12 : innerWidth * 0.62, ty = ok ? tb.top + tb.height / 2 : 20;
       flyThing({ src: img.src, size: 46, sx: a.left + a.width / 2, sy: a.top + a.height / 2, tx, ty, hx: 0, hy: -34, delay: 80 + n * 140, dur: 820 }).then(() => {
         const c = chip && (chip.closest('.chip') || chip); if (c && ok) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
-        S.ui('coin'); buzz(8); if (ok) plusText(tx + 12, ty + 30, '+' + r.p[k]);
+        S.ui(k === 'inf' ? 'heart' : 'item'); buzz(k === 'inf' ? [18, 60, 26] : 8); if (ok) plusText(tx + 12, ty + 30, '+' + r.p[k]);
       });
     });
   }

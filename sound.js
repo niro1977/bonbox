@@ -132,7 +132,14 @@
       sparkle(t + 0.02, 0.07);
     },
     x() { if (!ready()) return; const t = ctx.currentTime, f = pickV('x', [520, 494, 554, 466]) * jit(); pluck(f, t, 0.07, 0.16); noise(t, 0.035, 0.12, 3000 + Math.random() * 600, 2); },
-    tap() { if (!ready()) return; const t = ctx.currentTime, f = pickV('tap', [780, 740, 830, 698]) * jit(); pluck(f, t, 0.1, 0.22); bell(f * 2, t, 0.28, 0.07, 0.25); },
+    // one soft, round click (a single voice: no second layer)
+    tap() { if (!ready()) return; const t = ctx.currentTime, f = pickV('tap', [620, 587, 660]) * jit(); osc('sine', f, t, 0.085, 0.2, f * 0.72); },
+    // a coin drops into the purse: two bright metal pings and a tiny jingle
+    coin() { if (!ready()) return; const t = ctx.currentTime, k = pickV('coin', [1, 1.06, 0.95]) * jit(); bell(1568 * k, t, 0.22, 0.13, 0.15); bell(2093 * k, t + 0.055, 0.3, 0.11, 0.2); noise(t, 0.03, 0.05, 7000, 3); },
+    // hearts: a warm double thump, lub-dub
+    heart() { if (!ready()) return; const t = ctx.currentTime; osc('sine', 92, t, 0.16, 0.5, 52); osc('sine', 184, t, 0.07, 0.1, 110); osc('sine', 78, t + 0.2, 0.2, 0.4, 44); osc('sine', 156, t + 0.2, 0.07, 0.07, 92); },
+    // a helper lands in its pocket: one soft chime
+    item() { if (!ready()) return; const t = ctx.currentTime; bell(1047 * jit(), t, 0.4, 0.13, 0.25); },
     wrong() { if (!ready()) return; const t = ctx.currentTime, k = pickV('wrong', [1, 0.94, 1.06]); osc('sine', 220 * k, t, 0.34, 0.34, 110 * k); pluck(196 * k, t, 0.28, 0.22); pluck(147 * k, t + 0.09, 0.3, 0.2); },
     hint() { if (!ready()) return; const t = ctx.currentTime; reverb(); [0, 4, 7, 12, 16].forEach((s, i) => bell(hz(s + 12), t + i * 0.06, 0.8, 0.16)); sparkle(t + 0.1, 0.06); },
     win() { if (!ready()) return; if (sample('stars', 1, 0.95)) return; const t = ctx.currentTime; [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => { osc('triangle', hz(s + 12), t + i * 0.09, 0.45, 0.28); osc('sine', hz(s + 24), t + i * 0.09, 0.3, 0.1); }); },
@@ -148,7 +155,7 @@
       const t = ctx.currentTime, up = [0, 4, 7, 12, 16].slice(0, 3 + Math.min(2, level || 0));
       reverb(); up.forEach((x, k) => bell(hz(x + 24), t + k * 0.06, 0.7, 0.14)); sparkle(t + 0.05, 0.07);
     },
-    ui(name) { if (!ready()) return; const m = { open: 'tap', close: 'tap', back: 'tap', flip: 'tap', buy: 'hint', coin: 'hint' }[name]; if (m && S[m]) S[m](); },
+    ui(name) { if (!ready()) return; const m = { open: 'tap', close: 'tap', back: 'tap', flip: 'tap', buy: 'coin', coin: 'coin', heart: 'heart', item: 'item' }[name]; if (m && S[m]) S[m](); },
     starIn() { if (!ready()) return; const t = ctx.currentTime; noise(t, 0.4, 0.18, 2400, 0.8); osc('sine', 280, t, 0.42, 0.1, 1600); },
     star(i, earned) {
       if (!ready()) return;
@@ -170,8 +177,8 @@
     lose() { if (!ready()) return; const t = ctx.currentTime; reverb(); [7, 4, 0, -5].forEach((s, i) => { pluck(hz(s), t + i * 0.2, 0.5, 0.28); bell(hz(s + 12), t + i * 0.2, 0.7, 0.07, 0.3); }); },
     hop() { if (!ready()) return; const t = ctx.currentTime, k = pickV('hop', [1, 1.06, 0.94]) * jit(); pluck(520 * k, t, 0.12, 0.2); pluck(780 * k, t + 0.08, 0.14, 0.2); bell(1560 * k, t + 0.1, 0.4, 0.06); },
     // soft button feel: a low thud when the finger goes down, a tiny tick when it lifts
-    press() { if (!ready()) return; const t = ctx.currentTime, f = pickV('press', [210, 196, 224]) * jit(); osc('sine', f, t, 0.07, 0.16, f * 0.6); noise(t, 0.02, 0.05, 1800, 1.2); },
-    release() { if (!ready()) return; const t = ctx.currentTime; pluck(pickV('rel', [1180, 1250, 1110]) * jit(), t, 0.04, 0.05); },
+    press() {},   // silent: the click itself is the only sound of a press
+    release() {},
     // a window pops in (rising swish + soft chime) and out (falling swish)
     popIn() { if (!ready()) return; const t = ctx.currentTime, k = pickV('pin', [1, 1.12, 0.9]); noise(t, 0.16, 0.07, 1400 * k, 0.7); osc('sine', 330 * k, t, 0.16, 0.09, 660 * k); bell(1320 * k, t + 0.09, 0.35, 0.05, 0.3); },
     popOut() { if (!ready()) return; const t = ctx.currentTime, k = pickV('pout', [1, 1.1, 0.92]); noise(t, 0.12, 0.05, 1100 * k, 0.7); osc('sine', 520 * k, t, 0.12, 0.07, 260 * k); },

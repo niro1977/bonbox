@@ -1635,3 +1635,6 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 /* the text lines of the mini-games */
 #quickInfo,#memMoves{display:inline-block;padding:4px 14px;border-radius:14px;background:linear-gradient(180deg,#fff,#e4f1ff);box-shadow:0 3px 0 #9cbfe0,inset 0 2px 0 #fff;margin-bottom:6px}
 #quickMsg:not(:empty),#memMsg:not(:empty){display:inline-block;padding:6px 16px;border-radius:16px;background:linear-gradient(180deg,#fffbe0,#ffe08a);box-shadow:0 3px 0 #d99a1c,inset 0 2px 0 #fff;margin-top:6px}
+
+/* the winning bear stands a little lower, so his jump does not climb over the title */
+#win .win-gumi{margin-top:2px!important;margin-bottom:-12px!important}
