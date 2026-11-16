@@ -1854,17 +1854,33 @@
   let wheelRot = 0, spinning = false;
   function buildWheel() {
     const ICON = (g) => (g.c ? 'ic_coin' : g.h ? 'ic_hint' : g.w ? 'ic_wand' : g.s ? 'ic_shield' : g.k ? 'ic_sweeper' : g.l ? 'ic_lens' : 'ic_double');
-    let defs = '<defs><radialGradient id="wgloss" cx="50%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".5" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient></defs>';
+    // glossy 3D wheel: every slice is a lit dome of candy colour (bright toward the hub, deep at the rim), with bevelled dividers, a rim shadow and a glass highlight on top
+    const COL = [['#ff9bd0', '#ff2f93', '#b4005c'], ['#ffd68a', '#ff9a1f', '#b85a00'], ['#b9f58a', '#3fcf3a', '#12801a'], ['#9be6ff', '#1fb0ff', '#0066b8'], ['#d9b8ff', '#9a4dff', '#5516b8'], ['#fff3a0', '#ffd21f', '#b88a00'], ['#ffb3a0', '#ff5a3a', '#b01e08'], ['#a8f0ff', '#27c9e8', '#0a7f9c']];
+    let defs = '<defs>';
+    COL.forEach((c, k) => { defs += '<radialGradient id="wg' + k + '" gradientUnits="userSpaceOnUse" cx="110" cy="110" r="92"><stop offset="0" stop-color="' + c[0] + '"/><stop offset=".55" stop-color="' + c[1] + '"/><stop offset="1" stop-color="' + c[2] + '"/></radialGradient>'; });
+    defs += '<radialGradient id="wrim" gradientUnits="userSpaceOnUse" cx="110" cy="110" r="92"><stop offset=".78" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></radialGradient>'
+      + '<radialGradient id="whubsh" gradientUnits="userSpaceOnUse" cx="110" cy="110" r="34"><stop offset=".5" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>'
+      + '<linearGradient id="wglass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".62"/><stop offset=".55" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+      + '<filter id="wsh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.1" flood-color="#2a0040" flood-opacity=".6"/></filter></defs>';
     let s = defs + '<g id="wheelRot">';
-    const R = 90;
+    const R = 90, P = (r, a) => (110 + r * Math.cos(a)).toFixed(1) + ' ' + (110 + r * Math.sin(a)).toFixed(1);
     for (let i = 0; i < 8; i++) {
       const a0 = (i * 45 - 90) * Math.PI / 180, a1 = ((i + 1) * 45 - 90) * Math.PI / 180;
-      s += '<path d="M110 110 L' + (110 + R * Math.cos(a0)).toFixed(1) + ' ' + (110 + R * Math.sin(a0)).toFixed(1) + ' A' + R + ' ' + R + ' 0 0 1 ' + (110 + R * Math.cos(a1)).toFixed(1) + ' ' + (110 + R * Math.sin(a1)).toFixed(1) + ' Z" fill="' + WCOL[i] + '" stroke="#fff" stroke-width="2"/>';
-      const am = (i * 45 + 22.5 - 90) * Math.PI / 180, g = WSEG[i], rr = 60, x = 110 + rr * Math.cos(am), y = 110 + rr * Math.sin(am), rot = i * 45 + 22.5;
-      s += '<g transform="rotate(' + rot + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"><image href="art/' + ICON(g) + '.webp" x="' + (x - 14).toFixed(1) + '" y="' + (y - 21).toFixed(1) + '" width="28" height="28"/>' +
-        (g.c ? '<text x="' + x.toFixed(1) + '" y="' + (y + 14).toFixed(1) + '" text-anchor="middle" font-size="13" font-weight="900" fill="#fff" stroke="#3a0a4a" stroke-width="2.6" paint-order="stroke" style="font-family:Nunito,sans-serif">' + g.c + '</text>' : '') + '</g>';
+      s += '<path d="M110 110 L' + P(R, a0) + ' A' + R + ' ' + R + ' 0 0 1 ' + P(R, a1) + ' Z" fill="url(#wg' + i + ')"/>';
     }
-    s += '<circle cx="110" cy="110" r="' + R + '" fill="url(#wgloss)"/></g>';
+    for (let i = 0; i < 8; i++) {   // bevelled dividers: a dark groove with a bright edge beside it
+      const a = (i * 45 - 90) * Math.PI / 180, b = a + 0.018;
+      s += '<path d="M110 110 L' + P(R, a) + '" stroke="rgba(60,0,70,.55)" stroke-width="2.6" stroke-linecap="round"/><path d="M110 110 L' + P(R, b) + '" stroke="rgba(255,255,255,.75)" stroke-width="1.1" stroke-linecap="round"/>';
+    }
+    s += '<circle cx="110" cy="110" r="' + R + '" fill="url(#wrim)"/><circle cx="110" cy="110" r="34" fill="url(#whubsh)"/>';
+    for (let i = 0; i < 8; i++) {
+      const am = (i * 45 + 22.5 - 90) * Math.PI / 180, g = WSEG[i], rr = 61, x = 110 + rr * Math.cos(am), y = 110 + rr * Math.sin(am), rot = i * 45 + 22.5;
+      s += '<g filter="url(#wsh)" transform="rotate(' + rot + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"><image href="art/' + ICON(g) + '.webp" x="' + (x - 16).toFixed(1) + '" y="' + (y - 23).toFixed(1) + '" width="32" height="32"/>' +
+        (g.c ? '<text x="' + x.toFixed(1) + '" y="' + (y + 17).toFixed(1) + '" text-anchor="middle" font-size="15" font-weight="900" fill="#fff" stroke="#3a0a4a" stroke-width="3" paint-order="stroke" style="font-family:Nunito,sans-serif">' + g.c + '</text>' : '') + '</g>';
+    }
+    s += '</g>';
+    // the glass highlight does not turn with the wheel: the light stays where it is
+    s += '<path d="M' + P(R - 3, Math.PI * 1.06) + ' A' + (R - 3) + ' ' + (R - 3) + ' 0 0 1 ' + P(R - 3, Math.PI * 1.94) + ' Q110 96 ' + P(R - 3, Math.PI * 1.06) + ' Z" fill="url(#wglass)" pointer-events="none"/>';
     $('wheelSvg').innerHTML = s;
   }
   function openWheel() {

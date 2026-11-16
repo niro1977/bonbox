@@ -1542,3 +1542,51 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 .st-storm:not(.go) .st-gust,.st-storm:not(.go) .st-wind,.st-storm:not(.go) .st-achoo,.st-storm:not(.go) .st-flash{display:none}
 .st-storm:not(.go) .st-img{animation:stInhale 3.4s ease-in both}
 @keyframes stInhale{from{transform:scale(1.02)}to{transform:scale(1.13) translateY(1%)}}
+
+/* =====================================================================
+   3D + GLOSS PASS: everything that was a flat panel is now a raised, lit, glossy piece
+   ===================================================================== */
+/* lucky wheel: tilted toward the player, with a thick gold edge and a shadow on the table */
+#wheel .wheelbox{transform:perspective(680px) rotateX(15deg);transform-origin:50% 62%;margin:0 auto 14px}
+#wheel .wheelbox::before{content:"";position:absolute;left:8%;right:8%;bottom:-9%;height:16%;border-radius:50%;background:radial-gradient(ellipse,rgba(30,0,60,.5),rgba(30,0,60,0) 70%);z-index:-1}
+#wheel .wheelbox .wring{filter:drop-shadow(0 3px 0 #c8801a) drop-shadow(0 3px 0 #a05e0c) drop-shadow(0 3px 0 #7a4206) drop-shadow(0 9px 7px rgba(40,10,0,.55))}
+#wheel .wheelbox .whub{width:24%;filter:drop-shadow(0 2px 0 #a05e0c) drop-shadow(0 5px 4px rgba(40,10,0,.6))}
+#wheel .wheelbox .wptr{width:17%;top:-5%;filter:drop-shadow(0 3px 0 #8a0a1a) drop-shadow(0 6px 4px rgba(0,0,0,.5))}
+
+/* list rows, stat tiles, collection cells: raised glossy plates */
+.shoprow,.pf-grid div,.colcell,.stkrow,.stormrow,.passrow,.rlist>*,#giftList>*,#questList>*,#gameList>*{
+  background:linear-gradient(180deg,#ffffff 0%,#f1f8ff 45%,#d6e9fb 100%)!important;border:2px solid #fff!important;border-radius:16px!important;
+  box-shadow:0 4px 0 #9cbfe0,0 7px 8px rgba(40,80,140,.28),inset 0 2px 0 #fff,inset 0 -7px 10px rgba(110,165,220,.22)!important}
+.stormrow.got,.stkrow.got{background:linear-gradient(180deg,#fffbe0,#ffe9a0 55%,#ffcf5a)!important;box-shadow:0 4px 0 #d99a1c,0 7px 8px rgba(120,70,0,.28),inset 0 2px 0 #fff,inset 0 -7px 10px rgba(255,170,40,.25)!important}
+.colcell.on,.colcell.sel{background:linear-gradient(180deg,#f4fff0,#c9f5b8 60%,#9be585)!important;border-color:#3fcf3a!important;box-shadow:0 4px 0 #2a9a28,0 7px 8px rgba(20,90,20,.3),inset 0 2px 0 #fff!important}
+.colcell.locked{filter:saturate(.75)}
+.rlist>.me,.rlist>.mine{background:linear-gradient(180deg,#fffbe0,#ffe9a0 55%,#ffcf5a)!important;box-shadow:0 4px 0 #d99a1c,0 7px 8px rgba(120,70,0,.28),inset 0 2px 0 #fff!important}
+/* shop packs and free-reward tiles: candy-glass cards */
+.pack,.freeb{position:relative;overflow:visible;box-shadow:0 5px 0 rgba(120,60,0,.42),0 10px 10px rgba(60,20,0,.28),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 14px rgba(190,90,0,.16)!important}
+.pack::after,.freeb::after,.evcard::after{content:"";position:absolute;left:5%;right:5%;top:3px;height:38%;border-radius:12px 12px 60% 60%/12px 12px 26px 26px;background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,0));pointer-events:none}
+.pack img,.freeb img,.shoprow>img,.shoprow .pico,.colcell img{filter:drop-shadow(0 3px 2px rgba(60,20,0,.38))}
+.evcard{box-shadow:0 6px 0 rgba(0,0,0,.38),0 11px 10px rgba(20,0,50,.3),inset 0 2px 0 rgba(255,255,255,.6),inset 0 -12px 16px rgba(0,0,0,.2)!important}
+/* progress bars: a carved track with a glossy candy fill */
+.score-bar,.qbar,.quest .qbar,#pfBar,.pf-bar,#rankBar,.chest-bar,#quickBar,.storm-hp i,.bossbar .hp{box-shadow:inset 0 2px 4px rgba(0,0,30,.45),0 1px 0 rgba(255,255,255,.7)!important}
+.score-bar i,.qbar i,.qbar u,.quest .qbar u,#pfBar,#chestBar,#quickBar,.storm-hp u,.bossbar .hp u{background-image:linear-gradient(180deg,rgba(255,255,255,.7) 0,rgba(255,255,255,.12) 46%,rgba(0,0,0,.14) 100%),linear-gradient(90deg,#ff6ab8,#ffb21f)!important;box-shadow:inset 0 -2px 2px rgba(120,30,0,.25)}
+.storm-hp u,.bossbar .hp u{background-image:linear-gradient(180deg,rgba(255,255,255,.7) 0,rgba(255,255,255,.12) 46%,rgba(0,0,0,.14) 100%),linear-gradient(90deg,#b6f03a,#58c21a)!important}
+.quest .qbar{height:10px!important;border-radius:8px!important}.quest .qbar u{border-radius:8px!important}
+/* switches: a glossy ball in a carved slot */
+.sw{background:linear-gradient(180deg,#b8a698,#e2d4c8)!important;box-shadow:inset 0 3px 5px rgba(60,30,0,.4),0 1px 0 #fff!important;height:32px!important;width:58px!important}
+.sw::after{background:radial-gradient(circle at 35% 28%,#fff 0,#f4f4f8 38%,#c9ccd8 100%)!important;box-shadow:0 3px 0 rgba(60,40,30,.35),0 4px 6px rgba(0,0,0,.3),inset 0 -2px 3px rgba(0,0,0,.12)!important}
+.sw[aria-checked="true"]{background:linear-gradient(180deg,#12b07a,#3ff0b4)!important}
+.sw[aria-checked="true"]::after{transform:translateX(26px)!important}
+/* text boxes */
+.namefield input,#pfName{background:linear-gradient(180deg,#fff,#fff6e6)!important;border:2px solid #d9a560!important;box-shadow:inset 0 3px 5px rgba(120,60,0,.22),0 2px 0 #fff!important;border-radius:14px!important}
+/* small labels */
+.ptag,.colcell i,.pl-tier,.node .badge,.tier{box-shadow:0 2px 0 rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.55)}
+/* scroll bars inside the windows */
+.card ::-webkit-scrollbar,.card::-webkit-scrollbar{width:9px}
+.card ::-webkit-scrollbar-track,.card::-webkit-scrollbar-track{background:rgba(90,50,10,.16);border-radius:9px;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+.card ::-webkit-scrollbar-thumb,.card::-webkit-scrollbar-thumb{border-radius:9px;background:linear-gradient(90deg,#ffd76a,#ff9a1f);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 2px rgba(0,0,0,.3)}
+.card ::-webkit-scrollbar-button,.card::-webkit-scrollbar-button{display:none}
+/* the board tiles: a little more depth and a sharper highlight */
+.cell{box-shadow:inset 0 -5px 0 rgba(0,0,0,.2),inset 0 3px 0 rgba(255,255,255,.55),0 2px 2px rgba(0,0,30,.25)!important;background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.08) 42%,rgba(0,0,0,.14))!important}
+.found{box-shadow:0 3px 0 rgba(120,80,30,.35),inset 0 2px 0 #fff,inset 0 -5px 8px rgba(200,150,80,.18)}
+/* the helper highlight keeps its black frame on the new glossy tiles */
+.board.spot .cell.lit{box-shadow:0 0 0 4px #000,0 0 10px 4px rgba(0,0,0,.55),inset 0 3px 0 rgba(255,255,255,.55)!important}
