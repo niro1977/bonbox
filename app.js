@@ -2195,13 +2195,13 @@
   function startJars() {
     freshDay(); if ((plays.jars || 0) >= MAX_PLAYS) return; plays.jars = (plays.jars || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Sugar Jars', 'Tap the jar with the same colour. 3 mistakes and it is over.');
-    const cols = ['#22b8ff', '#ff52c8', '#ffd400', '#7ee21f'], body = $('quickBody'), TOT = 14; let n = 0, ok = 0, lives = 3, over = false, now = 0, tStart = 0, dur = 2400;
-    body.innerHTML = '<div class="jdrop"><i id="jDrop"></i></div><div class="jars">' + cols.map((c, i) => '<button type="button" class="jar" data-i="' + i + '" style="--jc:' + c + '"><b></b></button>').join('') + '</div>';
+    const cols = ['#22b8ff', '#ff52c8', '#ffd400', '#7ee21f'], JSW = [2, 6, 7, 4], body = $('quickBody'), TOT = 14; let n = 0, ok = 0, lives = 3, over = false, now = 0, tStart = 0, dur = 2400;
+    body.innerHTML = '<div class="jdrop"><i id="jDrop"></i></div><div class="jars">' + cols.map((c, i) => '<button type="button" class="jar" data-i="' + i + '" style="--jc:' + c + '"><b></b><img src="art/sw_' + JSW[i] + '.webp" alt="" draggable="false"><u></u></button>').join('') + '</div>';
     const drop = $('jDrop');
     const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? T('Perfect!') : ok + ' / ' + TOT + ' sorted', Math.floor(ok / 4), ok >= TOT ? { hints: 1 } : null); };
     const next = () => {
       if (over) return; if (n >= TOT) return fin();
-      now = Math.floor(Math.random() * 4); drop.style.background = 'radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),transparent 45%),' + cols[now];
+      now = Math.floor(Math.random() * 4); drop.style.background = 'url(art/sw_' + JSW[now] + '.webp) center/contain no-repeat';
       dur = Math.max(1100, 2400 - n * 90); drop.classList.remove('fall'); void drop.offsetWidth; drop.style.animationDuration = dur + 'ms'; drop.classList.add('fall'); tStart = performance.now(); n++;
       $('quickInfo').textContent = 'Drop ' + n + ' / ' + TOT + ' · ❤️ ' + lives;
     };
