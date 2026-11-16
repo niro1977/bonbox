@@ -1646,22 +1646,16 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 #chestMsg{max-width:100%;overflow-wrap:anywhere}
 
 /* audit fixes: no window may be taller than the screen; its list scrolls inside instead */
-.overlay>.card{max-height:calc(100svh - 74px);box-sizing:border-box}
-#quests .card,#ranking .card,#gifts .card,#games .card,#pass .card{display:flex;flex-direction:column}
-#questList,#ranking .rlist,#giftList,#gameList,#passList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 4px 8px}
-#quests .card>*:not(#questList),#ranking .card>*:not(.rlist),#gifts .card>*:not(#giftList),#pass .card>*:not(#passList){flex:none}
 /* the round side buttons: the tag never grows wider than its button */
 .med .tag{max-width:100%;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:clip;font-size:12px}
 
 /* audit fixes, second round */
-.overlay>.card{max-height:calc(100svh - 124px)}
 html[lang="es"] .med .tag{font-size:10px!important;padding-left:5px!important;padding-right:5px!important}
 html[lang="es"] .card h2{font-size:clamp(15px,4.9vw,21px)!important;white-space:nowrap}
 #win .row{gap:8px}
 html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!important;font-size:clamp(15px,4.6vw,19px)!important}
 
 /* audit fixes, third round */
-#quests .card,#ranking .card,#gifts .card,#pass .card{max-height:calc(100svh - 124px)!important}
 #rwTitle{white-space:normal!important;font-size:clamp(13px,4.3vw,20px)!important;line-height:1.05!important;text-wrap:balance;max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 /* ---------- board placement ---------- */
@@ -1694,3 +1688,8 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 /* when the numbers are long the counters shrink their text a little instead of pushing each other out */
 .wallet.topbar .chip{flex:0 1 auto;min-width:0}
 .wallet.topbar .chip b{white-space:nowrap}
+
+/* tall windows: the window itself is never capped or re-boxed (that broke its frame on phones); only the list inside it gets a height limit and scrolls */
+#questList,#ranking .rlist,#giftList,#gameList,#passList{max-height:calc(100svh - 400px);min-height:120px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 4px 8px}
+@supports not (height:100svh){#questList,#ranking .rlist,#giftList,#gameList,#passList{max-height:calc(100vh - 430px)}}
+#ranking .rlist{max-height:calc(100svh - 480px);min-height:96px}
