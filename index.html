@@ -14,9 +14,25 @@
 <link rel="apple-touch-icon" href="icon-180.png?v=85">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
-<link rel="stylesheet" href="style.css?v=131">
+<link rel="stylesheet" href="style.css?v=133">
+<link rel="preload" as="image" href="art/gumi_hero.webp"><link rel="preload" as="image" href="art/logo.webp">
+<style>
+#splash{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 38%,#8a4af0,#4a1fb8 60%,#2a0f7a);transition:opacity .4s}
+#splash.out{opacity:0;pointer-events:none}
+#splash .slogo{width:min(70vw,280px);border-radius:28px;box-shadow:0 0 0 3px rgba(255,255,255,.25),0 12px 30px rgba(20,0,60,.45);animation:spop .6s cubic-bezier(.23,1,.32,1) both}
+#splash .sbear{width:min(42vw,170px);animation:sbob 1.5s ease-in-out infinite;filter:drop-shadow(0 8px 6px rgba(20,0,60,.45))}
+#splash .sbar{width:min(60vw,230px);height:14px;border-radius:99px;background:rgba(0,0,0,.3);border:3px solid #fff;overflow:hidden}
+#splash .sbar i{display:block;height:100%;width:30%;border-radius:99px;background:linear-gradient(90deg,#ffd84a,#ff8a14);animation:sload 1.5s cubic-bezier(.23,1,.32,1) forwards}
+#splash b{color:#fff;font:900 16px system-ui,sans-serif;letter-spacing:1px}
+@keyframes sbob{50%{transform:translateY(-10px) rotate(-2deg)}}
+@keyframes spop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+@keyframes sload{from{width:8%}to{width:96%}}
+@media (prefers-reduced-motion:reduce){#splash .sbear{animation:none}}
+</style>
+<script>window.__t0=Date.now()</script>
 </head>
 <body>
+<div id="splash"><img class="slogo" src="art/logo.webp" alt="Candoku"><img class="sbear" src="art/gumi_hero.webp" alt=""><div class="sbar"><i></i></div><b>Loading…</b></div>
 <div id="scene" aria-hidden="true"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -127,16 +143,16 @@
 <main id="home" class="screen">
   <header class="hero">
     <button class="icon sndBtn" id="sndHome" type="button" aria-label="Sound"><svg><use href="#snd-on"/></svg></button>
-    <div class="logo" aria-label="Candoku"><img src="art/logo.webp" alt="Candoku" draggable="false"></div>
+    <div class="logo" aria-label="Candoku"><img loading="lazy" decoding="async" src="art/logo.webp" alt="Candoku" draggable="false"></div>
     <button class="icon" id="howBtn" type="button" aria-label="How to play"><svg><use href="#gear"/></svg></button>
   </header>
 
   <div class="wallet">
     <button class="chip me" id="walletMe" type="button" aria-label="Profile"><svg class="gum"><use href="#gumi"/></svg></button>
-    <span class="chip" title="Hearts per level"><img class="hrt" src="art/ic_heart.webp" alt="" draggable="false"><b id="heartN">3</b></span>
-    <button class="chip" id="walletCoins" type="button" aria-label="Shop"><img class="" src="art/ic_coin.webp" alt="" draggable="false"><b id="coinN">0</b><i>+</i></button>
-    <span class="chip"><img class="" src="art/ic_hint.webp" alt="" draggable="false"><b id="hintN">3</b></span>
-    <span class="chip"><img class="" src="art/ic_wand.webp" alt="" draggable="false"><b id="wandN">0</b></span>
+    <span class="chip" title="Hearts per level"><img decoding="async" class="hrt" src="art/ic_heart.webp" alt="" draggable="false"><b id="heartN">3</b></span>
+    <button class="chip" id="walletCoins" type="button" aria-label="Shop"><img decoding="async" class="" src="art/ic_coin.webp" alt="" draggable="false"><b id="coinN">0</b><i>+</i></button>
+    <span class="chip"><img decoding="async" class="" src="art/ic_hint.webp" alt="" draggable="false"><b id="hintN">3</b></span>
+    <span class="chip"><img decoding="async" class="" src="art/ic_wand.webp" alt="" draggable="false"><b id="wandN">0</b></span>
     <button class="chip gearchip" id="gearMap" type="button" aria-label="Settings"><svg><use href="#gear"/></svg></button>
   </div>
   <button class="daily" id="daily" type="button">
@@ -155,14 +171,14 @@
   <div class="sides">
     <div class="col l">
       <button class="med" id="medDaily" type="button"><span class="disc"><svg><use href="#c3"/></svg></span><span class="tag" id="medDailyTag">Play</span></button>
-      <button class="med" id="medWheel" type="button"><span class="disc"><img class="" src="art/ic_wheel.webp" alt="" draggable="false"></span><span class="tag" id="medWheelTag">FREE</span></button>
+      <button class="med" id="medWheel" type="button"><span class="disc"><img loading="lazy" decoding="async" class="" src="art/ic_wheel.webp" alt="" draggable="false"></span><span class="tag" id="medWheelTag">FREE</span></button>
     </div>
     <div class="col r">
-      <button class="med" id="medChest" type="button"><span class="disc"><img class="" src="art/ic_chest.webp" alt="" draggable="false"></span><span class="tag" id="medChestTag">0/10</span></button>
-      <button class="med" id="medEvents" type="button"><span class="disc"><img src="art/ev_shooter.webp" alt="" draggable="false"></span><span class="tag" id="medEventsTag">EVENTS</span></button>
+      <button class="med" id="medChest" type="button"><span class="disc"><img loading="lazy" decoding="async" class="" src="art/ic_chest.webp" alt="" draggable="false"></span><span class="tag" id="medChestTag">0/10</span></button>
+      <button class="med" id="medEvents" type="button"><span class="disc"><img loading="lazy" decoding="async" src="art/ev_shooter.webp" alt="" draggable="false"></span><span class="tag" id="medEventsTag">EVENTS</span></button>
     </div>
   </div>
-  <div hidden><button class="med" id="medPass" type="button"><span class="disc emo">🎟️</span><span class="tag" id="medPassTag">0/10</span></button><button class="med" id="medRush" type="button"><span class="disc emo">⚡</span><span class="tag" id="medRushTag">START</span></button><button class="med" id="medGames" type="button"><span class="disc"><img class="" src="art/ic_games.webp" alt="" draggable="false"></span><span class="tag" id="medGamesTag">4/4</span></button></div>
+  <div hidden><button class="med" id="medPass" type="button"><span class="disc emo">🎟️</span><span class="tag" id="medPassTag">0/10</span></button><button class="med" id="medRush" type="button"><span class="disc emo">⚡</span><span class="tag" id="medRushTag">START</span></button><button class="med" id="medGames" type="button"><span class="disc"><img loading="lazy" decoding="async" class="" src="art/ic_games.webp" alt="" draggable="false"></span><span class="tag" id="medGamesTag">4/4</span></button></div>
   <div class="map" id="map"></div>
 </main>
 
@@ -179,23 +195,23 @@
   <div class="boardwrap"><div class="board" id="board"></div></div>
   <div class="toast" id="toast"></div>
   <div class="tools">
-    <button class="btn" id="undoBtn" type="button" aria-label="Undo" title="Undo"><img class="tico" src="art/tool_undo.webp" alt="" draggable="false"></button>
-    <button class="btn" id="hintBtn" type="button" aria-label="Hint" title="Hint"><img class="tico" src="art/tool_hint.webp" alt="" draggable="false"><i class="badge" id="hintBadge">0</i></button>
-    <button class="btn" id="wandBtn" type="button" aria-label="Magic wand" title="Magic wand"><img class="tico" src="art/tool_wand.webp" alt="" draggable="false"><i class="badge" id="wandBadge">0</i></button>
-    <button class="btn" id="sweepBtn" type="button" aria-label="Sweeper" title="Sweeper"><img class="tico" src="art/tool_sweeper.webp" alt="" draggable="false"><i class="badge" id="sweepBtnBadge">0</i></button>
-    <button class="btn" id="lensBtn" type="button" aria-label="Magnifier" title="Magnifier"><img class="tico" src="art/tool_lens.webp" alt="" draggable="false"><i class="badge" id="lensBtnBadge">0</i></button>
-    <button class="btn" id="maybeBtn" type="button" aria-pressed="false" aria-label="Maybe" title="Maybe"><img class="tico" src="art/tool_maybe.webp" alt="" draggable="false"></button>
-    <button class="btn" id="clearBtn" type="button" aria-label="Restart" title="Restart"><img class="tico" src="art/tool_restart_red.webp" alt="" draggable="false"></button>
+    <button class="btn" id="undoBtn" type="button" aria-label="Undo" title="Undo"><img loading="lazy" decoding="async" class="tico" src="art/tool_undo.webp" alt="" draggable="false"></button>
+    <button class="btn" id="hintBtn" type="button" aria-label="Hint" title="Hint"><img loading="lazy" decoding="async" class="tico" src="art/tool_hint.webp" alt="" draggable="false"><i class="badge" id="hintBadge">0</i></button>
+    <button class="btn" id="wandBtn" type="button" aria-label="Magic wand" title="Magic wand"><img loading="lazy" decoding="async" class="tico" src="art/tool_wand.webp" alt="" draggable="false"><i class="badge" id="wandBadge">0</i></button>
+    <button class="btn" id="sweepBtn" type="button" aria-label="Sweeper" title="Sweeper"><img loading="lazy" decoding="async" class="tico" src="art/tool_sweeper.webp" alt="" draggable="false"><i class="badge" id="sweepBtnBadge">0</i></button>
+    <button class="btn" id="lensBtn" type="button" aria-label="Magnifier" title="Magnifier"><img loading="lazy" decoding="async" class="tico" src="art/tool_lens.webp" alt="" draggable="false"><i class="badge" id="lensBtnBadge">0</i></button>
+    <button class="btn" id="maybeBtn" type="button" aria-pressed="false" aria-label="Maybe" title="Maybe"><img loading="lazy" decoding="async" class="tico" src="art/tool_maybe.webp" alt="" draggable="false"></button>
+    <button class="btn" id="clearBtn" type="button" aria-label="Restart" title="Restart"><img loading="lazy" decoding="async" class="tico" src="art/tool_restart_red.webp" alt="" draggable="false"></button>
   </div>
-  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v131</span></p>
+  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v133</span></p>
 </main>
 
 <!-- WIN -->
-<div id="bank" class="bank" hidden><img src="art/ic_coin.webp" alt="" draggable="false"><b id="bankN">0</b></div>
+<div id="bank" class="bank" hidden><img loading="lazy" decoding="async" src="art/ic_coin.webp" alt="" draggable="false"><b id="bankN">0</b></div>
 <div id="win" class="overlay" hidden>
   <div class="rays"><i></i><i class="r2"></i></div>
   <div class="card">
-    <div class="win-gumi"><i class="halo"></i><i class="halo h2"></i><i class="gshadow"></i><div class="gbody"><img class="g-ground" src="art/gumi_win.webp" alt="" draggable="false"><img class="g-air" src="art/gumi_jump.webp" alt="" draggable="false"></div></div>
+    <div class="win-gumi"><i class="halo"></i><i class="halo h2"></i><i class="gshadow"></i><div class="gbody"><img loading="lazy" decoding="async" class="g-ground" src="art/gumi_win.webp" alt="" draggable="false"><img loading="lazy" decoding="async" class="g-air" src="art/gumi_jump.webp" alt="" draggable="false"></div></div>
     <h2>Sweet!</h2>
     <div class="stars" id="winStars"></div>
     <p id="winInfo"></p>
@@ -213,7 +229,7 @@
 <!-- OUT OF HEARTS -->
 <div id="lose" class="overlay" hidden>
   <div class="card">
-    <div class="lose-gumi"><img src="art/gumi_sad.webp" alt="" draggable="false"></div>
+    <div class="lose-gumi"><img loading="lazy" decoding="async" src="art/gumi_sad.webp" alt="" draggable="false"></div>
     <h2>Out of hearts</h2>
     <p>Take a breath and try this level again.</p>
     <button class="btn main wide" id="retryBtn" type="button">Try again</button>
@@ -281,7 +297,7 @@
 <!-- CHEST -->
 <div id="chest" class="overlay" hidden><div class="card">
   <h2>Candy Chest</h2>
-  <img class="chest-art" src="art/ic_chest.webp" alt="" draggable="false">
+  <img loading="lazy" decoding="async" class="chest-art" src="art/ic_chest.webp" alt="" draggable="false">
   <p id="chestMsg"></p>
   <div class="score-bar"><i id="chestBar"></i></div>
   <div id="chestPrize" class="chest-prize"></div>
@@ -293,7 +309,7 @@
 <!-- LUCKY WHEEL -->
 <div id="wheel" class="overlay" hidden><div class="card">
   <h2>Lucky Wheel</h2>
-  <div class="wheelbox" id="wheelBox"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 220 220"></svg><img class="wring" src="art/wheel_ring.webp" alt="" draggable="false"><img class="whub" src="art/wheel_hub.webp" alt="" draggable="false"><img class="wptr" src="art/wheel_pointer.webp" alt="" draggable="false"></div>
+  <div class="wheelbox" id="wheelBox"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 220 220"></svg><img loading="lazy" decoding="async" class="wring" src="art/wheel_ring.webp" alt="" draggable="false"><img loading="lazy" decoding="async" class="whub" src="art/wheel_hub.webp" alt="" draggable="false"><img loading="lazy" decoding="async" class="wptr" src="art/wheel_pointer.webp" alt="" draggable="false"></div>
   <p id="wheelMsg"></p>
   <button class="btn main wide" id="wheelBtn" type="button">Spin</button>
   <button class="link" id="wheelClose" type="button">Close</button>
@@ -392,7 +408,7 @@
 <!-- ITEM INFO (hint / wand) -->
 <div id="hintInfo" class="overlay" hidden>
   <div class="card">
-    <div class="hint-big"><img id="itemIcon" src="art/ic_hint.webp" alt="" draggable="false"><b id="hintLeft">3</b></div>
+    <div class="hint-big"><img loading="lazy" decoding="async" id="itemIcon" src="art/ic_hint.webp" alt="" draggable="false"><b id="hintLeft">3</b></div>
     <h2 id="itemTitle">Hint</h2>
     <p id="itemDesc"></p>
     <p class="small" id="hintEarn"></p>
@@ -416,7 +432,7 @@
 <div id="shop" class="overlay" hidden>
   <div class="card">
     <h2>Shop</h2>
-    <p class="shopbal"><img class="" src="art/ic_coin.webp" alt="" draggable="false"><b id="shopCoins">0</b></p>
+    <p class="shopbal"><img loading="lazy" decoding="async" class="" src="art/ic_coin.webp" alt="" draggable="false"><b id="shopCoins">0</b></p>
     <div class="shoplist" id="shopList"></div>
     <p class="small">Earn coins by solving levels and from the Daily Bonus.</p>
     <button class="btn main wide" id="shopClose" type="button">Close</button>
@@ -479,18 +495,18 @@
   </div>
 </div>
 <nav class="nav" id="nav" aria-label="Main">
-  <button type="button" id="navGifts"><img class="navico" src="art/nav_gifts.webp" alt="" draggable="false"><span>Gifts</span></button>
-  <button type="button" id="navQuests"><img class="navico" src="art/nav_quests.webp" alt="" draggable="false"><span>Quests</span></button>
-  <button type="button" id="navHome" class="on"><img class="navico" src="art/nav_home.webp" alt="" draggable="false"><span>Home</span></button>
-  <button type="button" id="navShop"><img class="navico" src="art/nav_shop.webp" alt="" draggable="false"><span>Shop</span></button>
-  <button type="button" id="navRank"><img class="navico" src="art/nav_rank.webp" alt="" draggable="false"><span>Ranking</span></button>
+  <button type="button" id="navGifts"><img loading="lazy" decoding="async" class="navico" src="art/nav_gifts.webp" alt="" draggable="false"><span>Gifts</span></button>
+  <button type="button" id="navQuests"><img loading="lazy" decoding="async" class="navico" src="art/nav_quests.webp" alt="" draggable="false"><span>Quests</span></button>
+  <button type="button" id="navHome" class="on"><img loading="lazy" decoding="async" class="navico" src="art/nav_home.webp" alt="" draggable="false"><span>Home</span></button>
+  <button type="button" id="navShop"><img loading="lazy" decoding="async" class="navico" src="art/nav_shop.webp" alt="" draggable="false"><span>Shop</span></button>
+  <button type="button" id="navRank"><img loading="lazy" decoding="async" class="navico" src="art/nav_rank.webp" alt="" draggable="false"><span>Ranking</span></button>
 </nav>
-<script src="engine.js?v=131"></script>
-<script src="hints.js?v=131"></script>
-<script src="seeds.js?v=131"></script>
-<script src="sound.js?v=131"></script>
-<script src="music.js?v=131"></script>
-<script src="voice.js?v=131"></script>
-<script src="app.js?v=131"></script>
+<script src="engine.js?v=133"></script>
+<script src="hints.js?v=133"></script>
+<script src="seeds.js?v=133"></script>
+<script src="sound.js?v=133"></script>
+<script src="music.js?v=133"></script>
+<script src="voice.js?v=133"></script>
+<script src="app.js?v=133"></script>
 </body>
 </html>

@@ -196,14 +196,14 @@
     }
     for (let k = 0; k < zones; k++) {
       const z = ZONES[k % ZONES.length], cy = g.pos(k * 10 + 1).y + (MAP_STEP + WORLD_GAP) / 2;
-      html += '<div class="ribbon" style="background-image:url(art/ribbon_' + (k % 10) + '.webp);top:' + Math.round(cy) + 'px"><span><small>WORLD ' + (k + 1) + '</small><b>' + z.name + '</b></span></div>';
+      html += '<div class="ribbon zlazy" data-bg="art/ribbon_' + (k % 10) + '.webp" style="top:' + Math.round(cy) + 'px"><span><small>WORLD ' + (k + 1) + '</small><b>' + z.name + '</b></span></div>';
     }
     return html;
   }
 
   let zoneObs = null;
   function lazyZones() {   // a world's painting is fetched only when it is about to scroll into view
-    const els = document.querySelectorAll('.zone[data-bg]');
+    const els = document.querySelectorAll('.zone[data-bg],.ribbon[data-bg]');
     if (!('IntersectionObserver' in window)) { els.forEach((e) => { e.style.backgroundImage = 'url(' + e.dataset.bg + ')'; }); return; }
     if (zoneObs) zoneObs.disconnect();
     zoneObs = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.style.backgroundImage = 'url(' + en.target.dataset.bg + ')'; zoneObs.unobserve(en.target); } }), { rootMargin: '900px 0px' });
@@ -241,7 +241,7 @@
       b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tier) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
       b.dataset.lv = lv;
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
-      if (tier === 'normal') { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--nf', 'hue-rotate(' + (hue - 187) + 'deg)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); }
+      if (tier === 'normal') { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); }
       let html = '' + lv;
       if (tier !== 'normal') html += '<span class="badge">' + (tier === 'hard' ? 'HARD' : tier === 'extreme' ? 'EXTREME' : 'VERY HARD') + '</span>';
       if (lv < level && stars[lv]) { b.classList.add('hasst'); html += '<span class="st">'; for (let i = 1; i <= 3; i++) html += starSvg(i <= stars[lv]); html += '</span>'; }
@@ -1889,7 +1889,7 @@
       o.el.querySelector('em').textContent = o.tag(); o.el.classList.toggle('hot', !!o.hot()); o.el.classList.toggle('dim', !!(o.dim && o.dim()));
     });
   }
-  function openEvents() { S.unlock(); S.tap(); closeAll(); renderEvents(); $('events').hidden = false; }
+  function openEvents() { setTimeout(() => { loadArc(); loadHoop(); }, 600); S.unlock(); S.tap(); closeAll(); renderEvents(); $('events').hidden = false; }
 
   /* ---------- canvas helpers shared by the new arcade mini-games ---------- */
   let quickKey = null;
@@ -1910,10 +1910,10 @@
 
   // artwork for the arcade mini-games (made in Overchat)
   const arcArt = {};
-  [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg'], ['cart_rock', 'webp'], ['cart_bear', 'webp'], ['cart_rival', 'webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + f[0] + '.' + f[1]; arcArt[f[0]] = im; });
-  { const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
+  function loadArc() { if (arcArt.coin) return; [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg'], ['cart_rock', 'webp'], ['cart_bear', 'webp'], ['cart_rival', 'webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + f[0] + '.' + f[1]; arcArt[f[0]] = im; }); const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
   /* ---------- Candy Shooter: a Zuma-style chain of gumdrops; shoot matching colours to pop them ---------- */
   function startShoot() {
+    loadArc();
     freshDay(); if ((plays.shoot || 0) >= MAX_PLAYS) return; plays.shoot = (plays.shoot || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Candy Shooter', 'Tap to shoot. Match 3 or more to pop them before they reach the hole!');
     const { cv, g, xy } = quickCanvas();
@@ -1991,8 +1991,9 @@
   /* ---------- Hoop Shot: an arcade machine with a 4x4 board of hoops. Pull the ball back like a slingshot, aim with the
      dotted path, let go. Fill hoops; a full line of four is a bonus. 12 balls. ---------- */
   const hoopArt = {};
-  ['hoop_machine.jpg', 'hoop_ring.webp', 'hoop_ball_g.webp', 'hoop_ball_r.webp'].forEach((f) => { const im = new Image(); im.src = 'art/' + f; hoopArt[f.split('.')[0]] = im; });
+  function loadHoop() { if (hoopArt.hoop_ring) return; ['hoop_machine.jpg', 'hoop_ring.webp', 'hoop_ball_g.webp', 'hoop_ball_r.webp'].forEach((f) => { const im = new Image(); im.src = 'art/' + f; hoopArt[f.split('.')[0]] = im; }); }
   function startHoop() {
+    loadHoop();
     freshDay(); if ((plays.hoop || 0) >= MAX_PLAYS) return; plays.hoop = (plays.hoop || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Hoop Shot', 'Pull the ball back, aim, and let go. Fill the hoops!');
     const { cv, g, xy } = quickCanvas();
@@ -2079,6 +2080,7 @@
 
   /* ---------- Cart Race: switch lanes, dodge rocks, grab coins, beat the rival to the finish ---------- */
   function startCart() {
+    loadArc();
     freshDay(); if ((plays.cart || 0) >= MAX_PLAYS) return; plays.cart = (plays.cart || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Cart Race', 'Hold the cart and drag it left or right. Dodge rocks, grab coins, beat the rival!');
     const { cv, g } = quickCanvas(); const bear = new Image(); bear.src = look.stand;
@@ -2263,5 +2265,10 @@
       if (g.meta.kind === 'level') startLevel(g.meta.level); else startDaily();
     } else maybeBonus();
   }
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  { const sp = document.getElementById('splash'), t0 = window.__t0 || Date.now(); let gone = false;
+    const bye = () => { if (gone || !sp) return; gone = true; sp.classList.add('out'); setTimeout(() => sp.remove(), 450); if ($('game').hidden) scrollToLevel(level); };
+    const ready = () => setTimeout(bye, Math.max(0, 1600 - (Date.now() - t0)));
+    const hero = new Image(); hero.onload = hero.onerror = () => { if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready); }; hero.src = 'art/bg_' + (Math.floor((level - 1) / 10) % 30) + '.jpg';
+    setTimeout(bye, 6000); }
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').catch(() => {}), 1500));
 })();

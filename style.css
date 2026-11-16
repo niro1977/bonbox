@@ -1263,3 +1263,10 @@ body.inf-on #heartN{color:#e0245e;font-size:12px}
 .toast.gtoast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 body.in-game .toast.gtoast{bottom:150px}
 #climbInfo b{color:#7a2fd0}
+
+/* performance: level buttons use baked colour art, no per-node CSS filters */
+.node::after{filter:none!important}
+.node.current::after{filter:drop-shadow(0 0 9px #ffe14d) drop-shadow(0 0 3px #fff)!important}
+
+.node.locked::after{background-image:url(art/node_lock.webp)!important}
+.map .ribbon.zlazy:not([style*='background-image']){background-image:none!important}
