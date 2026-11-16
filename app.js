@@ -1931,61 +1931,90 @@
     quickRaf = requestAnimationFrame((t) => { last = t; tick(t); });
   }
 
-  /* ---------- Hoop Shot: lead the moving hoop; tap where it will be when the ball arrives ---------- */
+  /* ---------- Hoop Shot: an arcade machine with a 4x4 board of hoops. Pull the ball back like a slingshot, aim with the
+     dotted path, let go. Fill hoops; a full line of four is a bonus. 12 balls. ---------- */
+  const hoopArt = {};
+  ['hoop_machine.jpg', 'hoop_ring.webp', 'hoop_ball_g.webp', 'hoop_ball_r.webp'].forEach((f) => { const im = new Image(); im.src = 'art/' + f; hoopArt[f.split('.')[0]] = im; });
   function startHoop() {
     freshDay(); if ((plays.hoop || 0) >= MAX_PLAYS) return; plays.hoop = (plays.hoop || 0) + 1; store.set('plays', plays); updateSides();
-    quickOpen('Hoop Shot', 'Tap where the hoop will be! 10 shots.');
+    quickOpen('Hoop Shot', 'Pull the ball back, aim, and let go. Fill the hoops!');
     const { cv, g, xy } = quickCanvas();
-    let phase = 0, freq = 1.1, shots = 0, score = 0, ball = null, px = 150, over = false, last = performance.now(); const texts = [], T = 0.62, RY = 148;
-    const hx = (ph) => 150 + 86 * Math.sin(ph);
-    cv.onpointermove = (e) => { px = xy(e)[0]; };
-    cv.onpointerdown = (e) => {
-      px = xy(e)[0]; if (over || ball) return; shots++; S.tap(); buzz(8);
-      ball = { t: 0, tx: Math.max(40, Math.min(260, px)), x: 150, y: 318, r: 20, post: null, ph0: phase, hxEnd: hx(phase + freq * T) };
+    const BALLS = 12, SX = 150, SY = 330, TOPY = 88, BOTY = 268;
+    const rowT = [0.13, 0.38, 0.63, 0.88], sc = (t) => 0.74 + 0.36 * t, halfW = (t) => 103 + 42 * t;
+    const rings = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const t = rowT[r]; rings.push({ r, c, x: 151 + (c - 1.5) * halfW(t) * 0.46, y: TOPY + (BOTY - TOPY) * t, s: sc(t), ball: null, glow: 0, drop: 0 }); }
+    let left = BALLS, filled = 0, lines = 0, drag = null, ball = null, over = false, last = performance.now(), tNow = 0, shake = 0; const doneLines = {}, parts = [], texts = [], loose = [];
+    const kindOf = (n) => (n % 2 ? 'hoop_ball_r' : 'hoop_ball_g');
+    const target = (d) => { const px = Math.max(-70, Math.min(70, d.x - SX)), py = Math.max(0, Math.min(96, d.y - SY)); return { x: SX - px * 2.5, y: SY - 52 - py * 2.25, pull: py }; };
+    const drawBall = (k, x, y, rad, rot) => { const im = hoopArt[k]; g.save(); g.translate(x, y); if (rot) g.rotate(rot); if (im.complete && im.naturalWidth) g.drawImage(im, -rad, -rad, rad * 2, rad * 2); else glossBall(g, 0, 0, rad, '#4fdc4a', '#1f8f1c'); g.restore(); };
+    const ringGeo = (q) => { const w = 46 * q.s, h = w * 188 / 200; return { w, h, x: q.x - w / 2, y: q.y - h * 0.27 }; };
+    const drawRing = (q, part) => {           // part 0 = whole, 1 = only the front (lower) half, drawn over a ball that sits in the hoop
+      const im = hoopArt.hoop_ring, o = ringGeo(q); if (!(im.complete && im.naturalWidth)) { g.strokeStyle = '#fff'; g.lineWidth = 4; g.beginPath(); g.ellipse(q.x, q.y, 20 * q.s, 8 * q.s, 0, 0, 6.283); g.stroke(); return; }
+      if (!part) g.drawImage(im, o.x, o.y, o.w, o.h); else { const cut = 0.27; g.drawImage(im, 0, im.naturalHeight * cut, im.naturalWidth, im.naturalHeight * (1 - cut), o.x, o.y + o.h * cut, o.w, o.h * (1 - cut)); }
     };
-    const finish = () => { if (over) return; over = true; quickEnd(score + ' / 10 baskets', 3 + score * 2, score >= 10 ? { wands: 1 } : score >= 6 ? { hints: 1 } : null); };
-    const drawBall = (x, y, r) => {
-      glossBall(g, x, y, r, '#ff9a2e', '#b2480a'); g.strokeStyle = 'rgba(70,25,0,.65)'; g.lineWidth = 1.6;
-      g.beginPath(); g.arc(x, y, r * 0.95, 0.5, 2.6); g.stroke(); g.beginPath(); g.arc(x, y, r * 0.95, 3.6, 5.7); g.stroke(); g.beginPath(); g.moveTo(x - r, y); g.lineTo(x + r, y); g.stroke(); g.beginPath(); g.moveTo(x, y - r); g.lineTo(x, y + r); g.stroke();
+    const burst = (x, y, col, n) => { for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, v = 40 + Math.random() * 120; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 50, l: 0.6, c: col[k % col.length] }); } };
+    const say = (t, x, y, c, big) => texts.push({ t, x, y, a: 1.3, c, big });
+    const checkLines = () => {
+      const sets = []; for (let i = 0; i < 4; i++) { sets.push(['r' + i, rings.filter((q) => q.r === i)]); sets.push(['c' + i, rings.filter((q) => q.c === i)]); }
+      sets.push(['d0', rings.filter((q) => q.r === q.c)], ['d1', rings.filter((q) => q.r + q.c === 3)]);
+      sets.forEach(([id, qs]) => { if (!doneLines[id] && qs.every((q) => q.ball)) { doneLines[id] = 1; lines++; qs.forEach((q) => { q.glow = 1.6; burst(q.x, q.y, ['#ffe14d', '#fff', '#ffb347'], 8); }); say('LINE!', 150, 150, '#ffe14d', 1); S.fanfare(); buzz([20, 30, 50]); shake = 0.3; } });
     };
+    const finish = () => { if (over) return; over = true; const full = filled >= 16; quickEnd(filled + ' hoops · ' + lines + ' line' + (lines === 1 ? '' : 's'), Math.round(filled * 0.7) + lines * 3, full ? { wands: 1, inf: 15 } : lines >= 2 ? { inf: 15 } : lines >= 1 ? { hints: 1 } : null); };
+    cv.onpointerdown = (e) => { if (over || ball) return; const [x, y] = xy(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} drag = { x, y: Math.max(SY, y) }; };
+    cv.onpointermove = (e) => { if (!drag) return; const [x, y] = xy(e); drag.x = x; drag.y = y; };
+    const release = () => {
+      if (!drag) return; const tg = target(drag); drag = null; if (tg.pull < 8 || over) return;
+      ball = { k: kindOf(BALLS - left), t: 0, tx: tg.x, ty: tg.y, x: SX, y: SY, rad: 19, rot: 0, st: 'fly' }; left--; S.whoosh(); buzz(8);
+    };
+    cv.onpointerup = release; cv.onpointercancel = () => { drag = null; };
+    const pathAt = (tg, u) => { const tt = Math.max(0, Math.min(1, (tg.y - TOPY) / (BOTY - TOPY))), endR = 13.5 * sc(tt); return { x: SX + (tg.x - SX) * u, y: SY + (tg.y - SY) * u - (70 + (SY - tg.y) * 0.32) * 4 * u * (1 - u), rad: 19 + (endR - 19) * u }; };
     const draw = () => {
-      const bg = g.createLinearGradient(0, 0, 0, 360); bg.addColorStop(0, '#5ec8ff'); bg.addColorStop(0.62, '#bdeaff'); bg.addColorStop(0.62, '#e8a35a'); bg.addColorStop(1, '#b8692a'); g.fillStyle = bg; g.fillRect(0, 0, 300, 360);
-      g.fillStyle = 'rgba(255,255,255,.55)'; [[40, 40, 26], [70, 46, 20], [230, 62, 24], [256, 70, 16]].forEach((c) => { g.beginPath(); g.arc(c[0], c[1], c[2], 0, 6.283); g.fill(); });
-      g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 262); g.lineTo(300, 262); g.stroke();
-      const H = hx(phase), f = H;
-      g.fillStyle = '#fff'; rr(g, f - 50, 70, 100, 70, 9); g.fill(); g.lineWidth = 4; g.strokeStyle = '#d6303a'; g.stroke(); g.lineWidth = 3; rr(g, f - 20, 98, 40, 32, 4); g.stroke();
-      g.lineWidth = 5; g.strokeStyle = '#ff6a1f'; g.beginPath(); g.ellipse(H, RY - 4, 30, 8, 0, Math.PI, 6.283); g.stroke();
-      const fb = ball && ball.post && ball.post.type !== 'swish';
-      if (ball && !fb) drawBall(ball.x, ball.y, ball.r);
-      g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1.6; for (let i = -4; i <= 4; i++) { g.beginPath(); g.moveTo(H + i * 6.5, RY); g.lineTo(H + i * 4.2, RY + 40); g.stroke(); }
-      for (let k = 0; k < 3; k++) { g.beginPath(); g.moveTo(H - 28 + k * 3, RY + 12 + k * 12); g.lineTo(H + 28 - k * 3, RY + 12 + k * 12); g.stroke(); }
-      g.lineWidth = 6; g.strokeStyle = '#ff6a1f'; g.beginPath(); g.ellipse(H, RY, 30, 8, 0, 0, Math.PI); g.stroke();
-      if (ball && fb) drawBall(ball.x, ball.y, ball.r);
-      if (!ball) { drawBall(150, 318, 20); }
-      if (!ball && !over) { g.strokeStyle = 'rgba(255,255,255,.7)'; g.setLineDash([4, 5]); g.lineWidth = 2; g.beginPath(); g.arc(Math.max(40, Math.min(260, px)), RY, 16, 0, 6.283); g.stroke(); g.setLineDash([]); }
-      texts.forEach((t) => { g.globalAlpha = Math.max(0, t.a); g.font = '900 24px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = '#000'; g.strokeText(t.t, t.x, t.y); g.fillStyle = t.c; g.fillText(t.t, t.x, t.y); }); g.globalAlpha = 1;
+      g.save(); if (shake > 0) g.translate((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5);
+      const m = hoopArt.hoop_machine; g.fillStyle = '#231a52'; g.fillRect(0, 0, 300, 360); if (m.complete && m.naturalWidth) g.drawImage(m, 0, 0, 300, 300);
+      const tr = g.createLinearGradient(0, 296, 0, 360); tr.addColorStop(0, '#7a1420'); tr.addColorStop(0.25, '#c0252f'); tr.addColorStop(1, '#5a0d16'); g.fillStyle = tr; g.fillRect(0, 296, 300, 64);
+      g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(SX, SY + 17, 30, 8, 0, 0, 6.283); g.fill();
+      // scoreboard
+      g.textAlign = 'center'; g.fillStyle = '#7a3a06'; g.font = '900 17px Nunito,sans-serif'; g.fillText(filled + ' / 16', 96, 44); g.font = '900 10px Nunito,sans-serif'; g.fillText('HOOPS', 96, 56);
+      g.font = '900 17px Nunito,sans-serif'; g.fillText(String(lines), 150, 44); g.font = '900 10px Nunito,sans-serif'; g.fillText('LINES', 150, 56);
+      g.font = '900 17px Nunito,sans-serif'; g.fillText(String(left), 204, 44); g.font = '900 10px Nunito,sans-serif'; g.fillText('BALLS', 204, 56);
+      // hoops, far rows first; a ball in flight is drawn at the depth of its row
+      const flyRow = ball && ball.st === 'fly' ? -1 : 9;
+      rings.forEach((q) => {
+        if (q.glow > 0) { g.globalAlpha = Math.min(1, q.glow); const gl = g.createRadialGradient(q.x, q.y, 2, q.x, q.y, 34 * q.s); gl.addColorStop(0, 'rgba(255,240,140,.95)'); gl.addColorStop(1, 'rgba(255,220,80,0)'); g.fillStyle = gl; g.beginPath(); g.arc(q.x, q.y, 34 * q.s, 0, 6.283); g.fill(); g.globalAlpha = 1; }
+        g.fillStyle = 'rgba(90,40,0,.25)'; g.beginPath(); g.ellipse(q.x + 3, q.y + 20 * q.s, 20 * q.s, 6 * q.s, 0, 0, 6.283); g.fill();
+        drawRing(q, 0);
+        if (q.ball) { const dy = 7 * q.s - Math.abs(Math.sin(q.drop * 9)) * q.drop * 10; drawBall(q.ball, q.x, q.y + dy, 13.5 * q.s, 0); drawRing(q, 1); }
+      });
+      loose.forEach((b) => drawBall(b.k, b.x, b.y, b.rad, b.rot));
+      // aim
+      if (drag && !ball) {
+        const tg = target(drag), px = Math.max(-70, Math.min(70, drag.x - SX)), py = Math.max(0, Math.min(96, drag.y - SY));
+        if (tg.pull >= 8) { for (let n = 1; n <= 11; n++) { const p = pathAt(tg, n / 11); g.globalAlpha = 0.35 + 0.55 * (n / 11); g.fillStyle = '#fff'; g.beginPath(); g.arc(p.x, p.y, 2.2 + n * 0.16, 0, 6.283); g.fill(); } g.globalAlpha = 1;
+          const onq = rings.find((q) => !q.ball && Math.hypot((tg.x - q.x) / (20 * q.s), (tg.y - q.y) / (11 * q.s)) < 0.62);
+          g.strokeStyle = onq ? '#7dff5a' : '#fff'; g.lineWidth = onq ? 3.5 : 2.5; g.setLineDash(onq ? [] : [5, 4]); g.beginPath(); g.ellipse(tg.x, tg.y, onq ? 18 : 15, onq ? 7.5 : 6, 0, 0, 6.283); g.stroke(); g.setLineDash([]); }
+        g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 3; g.beginPath(); g.moveTo(SX - 34, SY - 8); g.lineTo(SX + px * 0.55, SY + py * 0.3); g.lineTo(SX + 34, SY - 8); g.stroke();
+        drawBall(kindOf(BALLS - left), SX + px * 0.55, SY + py * 0.3, 19, 0);
+      } else if (!ball && left > 0) { drawBall(kindOf(BALLS - left), SX, SY + Math.sin(tNow * 3) * 2, 19, 0); if (left === BALLS) { g.globalAlpha = 0.6 + 0.4 * Math.sin(tNow * 4); g.fillStyle = '#fff'; g.font = '900 12px Nunito,sans-serif'; g.textAlign = 'center'; g.fillText('▼ pull down ▼', SX, 312); g.globalAlpha = 1; } }
+      if (ball) { g.fillStyle = 'rgba(60,20,0,.22)'; const u = Math.min(1, ball.t); g.beginPath(); g.ellipse(SX + (ball.tx - SX) * u, SY + (ball.ty - SY) * u + 10, ball.rad * 0.9, ball.rad * 0.3, 0, 0, 6.283); g.fill(); drawBall(ball.k, ball.x, ball.y, ball.rad, ball.rot); }
+      parts.forEach((p) => { g.globalAlpha = Math.max(0, p.l / 0.6); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, 3, 0, 6.283); g.fill(); }); g.globalAlpha = 1;
+      texts.forEach((t) => { g.globalAlpha = Math.max(0, Math.min(1, t.a)); g.font = '900 ' + (t.big ? 34 : 20) + 'px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = t.big ? 7 : 4; g.strokeStyle = '#5a2a00'; g.strokeText(t.t, t.x, t.y); g.fillStyle = t.c; g.fillText(t.t, t.x, t.y); }); g.globalAlpha = 1;
+      g.restore();
     };
     const tick = (now) => {
-      if (over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now; phase += freq * dt;
+      if (over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now; tNow += dt; shake = Math.max(0, shake - dt);
       if (ball) {
-        if (!ball.post) {
-          ball.t += dt / T; const t = Math.min(1, ball.t), e = t;
-          ball.x = 150 + (ball.tx - 150) * e; ball.y = 318 + (RY - 318) * t - 150 * 4 * t * (1 - t); ball.r = 20 - 7 * t;
-          if (ball.t >= 1) {
-            const d = Math.abs(ball.tx - hx(phase));
-            if (d < 21) { score++; ball.post = { type: 'swish', t: 0 }; texts.push({ t: d < 9 ? 'Perfect!' : 'Swish!', x: 150, y: 100, a: 1.4, c: '#ffe14d' }); S.candy(score % 9, Math.min(8, 2 + score)); buzz([10, 20, 20]); }
-            else if (d < 40) { ball.post = { type: 'rim', t: 0, vx: (ball.tx > hx(phase) ? 1 : -1) * 120, vy: -110 }; texts.push({ t: 'Rim!', x: ball.x, y: 100, a: 1, c: '#fff' }); S.x(); }
-            else { ball.post = { type: 'miss', t: 0, vx: 0, vy: 20 }; S.wrong(); }
-          }
-        } else {
-          const p = ball.post; p.t += dt;
-          if (p.type === 'swish') { ball.y += 150 * dt; ball.x += (hx(phase) - ball.x) * 4 * dt; if (p.t > 0.45) ball = null; }
-          else { p.vy += 520 * dt; ball.x += p.vx * dt; ball.y += p.vy * dt; if (ball.y > 380) ball = null; }
-          if (!ball) { freq = 1.1 + shots * 0.1; if (shots >= 10) return finish(); }
+        ball.t += dt / 0.62; ball.rot += dt * 5; const tg = { x: ball.tx, y: ball.ty }, p = pathAt(tg, Math.min(1, ball.t)); ball.x = p.x; ball.y = p.y; ball.rad = p.rad;
+        if (ball.t >= 1) {
+          let best = null, bd = 9; rings.forEach((q) => { const d = Math.hypot((ball.tx - q.x) / (20 * q.s), (ball.ty - q.y) / (11 * q.s)); if (d < bd) { bd = d; best = q; } });
+          if (best && bd < 0.62 && !best.ball) { best.ball = ball.k; best.drop = 1; filled++; burst(best.x, best.y, ['#fff', '#ffe14d', ball.k.endsWith('r') ? '#ff4d7a' : '#7ee21f'], 12); say(bd < 0.22 ? 'Perfect!' : 'Swish!', best.x, best.y - 26, '#fff'); S.candy(filled % 9, Math.min(8, 2 + filled)); buzz([10, 20, 20]); checkLines(); }
+          else { const side = best ? Math.sign(ball.tx - best.x) || 1 : 1, onBoard = ball.ty > TOPY - 6 && ball.ty < BOTY + 14 && Math.abs(ball.tx - 151) < 150; loose.push({ k: ball.k, x: ball.x, y: ball.y, rad: ball.rad, rot: ball.rot, vx: side * (best && bd < 1.5 ? 70 : 20), vy: best && bd < 1.5 ? -150 : -40, life: 0 }); if (best && bd < 1.5) { say(best.ball ? 'Taken!' : 'Rim!', ball.x, ball.y - 20, '#fff'); S.x(); buzz(14); } else { S.wrong(); } if (!onBoard) loose[loose.length - 1].vy = 60; }
+          ball = null; if (left <= 0 || filled >= 16) setTimeout(finish, 1100);
         }
       }
-      texts.forEach((t) => { t.y -= 22 * dt; t.a -= dt * 0.9; }); for (let i = texts.length - 1; i >= 0; i--) if (texts[i].a <= 0) texts.splice(i, 1);
-      $('quickBar').style.width = ((10 - shots) / 10 * 100) + '%'; $('quickInfo').textContent = 'Shots left ' + (10 - shots) + ' · baskets ' + score;
+      loose.forEach((b) => { b.vy += 520 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.rot += dt * 7; b.rad = Math.min(20, b.rad + dt * 5); b.life += dt; }); for (let i = loose.length - 1; i >= 0; i--) if (loose[i].y > 400) loose.splice(i, 1);
+      rings.forEach((q) => { q.glow = Math.max(0, q.glow - dt); q.drop = Math.max(0, q.drop - dt * 2.2); });
+      parts.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.l -= dt; }); for (let i = parts.length - 1; i >= 0; i--) if (parts[i].l <= 0) parts.splice(i, 1);
+      texts.forEach((t) => { t.y -= 24 * dt; t.a -= dt * 1.1; }); for (let i = texts.length - 1; i >= 0; i--) if (texts[i].a <= 0) texts.splice(i, 1);
+      $('quickBar').style.width = (left / BALLS * 100) + '%'; $('quickInfo').textContent = 'Balls ' + left + ' · hoops ' + filled + ' · lines ' + lines;
       draw(); quickRaf = requestAnimationFrame(tick);
     };
     quickRaf = requestAnimationFrame((t) => { last = t; tick(t); });
