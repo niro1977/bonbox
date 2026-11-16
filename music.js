@@ -55,8 +55,9 @@
     world(i) { world = i % 9; if (mood === 'game') play(); },
     stop() {
       running = false;
-      if (ctx && playing) { fadeOut(playing); playing = null; }
-      if (bus && ctx) bus.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.3);
+      // silent at once: the speaker button must cut the music right away
+      if (bus && ctx) { bus.gain.cancelScheduledValues(ctx.currentTime); bus.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.03); }
+      if (ctx && playing) { try { playing.src.stop(ctx.currentTime + 0.2); } catch (e) {} playing = null; }
     },
     duck(on) { ducked = !!on; applyGain(0.15); },
     sync() { if (enabled && S.isOn()) M.start(); else M.stop(); }

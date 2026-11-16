@@ -1432,3 +1432,6 @@ html[lang="es"] .med .tag{font-size:11px;letter-spacing:0;padding:4px 8px 6px!im
 .st-bolt.b3{left:66%;transform:rotate(-14deg);animation-delay:2.5s;animation-duration:2.7s}
 @keyframes stBolt{0%,100%{opacity:0}6%{opacity:1}10%{opacity:.25}14%{opacity:1}26%{opacity:.9}34%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.st-stage,.st-boss,.st-boss img,.st-bolt{animation:none}.st-boss .bl{opacity:0}.st-bolt{opacity:1}}
+
+/* the helper buttons keep their place under the board when messages float */
+.toast-gap{min-height:44px;flex:none}

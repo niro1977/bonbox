@@ -682,7 +682,7 @@
 
   let toastTimer = null;
   function toast(text) {
-    const t = $('toast'); if (t.parentElement !== document.body) { document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.add('show');
+    const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.add('show');
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
   }
   /* ---------- wallet: coins, hints, wands, helpers ---------- */
@@ -1269,7 +1269,7 @@
   $('introNext').onclick = () => { S.tap(); if (introStep >= PANELS.length) { if (V) V.say("Let's play!", true); endIntro(); } else { introStep++; renderIntro(); } };
   $('introSkip').onclick = () => { S.tap(); endIntro(); };
   document.addEventListener('pointerdown', () => { S.unlock(); if (M && $('intro').hidden) M.sync(); }, { once: true });
-  $('sndHome').onclick = toggleSound; $('sndGame').onclick = () => { S.tap(); syncOpts(); $('how').hidden = false; };
+  $('sndHome').onclick = toggleSound; $('sndGame').onclick = toggleSound;
   $('homeBtn').onclick = () => { $('win').hidden = true; toMap(); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
   $('reviveBtn').onclick = () => { S.tap(); watchAd(() => {
