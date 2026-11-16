@@ -18,6 +18,7 @@
     end1: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.',
     end2: 'Vinegar took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!',
     end3: 'From that day on, Vinegar was the sweetest cloud in Candy Land, and the Bonbox was full again. Thank you for playing!',
+    perfectword: 'Perfect!',
     letsplay: "Let's play!",
     first: 'Sweet!', yummy: 'Yummy!', tasty: 'Tasty!', nice: 'Nice one!', delicious: 'Delicious!',
     perfect: 'Delicious! Perfect!', divine: 'Divine! Perfect!', sugartastic: 'Sugar-tastic! Perfect!',
@@ -85,7 +86,14 @@
     });
   }
 
-  const any = (a) => a[Math.floor(Math.random() * a.length)];
+  // a shuffled bag per group: every line of the group is used once before any of them comes back, and never the same line twice in a row
+  const bags = {}, lastOf = {};
+  const any = (key, a) => {
+    let b = bags[key];
+    if (!b || !b.length) { b = bags[key] = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } if (b.length > 1 && b[b.length - 1] === lastOf[key]) b.unshift(b.pop()); }
+    return (lastOf[key] = b.pop());
+  };
+  const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty'];
   const V = {
     available() { return true; },
     isEnabled() { return enabled; },
@@ -101,11 +109,12 @@
       const id = CLIPS[textOrId] ? textOrId : ID_OF[textOrId];
       if (id) playClip(id, CLIPS[id]); else { stop(); speakFallback(textOrId); }
     },
-    praise() { V.say(any(['yummy', 'tasty', 'nice', 'delicious'])); },
-    first() { V.say('first'); },
-    win(hearts) { V.say(hearts >= 3 ? any(['divine', 'sugartastic', 'perfect']) : hearts === 2 ? any(['delicious', 'verytasty']) : 'close', true); },
+    praise() { V.say(any('praise', PRAISE)); },
+    pick(key, list) { return any(key, list); },
+    first() { V.say(any('praise', PRAISE)); },
+    win() { V.say('perfectword', true); },   // a finished level is always "Perfect!"
     lose() { V.say('lose', true); },
-    start(lv, tier) { V.say(tier === 'extreme' ? 'extremehard' : tier === 'veryhard' ? 'veryhard' : tier === 'hard' ? 'hard' : any(['go', 'ready']), true); }
+    start(lv, tier) { V.say(tier === 'extreme' ? 'extremehard' : tier === 'veryhard' ? 'veryhard' : tier === 'hard' ? 'hard' : any('go', ['go', 'ready']), true); }
   };
   document.addEventListener('pointerdown', () => { if (enabled) preload(); }, { once: true });
   root.CandokuVoice = V;

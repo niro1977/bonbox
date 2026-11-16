@@ -995,7 +995,7 @@
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
     $('reward').hidden = false; S.win(); buzz([25, 30, 45]);
     r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900); setTimeout(() => flyItems(r), 1000);
-    if (V) setTimeout(() => V.say(r.big ? 'bigreward' : r.p.wands ? 'wandget' : ['reward1', 'reward2', 'reward3'][Math.floor(Math.random() * 3)], true), 350);
+    if (V) setTimeout(() => V.say(r.big ? 'bigreward' : r.p.wands ? 'wandget' : V.pick('reward', ['reward1', 'reward2', 'reward3']), true), 350);
   }
   // the coins of a prize fly up into the top-bar wallet by themselves while the card is showing
   function flyReward(r) {
@@ -1161,7 +1161,7 @@
       await A(body, [{ transform: tf(-60, 0.7, 0.7, 0), opacity: 0 }, { transform: tf(3, 1.06, 0.94, 0), opacity: 1, offset: 0.7 }, { transform: tf(0, 1, 1, 0), opacity: 1 }], 480, out);
       let side = 1;
       while (live()) {
-        const H = 40 + Math.random() * 14, lean = (2 + Math.random() * 3) * side; side = -side;
+        const H = 28 + Math.random() * 8, lean = (2 + Math.random() * 3) * side; side = -side;   // a lower hop: the bear never climbs over the title
         show(1);
         await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(-3, 0.99, 1.02, lean) }, { transform: tf(0, 1.01, 0.99, -lean * 0.6) }, { transform: tf(-2, 0.99, 1.01, lean * 0.4) }, { transform: tf(0, 1, 1, 0) }], 760 + Math.random() * 380, soft); if (!live()) break;
         show(2); await A(body, [{ transform: tf(0, 0.97, 1.04, 0) }, { transform: tf(0, 1.05, 0.93, 0) }], 150, out); if (!live()) break;
@@ -1185,7 +1185,7 @@
     await A(body, [{ transform: tf(-70, 0.6, 0.6, -20), opacity: 0 }, { transform: tf(4, 1.1, 0.9, 4), opacity: 1, offset: 0.7 }, { transform: tf(0, 1, 1, 0), opacity: 1 }], 520, out);
     let dir = 1;
     while (live()) {
-      const H = 38 + Math.random() * 16, lean = (3 + Math.random() * 4) * dir; dir = -dir;
+      const H = 28 + Math.random() * 8, lean = (3 + Math.random() * 4) * dir; dir = -dir;
       // cheer and sway
       await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(-2, 0.99, 1.02, lean * 0.8) }, { transform: tf(0, 1.01, 0.99, -lean * 0.5) }, { transform: tf(0, 1, 1, 0) }], 620 + Math.random() * 260, soft); if (!live()) break;
       // anticipation
