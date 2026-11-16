@@ -101,10 +101,14 @@
   document.addEventListener('pointerdown', (e) => { const b = e.target.closest && e.target.closest(PRESSABLE); if (!b || b.disabled || b.closest('#board')) return; pressedEl = b; b.classList.add('pressing'); S.press(); }, true);
   const liftPress = () => { if (!pressedEl) return; pressedEl.classList.remove('pressing'); pressedEl = null; S.release(); };
   document.addEventListener('pointerup', liftPress, true); document.addEventListener('pointercancel', liftPress, true);
+  // the wallet bar lives on <body>, fixed to the top: visible on the map and above every popup, so prizes can fly into it
+  (function liftWallet() { const w = document.querySelector('.wallet'); if (w) { document.body.appendChild(w); w.classList.add('topbar'); } })();
+  const anyOverlay = () => [...document.querySelectorAll('.overlay')].some((o) => !o.hidden && o.id !== 'wipe');
   function watchOverlays() {
     const quiet = { wipe: 1, coach: 1 }; let lastPop = 0;
     document.querySelectorAll('.overlay').forEach((ov) => {
       new MutationObserver(() => {
+        document.body.classList.toggle('ov-open', anyOverlay());
         const now = performance.now(), card = ov.querySelector('.card');
         if (!ov.hidden) {
           if (card) { card.classList.remove('popin'); void card.offsetWidth; card.classList.add('popin'); }
@@ -415,10 +419,11 @@
     show('game');
     if (resumed) setTimeout(() => toast('Welcome back! Continuing where you left off.'), 500);
     if (cur.shield) setTimeout(() => toast('🛡 Heart Shield is on!'), 900);
+    if (infOn()) setTimeout(() => toast('♾️ Unlimited hearts for ' + fmtMS(infUntil - Date.now()) + '!'), 1500);
     if (V && !preSpoken) setTimeout(() => V.start(lv, tierOf(lv)), 700);
     preSpoken = false;
     if (lv % 10 === 0) setTimeout(() => toast('👑 Boss level! Beat it for a big prize.'), 1200);
-    if (lv === 1 && (forceCoach || !store.get('seenCoach', false))) setTimeout(startCoach, 1000);
+    if (lv === 1 && (forceCoach || !store.get('seenCoach', false))) setTimeout(openTutorial, 900);
     if (lv > 1 && sizeFor(lv) === baseSize(lv) && baseSize(lv) > baseSize(lv - 1)) {
       const id = sizeFor(lv) - 1;
       $('unlockIcon').innerHTML = '<use href="#c' + id + '"/>'; $('unlockName').textContent = NAMES[id];
@@ -630,6 +635,7 @@
     if (solved()) win();
   }
   function mistake(y, x) {
+    if (infOn()) { toast('♾️ Unlimited hearts: no heart lost!'); S.x(); buzz(20); bearReact('happy'); return; }
     if (cur.shield) { cur.shield = false; toast('🛡 The shield saved your heart!'); S.hint(); buzz([20, 20]); bearReact('happy'); saveGame(); return; }
     cur.hearts--; buzz([40, 30, 40]); S.wrong();
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
@@ -653,7 +659,16 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
   }
   /* ---------- wallet: coins, hints, wands, helpers ---------- */
-  function give(p, noHold) { coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens'].forEach((k) => { items[k] += p[k] || 0; }); saveWallet(); updateHintUi(); }
+  let infUntil = store.get('infUntil', 0);
+  const infOn = () => Date.now() < infUntil;
+  const fmtMS = (ms) => { const t = Math.ceil(ms / 1000); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  function infTick() {
+    const on = infOn(), e = $('heartN'); document.body.classList.toggle('inf-on', on);
+    if (e) e.textContent = on ? '∞ ' + fmtMS(infUntil - Date.now()) : MAX_HEARTS;
+    const g = $('infTag'); if (g) { g.hidden = !on; if (on) g.textContent = '∞ ' + fmtMS(infUntil - Date.now()); }
+  }
+  setInterval(infTick, 1000);
+  function give(p, noHold) { if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens'].forEach((k) => { items[k] += p[k] || 0; }); saveWallet(); updateHintUi(); }
   const coinSvg = '<img class="ico" src="art/ic_coin.webp" alt="" draggable="false">';
   /* coins you win fly into the main wallet (the top chip, or a floating bank on the game screen) and the counter ticks up as each lands */
   let coinHold = 0, bankT = 0;
@@ -700,7 +715,7 @@
   function flyCoins(fromEl, amount, delay, held) {
     if (!amount || amount <= 0) return;
     if (!held) { coinHold += amount; updateHintUi(); }
-    const wal = $('walletCoins'), home = !$('home').hidden && wal && wal.getBoundingClientRect().width > 0 && wal.getBoundingClientRect().top >= -4;
+    const wal = $('walletCoins'), home = !!wal && wal.getBoundingClientRect().width > 0;
     const settle = () => { coinHold = Math.max(0, coinHold - amount); updateHintUi(); };
     if (!fromEl || !fromEl.getBoundingClientRect) { settle(); return; }
     const a = fromEl.getBoundingClientRect();   // measured now, so it still works if the card is closed this very moment
@@ -730,7 +745,7 @@
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
-    set('heartN', MAX_HEARTS); set('hintBadge', hintsLeft); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
+    set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : MAX_HEARTS); set('hintBadge', hintsLeft); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
     $('hintBtn').classList.toggle('empty', hintsLeft <= 0); $('wandBtn').classList.toggle('empty', wands <= 0);
     set('sweepBtnBadge', items.sweeper); set('lensBtnBadge', items.lens); $('sweepBtn').classList.toggle('empty', items.sweeper <= 0); $('lensBtn').classList.toggle('empty', items.lens <= 0);
   }
@@ -841,13 +856,13 @@
     for (let i = 0; i < list.length; i++) { r -= wt[i]; if (r <= 0) return list[i]; }
     return list[0];
   }
-  const PICO = { coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens' };
-  const PNAME = { coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier' };
+  const PICO = { inf: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens' };
+  const PNAME = { inf: 'min of unlimited hearts', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier' };
   const prizeKeys = (p) => Object.keys(PICO).filter((k) => p[k]);
   function prizeHtml(p) {
-    return prizeKeys(p).map((k) => '<img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>+' + p[k] + '</b>').join('');
+    return prizeKeys(p).map((k) => '<img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>+' + p[k] + (k === 'inf' ? 'm ∞' : '') + '</b>').join('');
   }
-  function prizeText(p) { return prizeKeys(p).map((k) => p[k] + ' ' + PNAME[k] + (p[k] > 1 && k !== 'coins' ? 's' : '') + (k === 'coins' && p[k] > 1 ? 's' : '')).join(' and '); }
+  function prizeText(p) { return prizeKeys(p).map((k) => p[k] + ' ' + PNAME[k] + (p[k] > 1 && k !== 'coins' && k !== 'inf' ? 's' : '') + (k === 'coins' && p[k] > 1 ? 's' : '')).join(' and '); }
   /* every prize pops up with a message and the narrator, one after another */
   const rewardQueue = []; let rewardOpen = false, curReward = null;
   function announce(p, title, big, html) {
@@ -858,7 +873,7 @@
     rewardOpen = true;
     $('rwTitle').textContent = r.title || 'You got a prize!';
     const kk = prizeKeys(r.p);
-    $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>+' + r.p[k] + '</b></div>').join('');
+    $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + r.p[k] + ' min' : '+' + r.p[k]) + '</b></div>').join('');
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
     $('reward').hidden = false; S.win(); buzz([25, 30, 45]);
     r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900); setTimeout(() => flyItems(r), 1000);
@@ -1192,12 +1207,56 @@
     $('coachText').textContent = st.text; $('coachStep').textContent = 'Tutorial ' + (coachStep + 1) + ' / ' + COACH.length;
     $('coachNext').textContent = coachStep === COACH.length - 1 ? "Let's play!" : 'Next';
   }
-  function startCoach() { if (!cur || $('game').hidden) return; forceCoach = false; coachStep = 0; $('coach').hidden = false; coachPlace(); }
+
+  /* ---------- visual tutorial: every rule is SHOWN on a small animated board, right vs wrong ---------- */
+  const TREG = [[0, 0, 0, 1], [2, 2, 1, 1], [2, 3, 3, 1], [2, 3, 3, 3]], TSOL = [[0, 1], [1, 3], [2, 0], [3, 2]], TCOL = ['#22b8ff', '#ffd400', '#ff52c8', '#7ee21f'];
+  function tutBoard(o) {
+    const has = (l, y, x) => (l || []).some((c) => c[0] === y && c[1] === x); let hh = '<div class="tb' + (o.bad ? ' isbad' : o.good ? ' isgood' : '') + '">';
+    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
+      const k = (o.candies || []).findIndex((c) => c[0] === y && c[1] === x);
+      hh += '<i class="tc' + (has(o.hi, y, x) ? ' hi' : '') + (has(o.red, y, x) ? ' red' : '') + '" data-p="' + y + x + '" style="--c:' + TCOL[TREG[y][x]] + '">' + (k >= 0 ? '<svg style="animation-delay:' + (0.15 + k * 0.18) + 's"><use href="#c' + ((o.ids || [0, 2, 3, 6])[k]) + '"/></svg>' : has(o.xs, y, x) ? '<u></u>' : '') + '</i>';
+    }
+    return hh + '</div>' + (o.bad ? '<b class="tmark bad">✗</b>' : o.good ? '<b class="tmark good">✓</b>' : '');
+  }
+  const pair = (good, bad) => '<div class="tpair"><div class="tside">' + tutBoard(Object.assign({ good: 1 }, good)) + '</div><div class="tside">' + tutBoard(Object.assign({ bad: 1 }, bad)) + '</div></div>';
+  const rowOf = (y) => [0, 1, 2, 3].map((x) => [y, x]), colOf = (x) => [0, 1, 2, 3].map((y) => [y, x]), regOf = (r) => { const o = []; TREG.forEach((rw, y) => rw.forEach((v, x) => { if (v === r) o.push([y, x]); })); return o; };
+  const TUT = [
+    { t: 'How to mark', d: 'Tap a square for an X (no candy here). Double-tap to place a candy.', h: () => '<div class="tsolo">' + tutBoard({}) + '<span class="thand" id="tHand">👆</span></div>', run: tutHand },
+    { t: 'Rows and columns', d: 'Two candies can never share a row or a column.', h: () => pair({ candies: TSOL, hi: rowOf(0).concat(colOf(1)) }, { candies: [[0, 0], [0, 3]], red: rowOf(0), ids: [0, 2] }) },
+    { t: 'One per colour', d: 'Each colour area holds exactly one candy.', h: () => pair({ candies: TSOL, hi: regOf(2) }, { candies: [[1, 1], [3, 0]], red: regOf(2), ids: [3, 6] }) },
+    { t: 'No touching!', d: 'Not side by side, and not even corner to corner.', h: () => pair({ candies: TSOL }, { candies: [[1, 1], [2, 2]], red: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2], [1, 1]], ids: [0, 3] }) },
+    { t: 'Hearts & helpers', d: 'A wrong candy costs a heart. Stuck? The light bulb gives a hint and the wand places a candy for you.', h: () => '<div class="thelp"><span class="thearts"><img src="art/ic_heart.webp" alt=""><img src="art/ic_heart.webp" alt=""><img class="brk" src="art/ic_heart.webp" alt=""></span><span class="ttools"><img src="art/ic_hint.webp" alt=""><img src="art/ic_wand.webp" alt=""></span></div>' }
+  ];
+  let tutI = 0, tutT = [];
+  function tutHand() {
+    const box = $('tutStage'), hand = $('tHand'); if (!hand) return; const cell = (p) => box.querySelector('.tc[data-p="' + p + '"]');
+    const go = (p) => { const c = cell(p), b = box.querySelector('.tsolo').getBoundingClientRect(), r = c.getBoundingClientRect(); hand.style.left = (r.left - b.left + r.width / 2) + 'px'; hand.style.top = (r.top - b.top + r.height / 2) + 'px'; };
+    const tap = () => { hand.classList.remove('tap'); void hand.offsetWidth; hand.classList.add('tap'); S.tap(); };
+    const loop = () => {
+      box.querySelectorAll('.tc').forEach((c) => { c.innerHTML = ''; });
+      const seq = [[300, () => go('11')], [1000, () => { tap(); cell('11').innerHTML = '<u></u>'; }], [1900, () => go('22')], [2600, () => { tap(); cell('22').innerHTML = '<u></u>'; }],
+        [3500, () => go('01')], [4200, tap], [4450, () => { tap(); cell('01').innerHTML = '<svg><use href="#c0"/></svg>'; S.candy(0, 3); }], [6200, loop]];
+      seq.forEach((q) => tutT.push(setTimeout(q[1], q[0])));
+    };
+    loop();
+  }
+  function tutShow() {
+    tutT.forEach(clearTimeout); tutT = []; const s = TUT[tutI];
+    $('tutTitle').textContent = s.t; $('tutText').textContent = s.d; $('tutStage').innerHTML = s.h(); $('tutDots').innerHTML = TUT.map((x, i) => '<i class="' + (i === tutI ? 'on' : '') + '"></i>').join('');
+    $('tutNext').textContent = tutI === TUT.length - 1 ? "Let's play!" : 'Next'; $('tutBack').hidden = tutI === 0; if (s.run) setTimeout(s.run, 60);
+  }
+  function openTutorial() { forceCoach = false; tutI = 0; $('tutorial').hidden = false; tutShow(); }
+  function closeTutorial() { tutT.forEach(clearTimeout); tutT = []; store.set('seenCoach', true); $('tutorial').hidden = true; }
+  $('tutNext').onclick = () => { if (tutI >= TUT.length - 1) closeTutorial(); else { tutI++; tutShow(); } };
+  $('tutBack').onclick = () => { if (tutI > 0) { tutI--; tutShow(); } };
+  $('tutSkip').onclick = closeTutorial;
+
+  function startCoachOld() { if (!cur || $('game').hidden) return; forceCoach = false; coachStep = 0; $('coach').hidden = false; coachPlace(); }
   function endCoach() { store.set('seenCoach', true); $('coach').hidden = true; S.tap(); }
   $('coachNext').onclick = () => { S.tap(); if (coachStep >= COACH.length - 1) endCoach(); else { coachStep++; coachPlace(); } };
   $('coachSkip').onclick = endCoach;
   window.addEventListener('resize', () => { if (!$('coach').hidden) coachPlace(); });
-  $('replayCoach').onclick = () => { $('how').hidden = true; forceCoach = true; transition(() => startLevel(1)); };
+  $('replayCoach').onclick = () => { $('how').hidden = true; openTutorial(); };
 
   /* ---------- collection: outfits, board frames, stickers ---------- */
   // two outfits at the start, then a new one every 15 levels passed; each has a standing pose (map, collection) and an arms-up pose (win screen, the in-air jump)
@@ -1460,8 +1519,8 @@
   function chestLoot(tier) {
     const common = () => { let p; do { p = rollPrize(0, false); } while (p.rare); return p; };
     if (tier === 'small') return mergePrize({ coins: 8 }, common());
-    if (tier === 'med') return mergePrize(mergePrize({ coins: 15 }, common()), rollPrize(3, true));
-    return mergePrize(mergePrize(mergePrize({ coins: 30 }, rollPrize(6, true)), rollPrize(6, true)), { wands: 1 });
+    if (tier === 'med') return mergePrize(mergePrize({ coins: 15, inf: 15 }, common()), rollPrize(3, true));
+    return mergePrize(mergePrize(mergePrize({ coins: 30 }, rollPrize(6, true)), rollPrize(6, true)), { wands: 1, inf: 30 });
   }
   function renderChest() {
     const art = document.querySelector('#chest .chest-art'), full = chest.n >= CHEST_AT, b = $('chestOpen'), q = chest.q;
@@ -1580,7 +1639,7 @@
   }
 
   /* ---------- Candy Pass: a vertical track of prizes; every level won without losing a heart climbs one step ---------- */
-  const PASS = [{ coins: 10 }, { coins: 15, hints: 1 }, { coins: 20 }, { wands: 1 }, { coins: 25, shield: 1 }, { coins: 30 }, { lens: 1, coins: 15 }, { coins: 40 }, { sweeper: 1, coins: 20 }, { coins: 75, wands: 1, double: 1 }];
+  const PASS = [{ coins: 10 }, { coins: 15, hints: 1 }, { coins: 20 }, { wands: 1 }, { coins: 25, shield: 1 }, { coins: 15, inf: 15 }, { lens: 1, coins: 15 }, { coins: 40 }, { sweeper: 1, coins: 20 }, { coins: 75, wands: 1, double: 1 }];
   let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
   function passAdvance() {
     if (pass.step >= PASS.length) return;
@@ -1612,7 +1671,7 @@
 
   /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
      platform, every level you lose drops him one. Each platform holds a bigger prize; a golden chest waits on top. Once a day. ---------- */
-  const CLIMB = [{ coins: 10 }, { hints: 1 }, { coins: 20, lens: 1 }, { shield: 1, coins: 15 }, { wands: 1 }, { coins: 40, sweeper: 1 }, { coins: 80, wands: 1, hints: 2, double: 1 }], CLIMB_MS = 24 * 3600e3;
+  const CLIMB = [{ coins: 10 }, { hints: 1, inf: 15 }, { coins: 20, lens: 1 }, { shield: 1, coins: 15 }, { wands: 1, inf: 30 }, { coins: 40, sweeper: 1 }, { coins: 80, wands: 1, hints: 2, double: 1 }], CLIMB_MS = 24 * 3600e3;
   let climb = Object.assign({ start: 0, step: 0, cl: [], day: '' }, store.get('climb', {}));
   const climbOn = () => climb.start > 0 && Date.now() < climb.start + CLIMB_MS;
   const climbLeft = () => Math.max(0, climb.start + CLIMB_MS - Date.now());
@@ -1671,11 +1730,11 @@
   /* ---------- prize items fly into the matching counter at the top ---------- */
   function flyItems(r) {
     if (!r || !r.p) return;
-    const tgt = { hints: 'hintN', wands: 'wandN' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
+    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
     keys.forEach((k, n) => {
       const from = [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
       const a = img.getBoundingClientRect(); if (!a.width) return;
-      const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width && !$('home').hidden;
+      const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width > 0;
       const tx = ok ? tb.left + tb.width / 2 - 12 : innerWidth * 0.62, ty = ok ? tb.top + tb.height / 2 : 20;
       flyThing({ src: img.src, size: 46, sx: a.left + a.width / 2, sy: a.top + a.height / 2, tx, ty, hx: 0, hy: -34, delay: 80 + n * 140, dur: 820 }).then(() => {
         const c = chip && (chip.closest('.chip') || chip); if (c && ok) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }

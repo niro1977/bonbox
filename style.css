@@ -1209,3 +1209,46 @@ body.in-game .bar .icon{color:#fff!important}
 .cl-prize{white-space:normal;width:128px;text-align:center;top:auto;bottom:calc(100% - 12px);line-height:1.5}
 .cl-plat.on:not(.done) .cl-prize{display:none}
 .cl-prize em{white-space:nowrap;display:inline-block}
+
+/* ===== the wallet bar is always on screen ===== */
+.wallet.topbar{position:fixed!important;top:0;left:50%;transform:translateX(-50%);width:min(460px,100%);margin:0!important;z-index:44;box-sizing:border-box;padding-top:max(6px,env(safe-area-inset-top))!important}
+#home{padding-top:54px}
+body.in-game .wallet.topbar{display:none}
+body.in-game.ov-open .wallet.topbar{display:flex}
+body.ov-open .wallet.topbar{pointer-events:none}
+.overlay{padding-top:58px}
+body.inf-on #heartN{color:#e0245e;font-size:12px}
+.inftag{position:absolute;transform:translateY(-22px);background:linear-gradient(#ff7aa8,#e0245e);color:#fff;font:900 11px 'Nunito',sans-serif;border-radius:99px;padding:1px 8px;border:2px solid #fff;white-space:nowrap;z-index:3}
+/* ===== visual tutorial ===== */
+#tutorial .card{gap:8px}
+.tstage{min-height:170px;display:grid;place-items:center}
+.tpair{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%}
+.tside{position:relative;display:grid;place-items:center}
+.tsolo{position:relative;width:170px}
+.tb{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:4px;border-radius:12px;background:#3a1d72;box-shadow:0 4px 0 rgba(0,0,0,.3);width:100%;aspect-ratio:1;border:3px solid #fff}
+.tb.isgood{border-color:#34d058}.tb.isbad{border-color:#ff4d5e}
+.tc{position:relative;border-radius:5px;background:var(--c);display:grid;place-items:center;box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -2px 0 rgba(0,0,0,.18)}
+.tc svg{width:82%;height:82%;animation:tpop .4s cubic-bezier(.23,1,.32,1) both}
+.tc u{width:54%;height:54%;background:linear-gradient(45deg,transparent 42%,#3a1d72 42% 58%,transparent 58%),linear-gradient(-45deg,transparent 42%,#3a1d72 42% 58%,transparent 58%);opacity:.75}
+.tc.hi{animation:thi 1.4s ease-in-out infinite}
+.tc.red{animation:tred 1s ease-in-out infinite}
+.tc.red::after{content:"";position:absolute;inset:0;border-radius:5px;background:rgba(255,30,60,.55);animation:tredo 1s ease-in-out infinite}
+@keyframes thi{50%{filter:brightness(1.35);transform:scale(1.04)}}
+@keyframes tred{50%{transform:scale(.94)}}
+@keyframes tredo{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes tpop{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+.tmark{position:absolute;right:-8px;top:-10px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:19px;font-weight:900;border:3px solid #fff;box-shadow:0 2px 0 rgba(0,0,0,.3);animation:tpop .4s .5s cubic-bezier(.23,1,.32,1) both}
+.tmark.good{background:#34d058}.tmark.bad{background:#ff4d5e}
+.thand{position:absolute;font-size:34px;transform:translate(-30%,-10%);transition:left .55s cubic-bezier(.77,0,.175,1),top .55s cubic-bezier(.77,0,.175,1);pointer-events:none;filter:drop-shadow(0 3px 2px rgba(0,0,0,.4));left:50%;top:110%}
+.thand.tap{animation:ttap .22s ease-out}
+@keyframes ttap{50%{transform:translate(-30%,-10%) scale(.78)}}
+.ttext{font-size:15px;line-height:1.3;min-height:40px;margin:0}
+.tdots{display:flex;gap:6px;justify-content:center}
+.tdots i{width:9px;height:9px;border-radius:50%;background:#c9bde8}.tdots i.on{background:#7a2fd0;transform:scale(1.25)}
+.trow{display:flex;gap:10px;justify-content:center}.trow .btn{min-width:110px}
+.thelp{display:flex;flex-direction:column;gap:14px;align-items:center}
+.thearts img{width:48px;height:48px}.thearts .brk{animation:tbrk 1.8s ease-in-out infinite}
+@keyframes tbrk{0%,40%{filter:none;transform:none}55%{transform:scale(1.25) rotate(-8deg)}70%,100%{filter:grayscale(1) brightness(.7);transform:scale(.9)}}
+.ttools img{width:54px;height:54px;margin:0 8px;animation:evbob 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.tc.hi,.tc.red,.tc.red::after,.thearts .brk,.ttools img{animation:none}}
+.tb{grid-template-rows:repeat(4,1fr)}.tc{min-height:0;min-width:0;overflow:hidden}

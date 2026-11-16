@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon" href="icon-180.png?v=85">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
-<link rel="stylesheet" href="style.css?v=121">
+<link rel="stylesheet" href="style.css?v=124">
 </head>
 <body>
 <div id="scene" aria-hidden="true"></div>
@@ -170,7 +170,7 @@
 <main id="game" class="screen" hidden>
   <div class="bar">
     <button class="icon" id="backBtn" type="button" aria-label="Back"><svg><use href="#back"/></svg></button>
-    <div class="title"><b id="gTitle">Level 1</b><div class="hearts" id="hearts"></div></div>
+    <div class="title"><b id="gTitle">Level 1</b><span class="inftag" id="infTag" hidden></span><div class="hearts" id="hearts"></div></div>
     <button class="icon sndBtn" id="sndGame" type="button" aria-label="Sound"><svg><use href="#snd-on"/></svg></button>
     <button class="icon" id="gearBtn" type="button" aria-label="How to play"><svg><use href="#gear"/></svg></button>
   </div>
@@ -187,7 +187,7 @@
     <button class="btn" id="maybeBtn" type="button" aria-pressed="false" aria-label="Maybe" title="Maybe"><img class="tico" src="art/tool_maybe.webp" alt="" draggable="false"></button>
     <button class="btn" id="clearBtn" type="button" aria-label="Restart" title="Restart"><img class="tico" src="art/tool_restart_red.webp" alt="" draggable="false"></button>
   </div>
-  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v121</span></p>
+  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v124</span></p>
 </main>
 
 <!-- WIN -->
@@ -321,6 +321,16 @@
   <h2>Events</h2>
   <div class="evgrid" id="evGrid"></div>
   <button class="btn main wide" id="eventsClose" type="button">Close</button>
+</div></div>
+
+<!-- VISUAL TUTORIAL -->
+<div id="tutorial" class="overlay" hidden><div class="card">
+  <h2 id="tutTitle">How to play</h2>
+  <div id="tutStage" class="tstage"></div>
+  <p id="tutText" class="ttext"></p>
+  <div class="tdots" id="tutDots"></div>
+  <div class="trow"><button class="btn" id="tutBack" type="button">Back</button><button class="btn main" id="tutNext" type="button">Next</button></div>
+  <button class="link" id="tutSkip" type="button">Skip</button>
 </div></div>
 
 <!-- CANDY CLIMB -->
@@ -474,12 +484,12 @@
   <button type="button" id="navShop"><img class="navico" src="art/nav_shop.webp" alt="" draggable="false"><span>Shop</span></button>
   <button type="button" id="navRank"><img class="navico" src="art/nav_rank.webp" alt="" draggable="false"><span>Ranking</span></button>
 </nav>
-<script src="engine.js?v=121"></script>
-<script src="hints.js?v=121"></script>
-<script src="seeds.js?v=121"></script>
-<script src="sound.js?v=121"></script>
-<script src="music.js?v=121"></script>
-<script src="voice.js?v=121"></script>
-<script src="app.js?v=121"></script>
+<script src="engine.js?v=124"></script>
+<script src="hints.js?v=124"></script>
+<script src="seeds.js?v=124"></script>
+<script src="sound.js?v=124"></script>
+<script src="music.js?v=124"></script>
+<script src="voice.js?v=124"></script>
+<script src="app.js?v=124"></script>
 </body>
 </html>
