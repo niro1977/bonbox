@@ -264,7 +264,7 @@
       b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tier) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
       b.dataset.lv = lv; if (lv % 10 === 0) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting'); else if (lv >= ULTRA_FROM) b.classList.add('ultra');
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
-      if (tier === 'normal') { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); }
+      { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); if (tier === 'normal') { b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); } }   // every button of a world wears the colour of that world's ribbon
       let html = '' + lv;
       if (tier !== 'normal') html += '<span class="badge">' + (tier === 'hard' ? 'HARD' : tier === 'extreme' ? 'EXTREME' : 'VERY HARD') + '</span>';
       if (lv < level && stars[lv]) { b.classList.add('hasst'); html += '<span class="st">'; for (let i = 1; i <= 3; i++) html += starSvg(i <= stars[lv]); html += '</span>'; }

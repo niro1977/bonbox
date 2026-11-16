@@ -1479,3 +1479,11 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 #ranking .namefield{color:#5a2a00!important;font-weight:800;text-shadow:none}
 #ranking .namefield input{background:#fff!important;color:#3a1500!important;border:2px solid #c98a4d!important;box-shadow:inset 0 2px 3px rgba(90,40,0,.18);-webkit-text-fill-color:#3a1500;caret-color:#c2185b;text-shadow:none;-webkit-text-stroke:0}
 #ranking .namefield input::placeholder{color:#a8876a}
+
+/* every level button has the colour of its world's ribbon; special levels add a gold ring, locked ones are the same colour, faded */
+.node.locked::after{background-image:var(--nimg)!important;opacity:.62}
+.node.hard::after,.node.veryhard::after,.node.extreme::after{border-radius:50%;box-shadow:0 0 0 3px #ffd84a,0 0 0 5px #b06a00}
+.node.extreme::after{box-shadow:0 0 0 3px #1a1030,0 0 0 5px #ffd84a}
+.node.ultra::after{box-shadow:none}
+.node.locked.hard::after,.node.locked.veryhard::after,.node.locked.extreme::after{box-shadow:0 0 0 3px rgba(255,216,74,.55)}
+.node.locked.ultra::after{box-shadow:none}
