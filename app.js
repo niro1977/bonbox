@@ -770,7 +770,7 @@
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
-    set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : 5)); set('hintBadge', hintsLeft); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
+    set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : 5)); set('hintBadge', hintsLeft); set('shieldN', items.shield || 0); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
     $('hintBtn').classList.toggle('empty', hintsLeft <= 0); $('wandBtn').classList.toggle('empty', wands <= 0);
     set('sweepBtnBadge', items.sweeper); set('lensBtnBadge', items.lens); $('sweepBtn').classList.toggle('empty', items.sweeper <= 0); $('lensBtn').classList.toggle('empty', items.lens <= 0);
   }
@@ -1997,7 +1997,7 @@
   /* ---------- prize items fly into the matching counter at the top ---------- */
   function flyItems(r) {
     if (!r || !r.p) return;
-    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
+    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'shieldN', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
     keys.forEach((k, n) => {
       const from = [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
       const a = img.getBoundingClientRect(); if (!a.width) return;
