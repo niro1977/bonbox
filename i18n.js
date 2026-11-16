@@ -137,6 +137,8 @@
     'A 24-hour battle. Press Start, then win levels on the map: every win is one hit on Vinegar!': 'Una batalla de 24 horas. Presiona Iniciar y gana niveles en el mapa: ¡cada victoria es un golpe a Vinagre!',
     'Vinegar is hiding. He will be back in a few days.': 'Vinagre se esconde. Volverá en unos días.',
     'Pfff! Bye bye, X marks!': '¡Pfff! ¡Adiós, tus X!', 'One puff... and your X marks are gone!': 'Un soplido... ¡y tus X desaparecen!',
+    'Enjoying Bonbox?': '¿Te gusta Bonbox?', 'Tap the stars to rate the game': 'Toca las estrellas para calificar el juego', 'Not now': 'Ahora no', 'Rate on Google Play': 'Calificar en Google Play',
+    'Thank you! Your stars on Google Play help us a lot.': '¡Gracias! Tus estrellas en Google Play nos ayudan mucho.', 'Thank you! We will keep making the game better.': '¡Gracias! Seguiremos mejorando el juego.',
     'ACHOO!': '¡ACHÚ!', 'Tap to start': 'Toca para empezar', 'Welcome to Bonbox!': '¡Bienvenido a Bonbox!', "Let's play!": '¡A jugar!', 'Next': 'Siguiente', 'Skip': 'Saltar', 'Got it': 'Entendido',
     'Welcome! Your goal: put exactly ONE candy in every color. The row up here shows which candies you still need.': '¡Bienvenido! Tu meta: poner exactamente UN dulce en cada color. La fila de arriba muestra los dulces que te faltan.',
     'Tap a square to mark an X, a square that cannot hold a candy. Tap the X again to remove it. Drag across squares to mark many.': 'Toca una casilla para marcar una X: ahí no puede ir un dulce. Toca la X otra vez para quitarla. Arrastra el dedo para marcar varias.',

@@ -850,7 +850,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1368,7 +1368,28 @@
     await transition(() => { renderHome(); show('home'); scrollToLevel(p ? p.from : level); });
     if (p) { await sleep(120); await hopTo(p.from, p.to); }
   }
+  /* ---------- "Enjoying Bonbox?": asked only at a happy moment (right after a win), a few times at most, never again once answered ---------- */
+  const RATE_AT = [8, 25, 60, 120, 200];
+  let rate = Object.assign({ done: false, asked: 0 }, store.get('rate', {})), rateThen = null;
+  function shouldRate() { return !rate.done && rate.asked < RATE_AT.length && cleared >= RATE_AT[rate.asked] && cur && cur.hearts >= 2; }
+  function openRate(then) {
+    rate.asked++; store.set('rate', rate); rateThen = then || null;
+    const box = $('rateStars'); box.innerHTML = '';
+    for (let i = 1; i <= 5; i++) { const b = document.createElement('button'); b.type = 'button'; b.className = 'rstar'; b.dataset.n = i; b.setAttribute('aria-label', i + ' / 5'); b.innerHTML = '<img src="art/star_grey.webp" alt="" draggable="false">'; b.onclick = () => pickRate(i); box.appendChild(b); }
+    $('rateMsg').textContent = 'Tap the stars to rate the game'; $('rateGo').hidden = true; $('rateLater').textContent = 'Not now';
+    $('rate').hidden = false; S.popIn && S.popIn();
+  }
+  function pickRate(n) {
+    [...$('rateStars').children].forEach((b, i) => { b.querySelector('img').src = 'art/star_' + (i < n ? 'gold' : 'grey') + '.webp'; b.classList.toggle('on', i < n); });
+    rate.done = true; rate.stars = n; store.set('rate', rate); S.praise(n >= 4 ? 2 : 0); buzz(12);
+    const nat = NATIVE();
+    if (n >= 4) { $('rateMsg').textContent = 'Thank you! Your stars on Google Play help us a lot.'; const g = $('rateGo'); g.hidden = !(nat && nat.review) && !DBG; g.textContent = 'Rate on Google Play'; }
+    else { $('rateMsg').textContent = 'Thank you! We will keep making the game better.'; $('rateGo').hidden = true; }
+    $('rateLater').textContent = 'Close';
+  }
+  function closeRate() { $('rate').hidden = true; const t = rateThen; rateThen = null; if (t) t(); }
   async function nextLevel() {
+    if (!$('win').hidden && shouldRate()) { openRate(() => nextLevel()); return; }
     $('win').hidden = true;
     if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL) { await toMap(); maybeEnding(); return; }
     const from = cur.meta.level, to = level; pendingHop = null;
@@ -1445,6 +1466,8 @@
   }); };
   $('retryBtn').onclick = () => { S.tap(); if (!canPlay()) { $('lose').hidden = true; toMap(); setTimeout(openLives, 900); return; } $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily())); };
   $('nextBtn').onclick = () => { S.tap(); nextLevel(); };
+  $('rateLater').onclick = () => { S.tap(); closeRate(); };
+  $('rateGo').onclick = () => { S.tap(); const nat = NATIVE(); if (nat && nat.review) { try { nat.review(); } catch (e) {} } else if (DBG) toast('(test) the Google Play rating window opens here'); closeRate(); };
   $('shareBtn').onclick = async () => {
     const text = T('Bonbox 🍬 ' + cur.label + ' ' + cur.n + '×' + cur.n + ' solved' + (cur.hints ? '' : ' with no hints'));
     try {

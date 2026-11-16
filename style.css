@@ -1693,3 +1693,14 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 #questList,#ranking .rlist,#giftList,#gameList,#passList{max-height:calc(100svh - 400px);min-height:120px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 4px 8px}
 @supports not (height:100svh){#questList,#ranking .rlist,#giftList,#gameList,#passList{max-height:calc(100vh - 430px)}}
 #ranking .rlist{max-height:calc(100svh - 480px);min-height:96px}
+
+/* rate us */
+#rate .rate-bear{display:block;width:96px;height:96px;object-fit:contain;margin:-6px auto 0;filter:drop-shadow(0 5px 4px rgba(60,0,30,.35))}
+.rate-stars{display:flex;justify-content:center;gap:4px;margin:4px 0}
+.rstar{padding:0;background:none;border:0;width:17%;max-width:54px;aspect-ratio:1;transition:transform .12s}
+.rstar img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 2px rgba(90,40,0,.4))}
+.rstar.on{animation:rstar .35s cubic-bezier(.3,1.6,.5,1)}
+.rstar:active{transform:scale(.88)}
+@keyframes rstar{0%{transform:scale(.6)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+#rateMsg{min-height:2.4em;margin:2px 0}
+#rate .card h2{font-size:clamp(15px,4.7vw,20px)!important;white-space:nowrap}
