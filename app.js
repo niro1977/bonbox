@@ -284,7 +284,7 @@
     h.querySelector('.ha').animate([{ opacity: 0, offset: 0 }, { opacity: 0, offset: A0 }, { opacity: 1, offset: A0 + 0.03 }, { opacity: 1, offset: A1 - 0.02 }, { opacity: 0, offset: A1 + 0.01 }, { opacity: 0, offset: 1 }], { duration: T, fill: 'forwards' });
     h.querySelector('.hg').animate([{ opacity: 1, offset: 0 }, { opacity: 1, offset: A0 }, { opacity: 0, offset: A0 + 0.03 }, { opacity: 0, offset: A1 - 0.02 }, { opacity: 1, offset: A1 + 0.01 }, { opacity: 1, offset: 1 }], { duration: T, fill: 'forwards' });
     const sh = document.createElement('i'); sh.className = 'hopshadow'; sh.style.left = a.x + 'px'; sh.style.top = (a.y - 22) + 'px'; map.insertBefore(sh, h);
-    sh.animate([{ transform: 'translate(-50%,0) scale(1)', opacity: 0.38, offset: 0 }, { transform: 'translate(-50%,0) scale(1.1)', opacity: 0.4, offset: A0 }, { transform: 'translate(calc(-50% + ' + dx / 2 + 'px),' + dy / 2 + 'px) scale(.5)', opacity: 0.18, offset: (A0 + A1) / 2 },
+    sh.animate([{ transform: 'translate(-50%,0) scale(1)', opacity: 0.5, offset: 0 }, { transform: 'translate(-50%,0) scale(1.1)', opacity: 0.52, offset: A0 }, { transform: 'translate(calc(-50% + ' + dx / 2 + 'px),' + dy / 2 + 'px) scale(.55)', opacity: 0.3, offset: (A0 + A1) / 2 },
       { transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(1.15)', opacity: 0.4, offset: A1 + 0.04 }, { transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(1)', opacity: 0.38, offset: 1 }], { duration: T, fill: 'forwards' });
     const dust = (x, y) => { for (let n = 0; n < 6; n++) { const d = document.createElement('i'); d.className = 'hopdust'; d.style.left = x + 'px'; d.style.top = (y - 18) + 'px'; map.appendChild(d); const ax = (n < 3 ? -1 : 1) * (10 + Math.random() * 24), ay = -4 - Math.random() * 12;
       const q = d.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 0.85 }, { transform: 'translate(calc(-50% + ' + ax + 'px),calc(-50% + ' + ay + 'px)) scale(1.5)', opacity: 0 }], { duration: 420 + Math.random() * 160, easing: out, fill: 'both' }); q.onfinish = () => d.remove(); } };
@@ -635,7 +635,7 @@
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; saveGame(); freshScore(); score.run = 0; store.set('score', score); setTimeout(() => { S.lose(); if (V) V.lose(); $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; saveGame(); freshScore(); score.run = 0; store.set('score', score); climbLose(); setTimeout(() => { S.lose(); if (V) V.lose(); $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -1120,7 +1120,7 @@
     x.onclick = (e) => {
       e.stopPropagation(); S.tap();
       const ov = card.closest('.overlay'); if (!ov) return;
-      const ids = ['#rwOk', '#howClose', '#wheelClose', '#chestClose', '#questClose', '#giftClose', '#gamesClose', '#memClose', '#tossClose', '#passClose', '#quickClose', '#eventsClose', '#rankClose', '#hintCancel', '#shopClose', '#colClose', '#pfClose', '#homeBtn', '#loseHome', '#bonusClaim'];
+      const ids = ['#rwOk', '#howClose', '#wheelClose', '#chestClose', '#questClose', '#giftClose', '#gamesClose', '#memClose', '#tossClose', '#passClose', '#quickClose', '#eventsClose', '#climbClose', '#rankClose', '#hintCancel', '#shopClose', '#colClose', '#pfClose', '#homeBtn', '#loseHome', '#bonusClaim'];
       for (const id of ids) { const b = card.querySelector(id); if (b) { b.click(); if (ov.hidden) return; break; } }
       ov.hidden = true;                                   // any popup without its own button just closes
     };
@@ -1347,7 +1347,7 @@
     { id: 'a10', text: 'Daily Bonus streak of 7 days', goal: 7, get: () => Math.max(bonus.streak || 0, 0), prize: { wands: 1, coins: 50 } }];
   function freshWeek() { const k = weekKey(); if (!weekly || weekly.week !== k) { weekly = { week: k, solved: 0, hard: 0, flawless: 0, claimed: {} }; store.set('weekly', weekly); } }
   function trackSolved() {
-    freshWeek(); const flawless = cur.hearts >= MAX_HEARTS;
+    freshWeek(); const flawless = cur.hearts >= MAX_HEARTS; climbWin();
     stats.solved++; if (flawless) { passAdvance(); stats.flawless++; stats.run++; stats.maxRun = Math.max(stats.maxRun, stats.run); } else stats.run = 0; if (!cur.hints) stats.nohint++;
     if (cur.meta && cur.meta.kind === 'level' && cur.meta.level % 10 === 0) stats.bosses++;
     weekly.solved++; if (cur.tier !== 'normal') weekly.hard++; if (flawless) weekly.flawless++;
@@ -1388,7 +1388,7 @@
   let quests = store.get('quests', null), chest = store.get('chest', { n: 0 }), wheel = store.get('wheel', { date: '', extra: 0 });
   let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0, odd: 0, jars: 0, shoot: 0, hoop: 0, cart: 0 });
 
-  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events'].forEach((id) => { $(id).hidden = true; }); };
+  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb'].forEach((id) => { $(id).hidden = true; }); };
   const QDEF = [
     { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 12 },
     { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 15 },
@@ -1609,6 +1609,48 @@
     }
   }
 
+
+  /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
+     platform, every level you lose drops him one. Each platform holds a bigger prize; a golden chest waits on top. Once a day. ---------- */
+  const CLIMB = [{ coins: 10 }, { hints: 1 }, { coins: 20, lens: 1 }, { shield: 1, coins: 15 }, { wands: 1 }, { coins: 40, sweeper: 1 }, { coins: 80, wands: 1, hints: 2, double: 1 }], CLIMB_MS = 24 * 3600e3;
+  let climb = Object.assign({ start: 0, step: 0, cl: [], day: '' }, store.get('climb', {}));
+  const climbOn = () => climb.start > 0 && Date.now() < climb.start + CLIMB_MS;
+  const climbLeft = () => Math.max(0, climb.start + CLIMB_MS - Date.now());
+  const climbClaim = () => CLIMB.filter((x, i) => i < climb.step && !climb.cl[i]).length;
+  const fmtClock = (ms) => { const t = Math.floor(ms / 1000), hh = Math.floor(t / 3600), mm = Math.floor((t % 3600) / 60), ss = t % 60; return hh + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'); };
+  function climbWin() { if (!climbOn() || climb.step >= CLIMB.length) return; climb.step++; climb.moved = 1; store.set('climb', climb); setTimeout(() => toast('🧗 Candy Climb: platform ' + climb.step + ' / ' + CLIMB.length + '!'), 2400); }
+  function climbLose() { if (!climbOn() || climb.step <= 0) return; climb.step--; climb.moved = -1; store.set('climb', climb); setTimeout(() => toast('🧗 Candy Climb: down to platform ' + climb.step), 1400); }
+  function climbStart() {
+    if (climbOn()) return; if (climb.day === today()) { toast('Candy Climb is back tomorrow'); return; }
+    climb = { start: Date.now(), step: 0, cl: [], day: today(), moved: 0 }; store.set('climb', climb); S.unlock2(); buzz([20, 30, 40]); renderClimb(); updateSides();
+  }
+  function renderClimb() {
+    const box = $('climbTrack'), on = climbOn(), n = CLIMB.length; box.innerHTML = '';
+    const H = 74, top = 96, W = box.clientWidth || 270, px = (i) => W / 2 + (i % 2 ? 1 : -1) * W * 0.17, py = (i) => top + (n - 1 - i) * H + 40;
+    box.style.height = (top + n * H + 60) + 'px';
+    box.insertAdjacentHTML('beforeend', '<img class="cl-chest" src="art/3d_chest_large.webp" alt="" draggable="false" style="left:' + W / 2 + 'px;top:8px">');
+    for (let i = 0; i < n; i++) {
+      const reached = i < climb.step, done = !!climb.cl[i], d = document.createElement('div'); d.className = 'cl-plat' + (reached ? ' on' : '') + (done ? ' done' : ''); d.style.left = px(i) + 'px'; d.style.top = py(i) + 'px'; d.style.setProperty('--d', (i * 0.37 % 1.6).toFixed(2) + 's');
+      d.innerHTML = '<img src="art/climb_plat.webp" alt="" draggable="false"><i>' + (i + 1) + '</i><span class="cl-prize">' + (done ? '✓' : prizeChipsHtml(CLIMB[i])) + '</span>';
+      if (reached && !done) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main cl-claim'; b.textContent = 'Claim'; b.onclick = () => { climb.cl[i] = true; store.set('climb', climb); giveReward(CLIMB[i], i === n - 1 ? 'Top of the climb!' : 'Candy Climb!', i === n - 1); renderClimb(); updateSides(); }; d.appendChild(b); }
+      box.appendChild(d);
+    }
+    // the bear stands on the platform he reached (on the ground before the first one)
+    const st = climb.step, bx = st ? px(st - 1) : W / 2, by = st ? py(st - 1) - 26 : top + n * H + 28, bear = document.createElement('img');
+    bear.className = 'cl-bear'; bear.src = look.stand; bear.alt = ''; bear.draggable = false; bear.style.left = bx + 'px'; bear.style.top = by + 'px'; box.appendChild(bear);
+    if (climb.moved && on) {                      // he hops in from the platform he came from
+      const from = st - climb.moved, fx = from > 0 ? px(from - 1) : W / 2, fy = from > 0 ? py(from - 1) - 26 : top + n * H + 28, dx = fx - bx, dy = fy - by, kf = [];
+      for (let k = 0; k <= 10; k++) { const u = k / 10; kf.push({ transform: 'translate(calc(-50% + ' + (dx * (1 - u)).toFixed(1) + 'px),calc(-100% + ' + (dy * (1 - u) - 60 * 4 * u * (1 - u)).toFixed(1) + 'px))', offset: u * 0.85 }); }
+      kf.push({ transform: 'translate(-50%,-100%) scale(1.15,.82)', offset: 0.92 }, { transform: 'translate(-50%,-100%)', offset: 1 });
+      bear.animate(kf, { duration: 800, delay: 350, fill: 'backwards' }); setTimeout(() => { if (climb.moved > 0) S.hop(); else S.wrong(); }, 350);
+      climb.moved = 0; store.set('climb', climb);
+    }
+    $('climbInfo').textContent = on ? 'Win a level: up one platform. Lose a level: down one. ' + st + ' / ' + n : climb.day === today() ? 'Today\'s climb is over. A new one opens tomorrow.' : 'You get 24 hours. Every win lifts you one platform to a bigger prize!';
+    const b = $('climbStart'); b.hidden = on || climb.day === today(); $('climbTimer').hidden = !on; if (on) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft());
+    const sc = $('climbScroll'); if (sc) sc.scrollTop = Math.max(0, by - sc.clientHeight * 0.6);
+  }
+  function openClimb() { S.unlock(); S.tap(); closeAll(); $('climb').hidden = false; renderClimb(); }
+
   /* ---------- Coin Rush: once a day, 30 minutes of double coins on level wins ---------- */
   let rush = store.get('rush', { until: 0, day: '' }), rushWas = false;
   const rushActive = () => Date.now() < rush.until;
@@ -1720,6 +1762,7 @@
       { name: 'Candy Pass', img: 'ev_pass', a: '#ff6fb4', b: '#a02a8c', tag: () => passClaim() ? 'CLAIM ' + passClaim() : pass.step + ' / ' + PASS.length + ' steps', hot: () => passClaim() > 0, go: openPass },
       { name: 'Candy Chest', img: () => chestImg(chest.q ? chest.q.tier : chestTier()).replace('art/', '').replace('.webp', ''), a: '#c98a4d', b: '#6b3e17', tag: () => chest.q ? (chestLeft() <= 0 ? 'OPEN!' : '⏳ ' + fmtWait(chestLeft())) : chest.n >= CHEST_AT ? 'START' : chest.n + ' / ' + CHEST_AT, hot: () => chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT, go: openChest },
       { name: 'Lucky Wheel', img: 'ic_wheel', a: '#b58aff', b: '#5a2fb8', tag: () => (wheel.date !== today() || wheel.extra > 0) ? 'FREE SPIN' : 'Soon', hot: () => wheel.date !== today() || wheel.extra > 0, go: openWheel },
+      { name: 'Candy Climb', img: 'ev_climb', a: '#ff7ac4', b: '#7a2bd0', tag: () => climbOn() ? (climbClaim() ? 'CLAIM ' + climbClaim() : '⏱ ' + fmtClock(climbLeft())) : climb.day === today() ? 'Back tomorrow' : 'START', hot: () => (climbOn() && climbClaim() > 0) || (!climbOn() && climb.day !== today()), go: openClimb },
       { name: 'Coin Rush', img: 'ev_rush', a: '#ffd23a', b: '#d9780a', tag: () => rushActive() ? '⚡ ' + Math.ceil((rush.until - Date.now()) / 60000) + ' min left' : rush.day === today() ? 'Back tomorrow' : 'START', hot: () => rushActive() || rush.day !== today(), go: () => { startRush(); refreshEvents(); } }
     ].concat(GAMES.map((g) => ({ name: g[1], img: g[2], a: g[3], b: g[4], key: g[0],
       tag: () => { const l = MAX_PLAYS - (plays[g[0]] || 0), w = gameWait(g[0]); return l <= 0 ? 'Back tomorrow' : w > 0 ? '⏳ ' + fmtWait(w) : 'PLAY · ' + l + ' left'; },
@@ -1727,7 +1770,7 @@
   }
   function eventsHot() {
     const passClaim = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
-    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0);
+    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + ((climbOn() && climbClaim() > 0) || (!climbOn() && climb.day !== today()) ? 1 : 0);
   }
   function renderEvents() {
     freshDay(); buildEventItems(); const grid = $('evGrid'); grid.innerHTML = '';
@@ -2043,8 +2086,9 @@
     $('tossClose').onclick = () => { S.tap(); stopToss(); $('toss').hidden = true; updateSides(); };
     $('medPass').onclick = openPass; $('passClose').onclick = () => { S.tap(); $('pass').hidden = true; updateSides(); };
     $('medEvents').onclick = openEvents; $('eventsClose').onclick = () => { S.tap(); $('events').hidden = true; updateSides(); };
+    $('climbStart').onclick = climbStart; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
     $('medRush').onclick = startRush; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === 'Done'; $('quick').hidden = true; updateSides(); if (was) openEvents(); };
-    setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
+    setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (!$('climb').hidden && climbOn()) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft()); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
   }
   wireExtras();
   // every popup opens and closes with a sound, found automatically
