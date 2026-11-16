@@ -184,7 +184,7 @@
     { name: 'Royal Cake Palace' },
     { name: 'Rainbow Sherbet Glacier' },
     { name: 'Sweet Kingdom Gate' },
-    // worlds 31-50: the road to Baron Sour's castle
+    // worlds 31-50: the road to Vinegar's castle
     { name: 'Sour Lemon Grove' },
     { name: 'Bubblegum Swamp' },
     { name: 'Marshmallow Clouds' },
@@ -204,7 +204,7 @@
     { name: 'Licorice Ruins' },
     { name: 'Thundercloud Citadel' },
     { name: 'Sour Storm Summit' },
-    { name: "Baron Sour's Castle" }
+    { name: "Vinegar's Castle" }
   ];
   const ASPECT = { 'd-lolly': [0.6, 1], 'd-bush': [1, 0.6], 'd-cane': [0.5, 1], 'd-cloud': [2, 1], 'd-house': [1, 1], 'd-cone': [0.85, 1.15], 'd-choco': [0.8, 1], 'd-star': [1, 1] };
   const zoneOf = (lv) => ZONES[Math.floor((lv - 1) / 10) % ZONES.length];
@@ -573,7 +573,7 @@
     return b;
   }
   function placedCount() { let c = 0; for (const r of cur.state) for (const v of r) if (v === 2) c++; return c; }
-  /* ---------- Baron Sour: the storm king waits on every 10th level ---------- */
+  /* ---------- Vinegar: the storm king waits on every 10th level ---------- */
   const foeKind = () => (!(cur && cur.meta && cur.meta.kind === 'level') ? null : cur.meta.level % 10 === 0 ? 'boss' : cur.meta.level % 5 === 0 && cur.meta.level < ULTRA_FROM ? 'minion' : null);
   const isBoss = () => foeKind() === 'boss';
   const nervous = () => !!(cur && cur.meta && cur.meta.level > 300);   // near his castle the Baron is not so sure of himself any more
@@ -582,7 +582,7 @@
   const SAY = {
     boss: { start: ["You'll never fix my mess!", 'Sweet things make me sick!', 'This board is mine!'], miss: ['Ha! Wrong!', "Sour, isn't it?", 'Hehehe!'], hit: ['Ouch!', 'Hey! Stop that!', 'Too sweet!'], lose: ["Noooo! I'll be back!"] },
     scared: { start: ['N-not you again!', 'Stay away from my castle!', 'You just got lucky before!'], miss: ['Phew... wrong!', 'Yes! Keep missing!'], hit: ['Eek!', 'Not again!', 'Stop, please!'], lose: ['Why are you so good at this?!'] },
-    minion: { start: ['The Baron sent me!', 'Bleh!'], miss: ['Nyah nyah!'], hit: ['Ow!'], lose: ['Waaah!'] }
+    minion: { start: ['Vinegar sent me!', 'Bleh!'], miss: ['Nyah nyah!'], hit: ['Ow!'], lose: ['Waaah!'] }
   };
   let sayT = null;
   function bossSay(kind) {
@@ -598,7 +598,7 @@
   }
   function bossUpdate() {
     const h = $('bossHud'), kind = foeKind(), on = !!kind; h.hidden = !on; $('game').classList.toggle('bossfight', on); if (!on) return;
-    h.classList.toggle('minion', kind === 'minion'); $('bossName').textContent = kind === 'minion' ? 'Sour Cloud' : 'Baron Sour';
+    h.classList.toggle('minion', kind === 'minion'); $('bossName').textContent = kind === 'minion' ? 'Sour Cloud' : 'Vinegar';
     let c = 0; for (let y = 0; y < cur.n; y++) if (cur.state[y][cur.solution[y]] === 2) c++;
     const hp = cur.n - c; $('bossHp').style.width = (hp / cur.n * 100) + '%'; $('bossHpN').textContent = hp + ' / ' + cur.n;
     if (cur.bossC === undefined) { h.classList.remove('defeat'); $('bossImg').src = foeImg('idle'); $('bossSay').classList.remove('on'); }
@@ -610,9 +610,9 @@
     const d = document.createElement('div'); d.className = 'boss-card ' + cls; d.innerHTML = '<i class="bc-flash"></i><img src="art/boss_' + img + '.webp" alt="" draggable="false"><b>' + text + '</b>';
     document.body.appendChild(d); setTimeout(() => d.remove(), 2700);
   }
-  function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard(nervous() ? 'worried' : 'idle', 'Baron Sour blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => V.say('boss1', true), 250); setTimeout(() => { if (isBoss() && !cur.done) bossSay('start'); }, 2800); }
+  function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard(nervous() ? 'worried' : 'idle', 'Vinegar blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => V.say('boss1', true), 250); setTimeout(() => { if (isBoss() && !cur.done) bossSay('start'); }, 2800); }
   function bossMiss() { bossFace('laugh', 1400); bossSay('miss'); const b = $('board'); b.classList.remove('zap'); void b.offsetWidth; b.classList.add('zap'); setTimeout(() => b.classList.remove('zap'), 600); }
-  function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'), big = isBoss(); h.classList.remove('hit', 'laugh'); $('bossImg').src = foeImg('lose'); $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; bossSay('lose'); h.classList.add('defeat'); if (big) { bossCard('lose', 'Baron Sour is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); } }
+  function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'), big = isBoss(); h.classList.remove('hit', 'laugh'); $('bossImg').src = foeImg('lose'); $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; bossSay('lose'); h.classList.add('defeat'); if (big) { bossCard('lose', 'Vinegar is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); } }
 
   /* on some ordinary levels the Baron peeks in and blows a little fog over a few empty squares. It only hides them for a moment: nothing on the board changes. */
   let mischiefT = null, fogT = null;
@@ -650,7 +650,7 @@
   function stealCheck(lv) {
     const w = Math.floor((lv - 1) / 10); if (lv < 11 || lv % 10 !== 1 || lv !== level || lv > LAST_LEVEL || stolen[w]) return;
     stolen[w] = 1; store.set('stolen', stolen);
-    setTimeout(() => { if (cur && !cur.done && !$('game').hidden) { bossCard('laugh', "Baron Sour stole this world's sticker! Beat him on level " + (lv + 9) + ' to win it back!', 'in steal'); S.whoosh(); buzz([30, 40, 30]); } }, 900);
+    setTimeout(() => { if (cur && !cur.done && !$('game').hidden) { bossCard('laugh', "Vinegar stole this world's sticker! Beat him on level " + (lv + 9) + ' to win it back!', 'in steal'); S.whoosh(); buzz([30, 40, 30]); } }, 900);
   }
 
   function paint() {
@@ -1109,8 +1109,8 @@
     else wr.hidden = true;
     if (m.kind === 'level' && m.level % 10 === 0) {
       const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
-      give(bp); setTimeout(() => announce(bp, '👑 Baron Sour defeated!', true, '<div class="rw-it"><img class="rw-boss" src="art/boss_lose.webp" alt="" draggable="false"></div>'), 3600); wr.hidden = false;
-      wr.innerHTML = '👑 Baron Sour defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
+      give(bp); setTimeout(() => announce(bp, '👑 Vinegar defeated!', true, '<div class="rw-it"><img class="rw-boss" src="art/boss_lose.webp" alt="" draggable="false"></div>'), 3600); wr.hidden = false;
+      wr.innerHTML = '👑 Vinegar defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
     updateHintUi();
     $('nextBtn').textContent = m.kind === 'level' && m.level < LAST_LEVEL ? 'Next level' : 'Back to map';
@@ -1257,14 +1257,14 @@
   /* ---------- opening story ---------- */
   const STORY = [
     { text: 'In Candy Land, every sweet lived in the great Bonbox, each one in its own perfect spot.', img: 'story1', fx: 'calm' },
-    { text: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!', img: 'story2p', fx: 'dark' },
+    { text: 'But up in the clouds lived Vinegar, the grumpy storm king. He could not stand all that sweetness!', img: 'story2p', fx: 'dark' },
     { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!', img: 'story3', fx: 'storm' },
     { text: 'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
   ];
   const ENDING = [
     { text: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.', img: 'end1', fx: 'flash' },
-    { text: 'Baron Sour took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!', img: 'end2', fx: 'calm' },
-    { text: 'From that day on he was Baron Sweet, and the Bonbox was full and sweeter than ever. Thank you for playing!', img: 'end3', fx: 'hero' }
+    { text: 'Vinegar took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!', img: 'end2', fx: 'calm' },
+    { text: 'From that day on, Vinegar was the sweetest cloud in Candy Land, and the Bonbox was full again. Thank you for playing!', img: 'end3', fx: 'hero' }
   ];
   let PANELS = STORY;
   // what moves on top of each story picture
@@ -1564,7 +1564,7 @@
   let look = { stand: 'art/gumi_hero.webp', win: 'art/gumi_win.webp', air: 'art/gumi_jump.webp' };
   const FRAMES = [{ id: 'cream', name: 'Cream', bg: '#f7f1e5', at: 0 }, { id: 'mint', name: 'Mint', bg: 'linear-gradient(160deg,#e6fff0,#b9f0d2)', at: 10 }, { id: 'sky', name: 'Sky', bg: 'linear-gradient(160deg,#e6f4ff,#bcdcfb)', at: 25 },
     { id: 'rose', name: 'Rose', bg: 'linear-gradient(160deg,#fff0f6,#ffcfe0)', at: 40 }, { id: 'gold', name: 'Gold', bg: 'linear-gradient(160deg,#fff7c9,#ffd96a)', at: 70 }, { id: 'night', name: 'Night', bg: 'linear-gradient(160deg,#5c4fd0,#2a2470)', at: 100 }];
-  const WORLD_NAMES = ['Lollipop Meadow', 'Chocolate River', 'Frosting Mountains', 'Cotton Candy Sky', 'Ice Cream Beach', 'Gingerbread Winter', 'Donut Lake', 'Cookie Canyon', 'Crystal Caves', 'Jelly Jungle', 'Cupcake Village', 'Candy Cane Forest', 'Caramel Falls', 'Carnival Fairground', 'Macaron Mesa', 'Waffle Castle', 'Soda Springs', 'Honey Hive Hills', 'Berry Bog', 'Mint Mountain', 'Licorice Night Market', 'Sugar Dunes Oasis', 'Pudding Pools', 'Cinnamon Autumn Forest', 'Starlight Sprinkle Galaxy', 'Toffee Treehouse Village', 'Gumdrop Garden', 'Royal Cake Palace', 'Rainbow Sherbet Glacier', 'Sweet Kingdom Gate', 'Sour Lemon Grove', 'Bubblegum Swamp', 'Marshmallow Clouds', 'Popcorn Peaks', 'Jellybean Harbor', 'Peppermint Blizzard', 'Fudge Volcano', 'Taffy Twister Plains', 'Sprinkle Desert', 'Gummy Bear Woods', 'Candy Carnival Night', 'Blueberry Moon Lagoon', 'Maple Syrup Marsh', 'Rock Candy Cliffs', 'Churro Canyon', 'Strawberry Storm Fields', 'Licorice Ruins', 'Thundercloud Citadel', 'Sour Storm Summit', "Baron Sour's Castle"];
+  const WORLD_NAMES = ['Lollipop Meadow', 'Chocolate River', 'Frosting Mountains', 'Cotton Candy Sky', 'Ice Cream Beach', 'Gingerbread Winter', 'Donut Lake', 'Cookie Canyon', 'Crystal Caves', 'Jelly Jungle', 'Cupcake Village', 'Candy Cane Forest', 'Caramel Falls', 'Carnival Fairground', 'Macaron Mesa', 'Waffle Castle', 'Soda Springs', 'Honey Hive Hills', 'Berry Bog', 'Mint Mountain', 'Licorice Night Market', 'Sugar Dunes Oasis', 'Pudding Pools', 'Cinnamon Autumn Forest', 'Starlight Sprinkle Galaxy', 'Toffee Treehouse Village', 'Gumdrop Garden', 'Royal Cake Palace', 'Rainbow Sherbet Glacier', 'Sweet Kingdom Gate', 'Sour Lemon Grove', 'Bubblegum Swamp', 'Marshmallow Clouds', 'Popcorn Peaks', 'Jellybean Harbor', 'Peppermint Blizzard', 'Fudge Volcano', 'Taffy Twister Plains', 'Sprinkle Desert', 'Gummy Bear Woods', 'Candy Carnival Night', 'Blueberry Moon Lagoon', 'Maple Syrup Marsh', 'Rock Candy Cliffs', 'Churro Canyon', 'Strawberry Storm Fields', 'Licorice Ruins', 'Thundercloud Citadel', 'Sour Storm Summit', "Vinegar's Castle"];
   const passed = () => Math.max(0, level - 1);
   let outfit = store.get('outfit', 'hero'), frame = store.get('frame', 'cream');
   const outfitOf = (id) => OUTFITS.find((o) => o.id === id) || OUTFITS[0], frameOf = (id) => FRAMES.find((f) => f.id === id) || FRAMES[0];
@@ -2089,14 +2089,14 @@
     const on = stormOn(), free = stormFree(), hp = STORM_GOAL - storm.hits, shown = on || stormClaim() > 0;
     $('stormBoss').src = 'art/boss_' + (!shown ? 'idle' : hp <= 0 ? 'lose' : hp <= 4 ? 'worried' : hp <= 8 ? 'hit' : 'idle') + '.webp';
     $('stormHp').style.width = (shown ? hp / STORM_GOAL * 100 : 100) + '%'; $('stormHpN').textContent = (shown ? hp : STORM_GOAL) + ' / ' + STORM_GOAL;
-    $('stormInfo').textContent = shown && hp <= 0 ? 'You knocked him out! Claim your prizes.' : on ? 'Baron Sour is storming Candy Land! Every level you win on the map is one hit. Knock him out before the time ends!'
-      : free ? 'A 24-hour battle. Press Start, then win levels on the map: every win is one hit on Baron Sour!' : 'Baron Sour is hiding. He will be back in a few days.';
+    $('stormInfo').textContent = shown && hp <= 0 ? 'You knocked him out! Claim your prizes.' : on ? 'Vinegar is storming Candy Land! Every level you win on the map is one hit. Knock him out before the time ends!'
+      : free ? 'A 24-hour battle. Press Start, then win levels on the map: every win is one hit on Vinegar!' : 'Vinegar is hiding. He will be back in a few days.';
     const box = $('stormRows'); box.innerHTML = '';
     STORM_PRIZE.forEach((p, i) => {
       const d = document.createElement('div'), got = shown && storm.hits >= p[0], done = !!storm.cl[i]; d.className = 'stormrow' + (got ? ' got' : '');
       d.innerHTML = '<b>' + p[0] + ' hits</b><span class="rwd">' + prizeChips(p[1]) + '</span>';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy'; b.textContent = done ? 'Claimed ✓' : 'Claim'; b.disabled = !got || done;
-      b.onclick = () => { storm.cl[i] = true; store.set('storm', storm); giveReward(p[1], i === STORM_PRIZE.length - 1 ? 'Baron Sour is defeated!' : 'Sour Storm!', i === STORM_PRIZE.length - 1); renderStorm(); updateSides(); };
+      b.onclick = () => { storm.cl[i] = true; store.set('storm', storm); giveReward(p[1], i === STORM_PRIZE.length - 1 ? 'Vinegar is defeated!' : 'Sour Storm!', i === STORM_PRIZE.length - 1); renderStorm(); updateSides(); };
       d.appendChild(b); box.appendChild(d);
     });
     $('stormStart').hidden = !free; $('stormPlay').hidden = !on || hp <= 0; $('stormPlay').textContent = 'Play level ' + Math.min(level, LAST_LEVEL);

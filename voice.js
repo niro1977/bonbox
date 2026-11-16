@@ -11,13 +11,13 @@
     intro2: 'Then came a giant sneeze. Achoo! Every candy got mixed up!',
     intro3: 'Help Gumi put them back. One candy in every color, and no two candies can touch!',
     story1: 'In Candy Land, every sweet lived in the great Bonbox, each one in its own perfect spot.',
-    story2: 'But up in the clouds lived Baron Sour, the grumpy storm king. He could not stand all that sweetness!',
+    story2: 'But up in the clouds lived Vinegar, the grumpy storm king. He could not stand all that sweetness!',
     story3: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!',
     story4: 'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!',
-    boss1: 'Baron Sour blocks the way! You can beat him!', boss2: 'You defeated Baron Sour! Amazing!',
+    boss1: 'Vinegar blocks the way! You can beat him!', boss2: 'You defeated Vinegar! Amazing!',
     end1: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.',
-    end2: 'Baron Sour took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!',
-    end3: 'From that day on he was Baron Sweet, and the Bonbox was full and sweeter than ever. Thank you for playing!',
+    end2: 'Vinegar took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!',
+    end3: 'From that day on, Vinegar was the sweetest cloud in Candy Land, and the Bonbox was full again. Thank you for playing!',
     letsplay: "Let's play!",
     first: 'Sweet!', yummy: 'Yummy!', tasty: 'Tasty!', nice: 'Nice one!', delicious: 'Delicious!',
     perfect: 'Delicious! Perfect!', divine: 'Divine! Perfect!', sugartastic: 'Sugar-tastic! Perfect!',
@@ -27,7 +27,7 @@
     z0: 'Welcome to Lollipop Meadow!', z1: 'Welcome to Chocolate River!', z2: 'Welcome to Frosting Mountains!', z3: 'Welcome to Cotton Candy Sky!',
     z4: 'Welcome to Ice Cream Beach!', z5: 'Welcome to Gingerbread Winter!', z6: 'Welcome to Donut Lake!', z7: 'Welcome to Cookie Canyon!', z8: 'Welcome to Crystal Caves!',
     z9: 'Welcome to Jelly Jungle!', z10: 'Welcome to Cupcake Village!', z11: 'Welcome to Candy Cane Forest!', z12: 'Welcome to Caramel Falls!', z13: 'Welcome to Carnival Fairground!', z14: 'Welcome to Macaron Mesa!', z15: 'Welcome to Waffle Castle!', z16: 'Welcome to Soda Springs!', z17: 'Welcome to Honey Hive Hills!', z18: 'Welcome to Berry Bog!', z19: 'Welcome to Mint Mountain!', z20: 'Welcome to Licorice Night Market!', z21: 'Welcome to Sugar Dunes Oasis!', z22: 'Welcome to Pudding Pools!', z23: 'Welcome to Cinnamon Autumn Forest!', z24: 'Welcome to Starlight Sprinkle Galaxy!', z25: 'Welcome to Toffee Treehouse Village!', z26: 'Welcome to Gumdrop Garden!', z27: 'Welcome to Royal Cake Palace!', z28: 'Welcome to Rainbow Sherbet Glacier!', z29: 'Welcome to Sweet Kingdom Gate!',
-    z30: 'Welcome to Sour Lemon Grove!', z31: 'Welcome to Bubblegum Swamp!', z32: 'Welcome to Marshmallow Clouds!', z33: 'Welcome to Popcorn Peaks!', z34: 'Welcome to Jellybean Harbor!', z35: 'Welcome to Peppermint Blizzard!', z36: 'Welcome to Fudge Volcano!', z37: 'Welcome to Taffy Twister Plains!', z38: 'Welcome to Sprinkle Desert!', z39: 'Welcome to Gummy Bear Woods!', z40: 'Welcome to Candy Carnival Night!', z41: 'Welcome to Blueberry Moon Lagoon!', z42: 'Welcome to Maple Syrup Marsh!', z43: 'Welcome to Rock Candy Cliffs!', z44: 'Welcome to Churro Canyon!', z45: 'Welcome to Strawberry Storm Fields!', z46: 'Welcome to Licorice Ruins!', z47: 'Welcome to Thundercloud Citadel!', z48: 'Welcome to Sour Storm Summit!', z49: "Welcome to Baron Sour's Castle!"
+    z30: 'Welcome to Sour Lemon Grove!', z31: 'Welcome to Bubblegum Swamp!', z32: 'Welcome to Marshmallow Clouds!', z33: 'Welcome to Popcorn Peaks!', z34: 'Welcome to Jellybean Harbor!', z35: 'Welcome to Peppermint Blizzard!', z36: 'Welcome to Fudge Volcano!', z37: 'Welcome to Taffy Twister Plains!', z38: 'Welcome to Sprinkle Desert!', z39: 'Welcome to Gummy Bear Woods!', z40: 'Welcome to Candy Carnival Night!', z41: 'Welcome to Blueberry Moon Lagoon!', z42: 'Welcome to Maple Syrup Marsh!', z43: 'Welcome to Rock Candy Cliffs!', z44: 'Welcome to Churro Canyon!', z45: 'Welcome to Strawberry Storm Fields!', z46: 'Welcome to Licorice Ruins!', z47: 'Welcome to Thundercloud Citadel!', z48: 'Welcome to Sour Storm Summit!', z49: "Welcome to Vinegar's Castle!"
   };
   const ID_OF = {}; Object.keys(CLIPS).forEach((k) => { ID_OF[CLIPS[k]] = k; });
   const buffers = {}, loading = {};
