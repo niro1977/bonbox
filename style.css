@@ -1688,3 +1688,9 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 @media (max-width:380px){.wallet.topbar .chip.me svg,.wallet.topbar .chip.me .gum{width:44px!important;height:44px!important}}
 /* the bear in the profile button: head and shoulders, cut cleanly at the inner edge of the pill */
 .wallet.topbar .chip.me svg,.wallet.topbar .chip.me .gum{margin:3px 0 -14px!important;clip-path:inset(0 0 17px 0 round 0 0 13px 13px)}
+/* profile button a little narrower again, so the counters keep their room when the numbers grow */
+.wallet.topbar .chip.me{width:42px!important}
+.wallet.topbar .chip.me svg,.wallet.topbar .chip.me .gum{width:38px!important;height:38px!important;margin:3px 0 -12px!important;clip-path:inset(0 0 13px 0 round 0 0 12px 12px)}
+/* when the numbers are long the counters shrink their text a little instead of pushing each other out */
+.wallet.topbar .chip{flex:0 1 auto;min-width:0}
+.wallet.topbar .chip b{white-space:nowrap}
