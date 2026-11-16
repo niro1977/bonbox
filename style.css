@@ -1317,3 +1317,9 @@ body.in-game .toast.gtoast{bottom:150px}
 #loseLives{margin:0;font-weight:900}
 .packs{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pack{min-width:0}.pack small em{white-space:normal}
 .shopscroll{max-height:calc(100svh - 350px)}#shop .card>.small{display:none}
+
+/* language button in the settings */
+.opt .langbtn{min-width:0;padding:7px 16px;font-size:15px;margin:0}
+
+/* Spanish: longer words on the small round tags */
+html[lang="es"] .med .tag{font-size:11px;letter-spacing:0;padding:4px 8px 6px!important;white-space:nowrap}

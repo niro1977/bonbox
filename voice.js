@@ -1,7 +1,7 @@
 /* Candoku narrator: recorded lines in a deep, charismatic male voice (audio/voice/*.mp3).
    If a clip is missing or can't play, it falls back to the device's own speech voice. */
 (function (root) {
-  const S = root.CandokuSound, synth = root.speechSynthesis;
+  const S = root.CandokuSound, synth = root.speechSynthesis, ES = root.LANG === 'es', TT = root.T || ((x) => x), DIR = ES ? 'audio/voice/es/' : 'audio/voice/';
   let enabled = true, last = 0, chosen = null, current = null;
   try { const v = localStorage.getItem('candoku.voice'); if (v !== null) enabled = JSON.parse(v); } catch (e) {}
 
@@ -28,7 +28,7 @@
     if (loading[id]) return loading[id];
     const ctx = S.ctx();
     if (!ctx) return Promise.resolve(null);
-    loading[id] = fetch('audio/voice/' + id + '.mp3')
+    loading[id] = fetch(DIR + id + '.mp3')
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('missing'))))
       .then((ab) => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
       .then((b) => (buffers[id] = b))
@@ -45,16 +45,16 @@
 
   function pickVoice() {
     if (!synth) return null;
-    const vs = synth.getVoices().filter((v) => /^en/i.test(v.lang));
+    const vs = synth.getVoices().filter((v) => (ES ? /^es/i : /^en/i).test(v.lang));
     if (!vs.length) return null;
-    chosen = vs.find((v) => /(guy|andrew|christopher|david|daniel|alex|male|fred|george|google uk english male)/i.test(v.name)) || vs.find((v) => /^en-US/i.test(v.lang)) || vs[0];
+    chosen = vs.find((v) => /(guy|andrew|christopher|david|daniel|alex|male|fred|george|google uk english male)/i.test(v.name)) || vs.find((v) => (ES ? /^es-(MX|US|419)/i : /^en-US/i).test(v.lang)) || vs[0];
     return chosen;
   }
   if (synth && synth.addEventListener) synth.addEventListener('voiceschanged', pickVoice);
   function speakFallback(text) {
     if (!synth) return;
-    const u = new SpeechSynthesisUtterance(text), M = root.CandokuMusic;
-    u.voice = chosen || pickVoice(); u.lang = 'en-US'; u.pitch = 0.7; u.rate = 1.0; u.volume = 1;
+    const u = new SpeechSynthesisUtterance(TT(text)), M = root.CandokuMusic;
+    u.voice = chosen || pickVoice(); u.lang = ES ? 'es-MX' : 'en-US'; u.pitch = 0.7; u.rate = 1.0; u.volume = 1;
     u.onstart = () => { if (M) M.duck(true); };
     u.onend = u.onerror = () => { if (M) M.duck(false); };
     synth.speak(u);
