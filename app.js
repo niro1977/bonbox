@@ -2018,6 +2018,8 @@
     closeAll(); stopQuick(); $('quickTitle').textContent = title; $('quickInfo').textContent = info; $('quickMsg').textContent = ''; $('quickBody').innerHTML = ''; $('quickClose').textContent = 'Give up'; $('quickBar').style.width = '100%'; $('quick').hidden = false;
   }
   function quickEnd(msg, reward, extra) {
+    // side-game prizes are half of what they were
+    if (reward > 0) reward = Math.max(1, Math.floor(reward / 2)); if (extra && extra.inf) extra = Object.assign({}, extra, { inf: Math.ceil(extra.inf / 2) });
     stopQuick(); if (reward) { coinHold += reward; } if (reward) give({ coins: reward }, true); if (extra) give(extra);
     S.win(); buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + ' +' + reward + ' ' + coinSvg + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
     if (reward) { updateHintUi(); setTimeout(() => flyCoins($('quickMsg'), reward, 0, true), 400); }
@@ -2141,7 +2143,7 @@
     freshDay(); if ((plays.shoot || 0) >= MAX_PLAYS) return; plays.shoot = (plays.shoot || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Candy Shooter', 'Tap to shoot. Match 3 or more to pop them before they reach the hole!');
     const { cv, g, xy } = quickCanvas();
-    const COLS = ['#ff3d6e', '#ffd21f', '#34a8ff', '#4fdc4a'], COLD = ['#a8123a', '#c28a00', '#0e5fb3', '#1f8f1c'], R = 10, D = 21, N = 30, CX = 122, CY = 182;
+    const COLS = ['#ff3d6e', '#ffd21f', '#34a8ff', '#4fdc4a'], COLD = ['#a8123a', '#c28a00', '#0e5fb3', '#1f8f1c'], R = 10, D = 21, N = 26, CX = 122, CY = 182;
     let pts = [[-24, 48], [262, 48], [262, 322], [40, 322], [40, 96], [204, 96], [204, 272], [112, 272]];
     for (let it = 0; it < 4; it++) { const o = [pts[0]]; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1]; o.push([a[0] * 0.75 + b[0] * 0.25, a[1] * 0.75 + b[1] * 0.25], [a[0] * 0.25 + b[0] * 0.75, a[1] * 0.25 + b[1] * 0.75]); } o.push(pts[pts.length - 1]); pts = o; }
     const seg = []; let L = 0; for (let i = 0; i < pts.length - 1; i++) { const dx = pts[i + 1][0] - pts[i][0], dy = pts[i + 1][1] - pts[i][1], l = Math.hypot(dx, dy) || 0.001; seg.push({ x: pts[i][0], y: pts[i][1], dx, dy, l, s0: L }); L += l; }
@@ -2185,7 +2187,13 @@
       g.fillStyle = 'rgba(40,15,0,.3)'; g.beginPath(); g.ellipse(CX + 3, CY + 8, 30, 26, 0, 0, 6.283); g.fill();
       const rec = cool > 0 ? cool / 0.12 * 5 : 0;
       if (ok(A.shoot_cannon)) { g.save(); g.translate(CX, CY); g.rotate(ang); g.drawImage(A.shoot_cannon, -29 - rec, -27, 78, 53.5); g.restore(); }
-      ballAt(nextC, CX, CY, 9.5, 0);
+      { // the loaded candy: bigger, on a bright plate with a pulsing ring, so its colour is clear against the cannon
+        const pu = 0.5 + 0.5 * Math.sin(performance.now() / 260);
+        g.save(); g.shadowColor = '#fff'; g.shadowBlur = 14; g.fillStyle = '#fff'; g.beginPath(); g.arc(CX, CY, 15.5, 0, 6.283); g.fill(); g.restore();
+        g.strokeStyle = COLD[nextC]; g.lineWidth = 2.5; g.beginPath(); g.arc(CX, CY, 15.5, 0, 6.283); g.stroke();
+        g.globalAlpha = 0.75 - pu * 0.55; g.strokeStyle = '#fff'; g.lineWidth = 3; g.beginPath(); g.arc(CX, CY, 18 + pu * 6, 0, 6.283); g.stroke(); g.globalAlpha = 1;
+        ballAt(nextC, CX, CY, 13, 0);
+      }
       if (shot) ballAt(shot.c, shot.x, shot.y, R + 1, performance.now() / 60);
       parts.forEach((p) => { g.globalAlpha = Math.max(0, p.l / 0.55); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, 3.4, 0, 6.283); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(p.x - 1, p.y - 1, 1.2, 0, 6.283); g.fill(); }); g.globalAlpha = 1;
       texts.forEach((t) => { g.globalAlpha = Math.max(0, t.a); g.font = '900 22px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = '#5a2a00'; g.strokeText(t.t, t.x, t.y); g.fillStyle = '#ffe14d'; g.fillText(t.t, t.x, t.y); }); g.globalAlpha = 1;
@@ -2193,7 +2201,7 @@
     const tick = (now) => {
       if (over) return; const dt = Math.min(0.05, (now - last) / 1000); last = now;
       cool = Math.max(0, cool - dt);
-      const fast = chain.length && (sPos(chain.length - 1) < 30 || sPos(0) < 90); head += (fast ? 95 : 22) * dt;
+      const fast = chain.length && (sPos(chain.length - 1) < 30 || sPos(0) < 90); head += (fast ? 80 : 14) * dt;
       chain.forEach((b) => { if (b.off) { const st = 170 * dt; b.off = Math.abs(b.off) <= st ? 0 : b.off - Math.sign(b.off) * st; } if (b.grow < 1) b.grow = Math.min(1, b.grow + dt * 5); });
       if (shot) {
         shot.x += shot.vx * dt; shot.y += shot.vy * dt;
@@ -2379,7 +2387,7 @@
     const grid = $('memGrid'); grid.innerHTML = ''; let first = null, lock = false, found = 0, moves = 14;
     $('memMoves').textContent = 'Moves left: ' + moves; $('memMsg').textContent = ''; $('memClose').textContent = 'Give up';
     const finish = (win) => {
-      const reward = win ? 2 + Math.floor(moves / 3) : 0; give({ coins: reward }, true); S.win(); updateSides();
+      const reward = win ? Math.max(1, Math.floor((2 + Math.floor(moves / 3)) / 2)) : 0; give({ coins: reward }, true); S.win(); updateSides();
       $('memMsg').innerHTML = (win ? 'Great memory! +' : 'Out of moves. +') + reward + ' ' + coinSvg; $('memClose').textContent = 'Done'; lock = true;
     };
     deck.forEach((id) => {
