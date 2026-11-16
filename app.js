@@ -20,7 +20,7 @@
   let daily = store.get('daily', { last: '', streak: 0 });
   let cur = null;
   let score = store.get('score', { date: '', points: 0, run: 0, best: 0 });
-  const START_HINTS = 3, HINT_EVERY = 5, WAND_EVERY = 20;
+  const START_HINTS = 3, HINT_EVERY = 10, WAND_EVERY = 15;
   let items = Object.assign({ shield: 1, double: 0, sweeper: 1, lens: 1 }, store.get('items', {}));
   let coins = store.get('coins', 30), wands = store.get('wands', 1), bonus = store.get('bonus', { last: '', streak: 0 });
   let hintsLeft = store.get('hints', START_HINTS), cleared = store.get('cleared', 0);   // hints in the bag, levels passed for the first time
@@ -845,9 +845,9 @@
   }
   /* ---------- daily bonus: pick one of nine cards ---------- */
   const PRIZES = [
-    { id: 'c10', w: 30, coins: 5 }, { id: 'c25', w: 20, coins: 10 }, { id: 'c50', w: 9, coins: 25, rare: 1 }, { id: 'c100', w: 2, coins: 50, rare: 1 },
-    { id: 'h1', w: 22, hints: 1 }, { id: 'h2', w: 8, hints: 2, rare: 1 }, { id: 'w1', w: 9, wands: 1, rare: 1 },
-    { id: 's1', w: 10, shield: 1 }, { id: 'k1', w: 10, sweeper: 1 }, { id: 'l1', w: 10, lens: 1 }, { id: 'd1', w: 5, double: 1, rare: 1 }
+    { id: 'c10', w: 34, coins: 2 }, { id: 'c25', w: 24, coins: 4 }, { id: 'c50', w: 8, coins: 8, rare: 1 }, { id: 'c100', w: 2, coins: 15, rare: 1 },
+    { id: 'h1', w: 9, hints: 1 }, { id: 'i1', w: 5, inf: 15, rare: 1 }, { id: 'w1', w: 2, wands: 1, rare: 1 },
+    { id: 's1', w: 6, shield: 1 }, { id: 'k1', w: 6, sweeper: 1 }, { id: 'l1', w: 6, lens: 1 }, { id: 'd1', w: 3, double: 1, rare: 1 }
   ];
   function rollPrize(streak, onlyRare) {
     const list = PRIZES.filter((p) => !onlyRare || p.rare);
@@ -961,7 +961,7 @@
     const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; }
     score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
     store.set('score', score); postScore();
-    const earnedCoins = (cur.n + (cur.hearts >= 3 ? 2 : 0)) * (rushActive() ? 2 : 1);
+    const earnedCoins = (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1);   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
     setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
@@ -990,7 +990,7 @@
     else if (m.kind === 'level') { wr.hidden = false; wr.textContent = (cleared % HINT_EVERY) + ' / ' + HINT_EVERY + ' levels to a free hint · wand in ' + (WAND_EVERY - (cleared % WAND_EVERY)) + ' more'; }
     else wr.hidden = true;
     if (m.kind === 'level' && m.level % 10 === 0) {
-      const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 50 : 30, wands: 1, hints: flawless ? 2 : 0, shield: 1, lens: flawless ? 1 : 0 };
+      const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
       give(bp); setTimeout(() => announce(bp, '👑 Boss defeated!', true), 3600); wr.hidden = false;
       wr.innerHTML = '👑 Boss defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
@@ -1363,9 +1363,9 @@
     const g = $('game'); if (g) g.style.setProperty('--fbg', frameOf(frame).bg);
     document.documentElement.style.setProperty('--fbg', frameOf(frame).bg);
   }
-  const STK_PRIZES = { 5: { coins: 75, lens: 1 }, 10: { coins: 150, wands: 1, shield: 1 }, 20: { coins: 300, wands: 2, double: 1 }, 30: { coins: 500, wands: 3, shield: 2, lens: 2 } };
+  const STK_PRIZES = { 5: { coins: 15 }, 10: { coins: 30, shield: 1 }, 20: { coins: 60, wands: 1 }, 30: { coins: 100, wands: 1, lens: 1 } };
   const prizeChipsHtml = (p) => Object.keys(p).map((k) => '<em>' + p[k] + '× ' + (PNAME[k] || k) + '</em>').join(' ');
-  const stkPrize = (n) => STK_PRIZES[n] || (n % 5 === 0 ? { coins: 75 } : null);
+  const stkPrize = (n) => STK_PRIZES[n] || (n % 5 === 0 ? { coins: 15 } : null);
   let stkClaimed = store.get('stkClaimed', {});
   const stickerCount = () => Math.min(WORLD_NAMES.length, Math.floor(passed() / 10));
   let colTab = 'outfits';
@@ -1420,7 +1420,7 @@
   function checkUnlocks(m) {
     const lv = m.level, extra = [];
     OUTFITS.filter((o) => o.at === lv && o.at > 0).forEach((o) => extra.push({ t: 'New outfit!', html: '<div class="rw-it"><img src="art/' + o.img + '.webp" alt="" draggable="false"><b>' + o.name + '</b></div>', big: true }));
-    if (lv % 50 === 0) { const n = lv / 50; extra.push({ t: 'Rare sticker!', html: '<div class="rw-it"><div class="sticker big rare">💀</div><b>Extreme Champion ' + n + '</b></div>', p: { coins: 100 }, big: true }); give({ coins: 100 }); }
+    if (lv % 50 === 0) { const n = lv / 50; extra.push({ t: 'Rare sticker!', html: '<div class="rw-it"><div class="sticker big rare">💀</div><b>Extreme Champion ' + n + '</b></div>', p: { coins: 20 }, big: true }); give({ coins: 20 }); }
     FRAMES.filter((f) => f.at === lv && f.at > 0).forEach((f) => extra.push({ t: 'New board frame!', html: '<div class="rw-it"><div class="swatch big" style="background:' + f.bg + '"><u></u><u></u><u></u><u></u></div><b>' + f.name + '</b></div>' }));
     if (lv % 10 === 0 && lv / 10 <= WORLD_NAMES.length) {
       const i = lv / 10 - 1; extra.push({ t: 'New sticker!', html: '<div class="rw-it"><div class="sticker big" style="background-image:url(art/bg_' + i + '.jpg)"></div><b>' + WORLD_NAMES[i] + '</b></div>' });
@@ -1433,19 +1433,19 @@
   const weekKey = () => { const d = new Date(); const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return t.getUTCFullYear() + '-W' + Math.ceil(((t - y0) / 864e5 + 1) / 7); };
   let stats = Object.assign({ solved: 0, flawless: 0, nohint: 0, bosses: 0, run: 0, maxRun: 0 }, store.get('stats', {}));
   let weekly = store.get('weekly', null), achClaimed = store.get('achClaimed', {});
-  const WDEF = [{ id: 'w1', text: 'Solve 15 levels this week', goal: 15, key: 'solved', prize: { coins: 50, double: 1 } },
-    { id: 'w2', text: 'Win 3 Hard (or harder) levels', goal: 3, key: 'hard', prize: { lens: 1, shield: 1 } },
-    { id: 'w3', text: 'Win 5 levels without losing a heart', goal: 5, key: 'flawless', prize: { wands: 1, coins: 30 } }];
-  const ADEF = [{ id: 'a1', text: 'Pass 10 levels', goal: 10, get: () => stats.solved, prize: { coins: 25 } },
-    { id: 'a2', text: 'Pass 50 levels', goal: 50, get: () => stats.solved, prize: { coins: 60, shield: 1 } },
-    { id: 'a3', text: 'Pass 100 levels', goal: 100, get: () => stats.solved, prize: { coins: 125, lens: 2 } },
-    { id: 'a4', text: 'Pass 200 levels', goal: 200, get: () => stats.solved, prize: { coins: 250, wands: 2, double: 1 } },
-    { id: 'a5', text: 'Win 10 levels without losing a heart', goal: 10, get: () => stats.flawless, prize: { sweeper: 2 } },
-    { id: 'a6', text: 'Win 50 levels without losing a heart', goal: 50, get: () => stats.flawless, prize: { coins: 100, shield: 2 } },
-    { id: 'a7', text: 'Win 10 levels with no hints', goal: 10, get: () => stats.nohint, prize: { coins: 40 } },
-    { id: 'a8', text: 'Defeat 3 bosses', goal: 3, get: () => stats.bosses, prize: { wands: 1, coins: 50 } },
-    { id: 'a9', text: 'Sky Path: 5 flawless levels in a row', goal: 5, get: () => stats.maxRun, prize: { coins: 50, lens: 1 } },
-    { id: 'a10', text: 'Daily Bonus streak of 7 days', goal: 7, get: () => Math.max(bonus.streak || 0, 0), prize: { wands: 1, coins: 50 } }];
+  const WDEF = [{ id: 'w1', text: 'Solve 15 levels this week', goal: 15, key: 'solved', prize: { coins: 10 } },
+    { id: 'w2', text: 'Win 3 Hard (or harder) levels', goal: 3, key: 'hard', prize: { lens: 1 } },
+    { id: 'w3', text: 'Win 5 levels without losing a heart', goal: 5, key: 'flawless', prize: { hints: 1, coins: 6 } }];
+  const ADEF = [{ id: 'a1', text: 'Pass 10 levels', goal: 10, get: () => stats.solved, prize: { coins: 5 } },
+    { id: 'a2', text: 'Pass 50 levels', goal: 50, get: () => stats.solved, prize: { coins: 12 } },
+    { id: 'a3', text: 'Pass 100 levels', goal: 100, get: () => stats.solved, prize: { coins: 25, lens: 1 } },
+    { id: 'a4', text: 'Pass 200 levels', goal: 200, get: () => stats.solved, prize: { coins: 50, wands: 1 } },
+    { id: 'a5', text: 'Win 10 levels without losing a heart', goal: 10, get: () => stats.flawless, prize: { sweeper: 1 } },
+    { id: 'a6', text: 'Win 50 levels without losing a heart', goal: 50, get: () => stats.flawless, prize: { coins: 20, shield: 1 } },
+    { id: 'a7', text: 'Win 10 levels with no hints', goal: 10, get: () => stats.nohint, prize: { coins: 8 } },
+    { id: 'a8', text: 'Defeat 3 bosses', goal: 3, get: () => stats.bosses, prize: { hints: 1, coins: 10 } },
+    { id: 'a9', text: 'Sky Path: 5 flawless levels in a row', goal: 5, get: () => stats.maxRun, prize: { coins: 10 } },
+    { id: 'a10', text: 'Daily Bonus streak of 7 days', goal: 7, get: () => Math.max(bonus.streak || 0, 0), prize: { hints: 1, coins: 10 } }];
   function freshWeek() { const k = weekKey(); if (!weekly || weekly.week !== k) { weekly = { week: k, solved: 0, hard: 0, flawless: 0, claimed: {} }; store.set('weekly', weekly); } }
   function trackSolved() {
     freshWeek(); const flawless = cur.hearts >= MAX_HEARTS; climbWin();
@@ -1491,9 +1491,9 @@
 
   const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb'].forEach((id) => { $(id).hidden = true; }); };
   const QDEF = [
-    { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 12 },
-    { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 15 },
-    { id: 'flawless', text: 'Solve a level without losing a heart', goal: 1, coins: 15 }
+    { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 3 },
+    { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 3 },
+    { id: 'flawless', text: 'Solve a level without losing a heart', goal: 1, coins: 4 }
   ];
   function freshDay() {
     const t = today();
@@ -1501,7 +1501,7 @@
     if (plays.date !== t) { plays = { date: t, memory: 0, toss: 0, odd: 0, jars: 0, shoot: 0, hoop: 0, cart: 0 }; store.set('plays', plays); }
   }
   const dailyGiftReady = () => gifts.daily !== today();
-  const freeGiftReady = () => Date.now() - gifts.free >= 6 * HOUR;
+  const freeGiftReady = () => Date.now() - gifts.free >= 24 * HOUR;
   const questReady = () => QDEF.some((q) => quests.p[q.id] >= q.goal && !quests.claimed[q.id]) || anyChallengeReady();
   function onSolved() {
     freshDay(); trackSolved();
@@ -1534,8 +1534,8 @@
     S.unlock(); S.tap(); closeAll();
     const list = $('giftList'); list.innerHTML = '';
     const rows = [
-      { name: 'Daily gift', sub: dailyGiftReady() ? 'Ready to collect!' : 'Come back tomorrow', ready: dailyGiftReady(), prize: { coins: 10 }, claim: () => { gifts.daily = today(); } },
-      { name: 'Free hint', sub: freeGiftReady() ? 'Ready to collect!' : 'Ready in ' + (() => { const ms = 6 * HOUR - (Date.now() - gifts.free), h = Math.floor(ms / HOUR), m = Math.ceil((ms % HOUR) / 60000); return h + 'h ' + m + 'm'; })(), ready: freeGiftReady(), prize: { hints: 1 }, claim: () => { gifts.free = Date.now(); } }
+      { name: 'Daily gift', sub: dailyGiftReady() ? 'Ready to collect!' : 'Come back tomorrow', ready: dailyGiftReady(), prize: { coins: 3 }, claim: () => { gifts.daily = today(); } },
+      { name: 'Free hint', sub: freeGiftReady() ? 'Ready to collect!' : 'Ready in ' + (() => { const ms = 24 * HOUR - (Date.now() - gifts.free), h = Math.floor(ms / HOUR), m = Math.ceil((ms % HOUR) / 60000); return h + 'h ' + m + 'm'; })(), ready: freeGiftReady(), prize: { hints: 1 }, claim: () => { gifts.free = Date.now(); } }
     ];
     rows.forEach((r) => {
       const d = document.createElement('div'); d.className = 'shoprow';
@@ -1560,9 +1560,9 @@
   function mergePrize(a, b) { const o = Object.assign({}, a); Object.keys(b).forEach((k) => { o[k] = (o[k] || 0) + b[k]; }); return o; }
   function chestLoot(tier) {
     const common = () => { let p; do { p = rollPrize(0, false); } while (p.rare); return p; };
-    if (tier === 'small') return mergePrize({ coins: 8 }, common());
-    if (tier === 'med') return mergePrize(mergePrize({ coins: 15, inf: 15 }, common()), rollPrize(3, true));
-    return mergePrize(mergePrize(mergePrize({ coins: 30 }, rollPrize(6, true)), rollPrize(6, true)), { wands: 1, inf: 30 });
+    if (tier === 'small') return common();
+    if (tier === 'med') return mergePrize({ coins: 4 }, common());
+    return mergePrize(mergePrize({ coins: 8, inf: 15 }, common()), rollPrize(6, true));
   }
   function renderChest() {
     const art = document.querySelector('#chest .chest-art'), full = chest.n >= CHEST_AT, b = $('chestOpen'), q = chest.q;
@@ -1617,7 +1617,7 @@
     coins -= c; saveWallet(); updateHintUi(); chest.q.ready = Date.now() - 1; store.set('chest', chest); S.ui('buy', 1, 1); renderChest(); updateSides();
   }
   /* lucky wheel */
-  const WSEG = [{ c: 5 }, { h: 1 }, { s: 1 }, { k: 1 }, { w: 1 }, { l: 1 }, { d: 1 }, { c: 25 }], WW = [24, 16, 12, 12, 8, 12, 5, 3], WCOL = ['#ff5fa8', '#ffb347', '#7be37a', '#45d0ff', '#b07bff', '#ffe14d', '#ff7a5c', '#5fd8ff'];
+  const WSEG = [{ c: 2 }, { h: 1 }, { s: 1 }, { k: 1 }, { w: 1 }, { l: 1 }, { d: 1 }, { c: 8 }], WW = [46, 9, 8, 8, 2, 8, 3, 16], WCOL = ['#ff5fa8', '#ffb347', '#7be37a', '#45d0ff', '#b07bff', '#ffe14d', '#ff7a5c', '#5fd8ff'];
   let wheelRot = 0, spinning = false;
   function buildWheel() {
     const ICON = (g) => (g.c ? 'ic_coin' : g.h ? 'ic_hint' : g.w ? 'ic_wand' : g.s ? 'ic_shield' : g.k ? 'ic_sweeper' : g.l ? 'ic_lens' : 'ic_double');
@@ -1681,7 +1681,7 @@
   }
 
   /* ---------- Candy Pass: a vertical track of prizes; every level won without losing a heart climbs one step ---------- */
-  const PASS = [{ coins: 10 }, { coins: 15, hints: 1 }, { coins: 20 }, { wands: 1 }, { coins: 25, shield: 1 }, { coins: 15, inf: 15 }, { lens: 1, coins: 15 }, { coins: 40 }, { sweeper: 1, coins: 20 }, { coins: 75, wands: 1, double: 1 }];
+  const PASS = [{ coins: 2 }, { coins: 3 }, { hints: 1 }, { coins: 4 }, { shield: 1 }, { coins: 5 }, { inf: 15 }, { coins: 6 }, { lens: 1 }, { coins: 15, wands: 1 }];
   let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
   function passAdvance() {
     if (pass.step >= PASS.length) return;
@@ -1713,7 +1713,7 @@
 
   /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
      platform, every level you lose drops him one. Each platform holds a bigger prize; a golden chest waits on top. Once a day. ---------- */
-  const CLIMB = [{ coins: 10 }, { hints: 1, inf: 15 }, { coins: 20, lens: 1 }, { shield: 1, coins: 15 }, { wands: 1, inf: 30 }, { coins: 40, sweeper: 1 }, { coins: 80, wands: 1, hints: 2, double: 1 }], CLIMB_MS = 24 * 3600e3;
+  const CLIMB = [{ coins: 2 }, { inf: 15 }, { coins: 4 }, { hints: 1 }, { coins: 6 }, { inf: 30 }, { coins: 15, wands: 1 }], CLIMB_MS = 24 * 3600e3;
   let climb = Object.assign({ start: 0, step: 0, cl: [], day: '' }, store.get('climb', {}));
   const climbOn = () => climb.start > 0 && Date.now() < climb.start + CLIMB_MS;
   const climbLeft = () => Math.max(0, climb.start + CLIMB_MS - Date.now());
@@ -1803,7 +1803,7 @@
     freshDay(); if ((plays.odd || 0) >= MAX_PLAYS) return; plays.odd = (plays.odd || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Odd One Out', 'Tap the candy that is different. Wrong taps cost 3 seconds.');
     const sizes = [3, 3, 4, 4, 5, 5]; let round = 0, score = 0, penalty = 0, over = false; const t0 = performance.now(), TOTAL = 30000;
-    const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, 5 + score * 3, win ? { hints: 1 } : null); };
+    const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, Math.floor(score / 2), null); };
     const board = () => {
       const n = sizes[round], a = Math.floor(Math.random() * 10); let b = Math.floor(Math.random() * 9); if (b >= a) b++;
       const odd = Math.floor(Math.random() * n * n), g = document.createElement('div'); g.className = 'oddgrid'; g.style.gridTemplateColumns = 'repeat(' + n + ',1fr)';
@@ -1830,7 +1830,7 @@
     const cols = ['#22b8ff', '#ff52c8', '#ffd400', '#7ee21f'], body = $('quickBody'), TOT = 14; let n = 0, ok = 0, lives = 3, over = false, now = 0, tStart = 0, dur = 2400;
     body.innerHTML = '<div class="jdrop"><i id="jDrop"></i></div><div class="jars">' + cols.map((c, i) => '<button type="button" class="jar" data-i="' + i + '" style="--jc:' + c + '"><b></b></button>').join('') + '</div>';
     const drop = $('jDrop');
-    const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? 'Perfect!' : ok + ' / ' + TOT + ' sorted', ok * 2 + 3, ok >= TOT ? { wands: 1 } : null); };
+    const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? 'Perfect!' : ok + ' / ' + TOT + ' sorted', Math.floor(ok / 4), ok >= TOT ? { hints: 1 } : null); };
     const next = () => {
       if (over) return; if (n >= TOT) return fin();
       now = Math.floor(Math.random() * 4); drop.style.background = 'radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),transparent 45%),' + cols[now];
@@ -1928,7 +1928,7 @@
     let nextC = pick();
     const sPos = (i) => head - i * D + chain[i].off;
     const burst = (x, y, c) => { for (let k = 0; k < 9; k++) { const a = Math.random() * 6.283, v = 50 + Math.random() * 110; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, l: 0.55, c }); } };
-    const finish = (win) => { if (over) return; over = true; quickEnd(win ? 'Cleared!' : 'They got through! ' + popped + ' popped', win ? 10 : Math.min(5, Math.floor(popped / 6)), win ? { hints: 1 } : null); };
+    const finish = (win) => { if (over) return; over = true; quickEnd(win ? 'Cleared!' : 'They got through! ' + popped + ' popped', win ? 4 : Math.min(2, Math.floor(popped / 12)), win ? { inf: 15 } : null); };
     const resolve = (k) => {
       combo = 0;
       for (;;) {
@@ -2015,7 +2015,7 @@
       sets.push(['d0', rings.filter((q) => q.r === q.c)], ['d1', rings.filter((q) => q.r + q.c === 3)]);
       sets.forEach(([id, qs]) => { if (!doneLines[id] && qs.every((q) => q.ball)) { doneLines[id] = 1; lines++; qs.forEach((q) => { q.glow = 1.6; burst(q.x, q.y, ['#ffe14d', '#fff', '#ffb347'], 8); }); say('LINE!', 150, 150, '#ffe14d', 1); S.fanfare(); buzz([20, 30, 50]); shake = 0.3; } });
     };
-    const finish = () => { if (over) return; over = true; const full = filled >= 16; quickEnd(filled + ' hoops · ' + lines + ' line' + (lines === 1 ? '' : 's'), Math.round(filled * 0.7) + lines * 3, full ? { wands: 1, inf: 15 } : lines >= 2 ? { inf: 15 } : lines >= 1 ? { hints: 1 } : null); };
+    const finish = () => { if (over) return; over = true; const full = filled >= 16; quickEnd(filled + ' hoops · ' + lines + ' line' + (lines === 1 ? '' : 's'), Math.floor(filled / 4) + lines, full ? { hints: 1, inf: 15 } : lines >= 3 ? { inf: 15 } : null); };
     cv.onpointerdown = (e) => { if (over || ball) return; const [x, y] = xy(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} drag = { x, y: Math.max(SY, y) }; };
     cv.onpointermove = (e) => { if (!drag) return; const [x, y] = xy(e); drag.x = x; drag.y = y; };
     const release = () => {
@@ -2089,7 +2089,7 @@
     cv.onpointermove = (e) => { if (e.pressure > 0 || e.buttons) setX(e); };
     quickKey = (e) => { if (e.key === 'ArrowLeft' || e.key === 'a') tx = Math.max(46, tx - 60); if (e.key === 'ArrowRight' || e.key === 'd') tx = Math.min(254, tx + 60); };
     if (location.search.includes('dbg')) window.__cart = () => ({ cx, tx, v, dist, t });
-    const finish = (win) => { if (over) return; over = true; quickKey = null; quickEnd(win ? 'You won the race!' : 'The rival won this time', Math.min(10, got) + (win ? 6 : 0), win ? { hints: 1 } : null); };
+    const finish = (win) => { if (over) return; over = true; quickKey = null; quickEnd(win ? 'You won the race!' : 'The rival won this time', Math.min(2, Math.floor(got / 6)) + (win ? 2 : 0), null); };
     const spawn = () => {
       const roll = Math.random(), free = Math.floor(Math.random() * 3);
       if (roll < 0.5) { items.push({ lane: free, y: -24, k: 'rock' }); const o = (free + 1 + Math.floor(Math.random() * 2)) % 3; if (Math.random() < 0.5) items.push({ lane: o, y: -24, k: 'coin' }); }
@@ -2153,7 +2153,7 @@
     const grid = $('memGrid'); grid.innerHTML = ''; let first = null, lock = false, found = 0, moves = 14;
     $('memMoves').textContent = 'Moves left: ' + moves; $('memMsg').textContent = ''; $('memClose').textContent = 'Give up';
     const finish = (win) => {
-      const reward = win ? 8 + moves * 2 : 3; give({ coins: reward }, true); S.win(); updateSides();
+      const reward = win ? 2 + Math.floor(moves / 3) : 0; give({ coins: reward }, true); S.win(); updateSides();
       $('memMsg').innerHTML = (win ? 'Great memory! +' : 'Out of moves. +') + reward + ' ' + coinSvg; $('memClose').textContent = 'Done'; lock = true;
     };
     deck.forEach((id) => {
@@ -2189,7 +2189,7 @@
     let shot = 0, hits = 0, perfect = 0, flying = null, note = '', noteT = 0, over = false, t0 = performance.now(), lastT = t0, jx = W / 2;
     const jarPos = (t) => W / 2 + Math.sin(t / 1000 * (1.5 + shot * 0.5)) * (W / 2 - JW / 2 - 8);
     const end = () => {
-      over = true; const reward = hits * 4 + perfect * 3; give({ coins: reward }, true); S.win(); updateSides();
+      over = true; const reward = Math.floor((hits + perfect) / 2); give({ coins: reward }, true); S.win(); updateSides();
       $('tossMsg').innerHTML = hits + ' in the jar! +' + reward + ' ' + coinSvg; $('tossClose').textContent = 'Done';
     };
     cv.onpointerdown = (e) => { e.preventDefault(); S.unlock(); if (over || flying) return; flying = { y: SY }; };
