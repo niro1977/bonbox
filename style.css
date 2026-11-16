@@ -1707,3 +1707,7 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 
 /* window titles: one centred line on the plate; the size is fitted by the code */
 .overlay .card h2,#reward #rwTitle,html[lang="es"] .card h2,#rate .card h2{display:grid!important;place-items:center!important;text-align:center!important;white-space:nowrap!important;overflow:visible!important;-webkit-line-clamp:unset!important;line-height:1!important;padding:0!important;font-size:20px}
+
+/* lucky wheel: a little bigger, and tilted less so nothing hides behind the rim */
+#wheel .wheelbox{width:min(318px,100%)!important;transform:perspective(760px) rotateX(10deg)!important;margin-left:-8px;margin-right:-8px}
+#wheel .wheelbox .whub{width:21%!important}
