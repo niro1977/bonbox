@@ -263,23 +263,37 @@
     h.style.left = a.x + 'px'; h.style.top = (a.y - 30) + 'px';
     h.innerHTML = '<img class="hg" src="' + look.stand + '" alt="" draggable="false"><img class="ha" src="' + look.air + '" alt="" draggable="false">';
     map.appendChild(h);
-    const dx = b.x - a.x, dy = b.y - a.y, T = 1000;
+    const dx = b.x - a.x, dy = b.y - a.y, T = 1150;
     { const fn = map.querySelector('.node[data-lv="' + from + '"]'), sts = fn ? fn.querySelectorAll('.st img.star:not(.off)') : [];
       if (sts.length) { fn.classList.add('fresh'); sts.forEach((x, n) => setTimeout(() => { S.stamp(n); buzz(8); }, 120 + n * 170)); await sleep(240 + sts.length * 170); } }
     S.hop();
-    // natural jump: crouch, launch (stretched), tucked mid-air pose, fall, squash on landing, settle
-    const out = 'cubic-bezier(.23,1,.32,1)', inn = 'cubic-bezier(.55,0,1,.45)';
-    const anim = h.animate([
-      { transform: 'translate(0,0) scale(1,1)', offset: 0, easing: out },
-      { transform: 'translate(0,0) scale(1.12,.84)', offset: 0.12, easing: out },
-      { transform: 'translate(' + dx * 0.06 + 'px,' + (dy * 0.06 - 14) + 'px) scale(.92,1.14)', offset: 0.18, easing: 'linear' },
-      { transform: 'translate(' + dx * 0.5 + 'px,' + (dy * 0.5 - 96) + 'px) scale(1,1) rotate(-6deg)', offset: 0.5, easing: inn },
-      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.95,1.08) rotate(3deg)', offset: 0.84, easing: out },
-      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(1.16,.82)', offset: 0.9, easing: out },
-      { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(1,1)', offset: 1 }
-    ], { duration: T, fill: 'forwards' });
-    h.querySelector('.ha').animate([{ opacity: 0, offset: 0 }, { opacity: 0, offset: 0.14 }, { opacity: 1, offset: 0.17 }, { opacity: 1, offset: 0.8 }, { opacity: 0, offset: 0.83 }, { opacity: 0, offset: 1 }], { duration: T, fill: 'forwards' });
-    h.querySelector('.hg').animate([{ opacity: 1, offset: 0 }, { opacity: 1, offset: 0.14 }, { opacity: 0, offset: 0.17 }, { opacity: 0, offset: 0.8 }, { opacity: 1, offset: 0.83 }, { opacity: 1, offset: 1 }], { duration: T, fill: 'forwards' });
+    // natural jump: crouch (anticipation), spring up, a true parabola through the air, squash on landing, a small rebound, settle.
+    // The camera pans with the bear, a shadow stays on the ground and shrinks while he is up, and dust puffs at take-off and landing.
+    const out = 'cubic-bezier(.23,1,.32,1)', HGT = Math.max(84, Math.min(130, Math.hypot(dx, dy) * 0.9)), A0 = 0.16, A1 = 0.8;
+    const kf = [{ transform: 'translate(0,0) scale(1,1)', offset: 0, easing: out }, { transform: 'translate(0,0) scale(1.14,.8)', offset: A0 - 0.03, easing: out }];
+    const tilt = Math.max(-12, Math.min(12, dx * 0.12));
+    for (let n = 0; n <= 10; n++) {
+      const u = n / 10, x = dx * u, y = dy * u - HGT * 4 * u * (1 - u), st = u < 0.2 ? 1 + (0.2 - u) * 0.9 : u > 0.85 ? 1 + (u - 0.85) * 0.6 : 1;
+      kf.push({ transform: 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) scale(' + (2 - st).toFixed(3) + ',' + st.toFixed(3) + ') rotate(' + (tilt * (1 - 2 * u)).toFixed(1) + 'deg)', offset: A0 + (A1 - A0) * u, easing: 'linear' });
+    }
+    kf.push({ transform: 'translate(' + dx + 'px,' + dy + 'px) scale(1.2,.76)', offset: A1 + 0.05, easing: out });
+    kf.push({ transform: 'translate(' + dx + 'px,' + (dy - 9) + 'px) scale(.95,1.07)', offset: A1 + 0.12, easing: 'ease-in' });
+    kf.push({ transform: 'translate(' + dx + 'px,' + dy + 'px) scale(1.06,.94)', offset: A1 + 0.17, easing: out });
+    kf.push({ transform: 'translate(' + dx + 'px,' + dy + 'px) scale(1,1)', offset: 1 });
+    const anim = h.animate(kf, { duration: T, fill: 'forwards' });
+    h.querySelector('.ha').animate([{ opacity: 0, offset: 0 }, { opacity: 0, offset: A0 }, { opacity: 1, offset: A0 + 0.03 }, { opacity: 1, offset: A1 - 0.02 }, { opacity: 0, offset: A1 + 0.01 }, { opacity: 0, offset: 1 }], { duration: T, fill: 'forwards' });
+    h.querySelector('.hg').animate([{ opacity: 1, offset: 0 }, { opacity: 1, offset: A0 }, { opacity: 0, offset: A0 + 0.03 }, { opacity: 0, offset: A1 - 0.02 }, { opacity: 1, offset: A1 + 0.01 }, { opacity: 1, offset: 1 }], { duration: T, fill: 'forwards' });
+    const sh = document.createElement('i'); sh.className = 'hopshadow'; sh.style.left = a.x + 'px'; sh.style.top = (a.y - 22) + 'px'; map.insertBefore(sh, h);
+    sh.animate([{ transform: 'translate(-50%,0) scale(1)', opacity: 0.38, offset: 0 }, { transform: 'translate(-50%,0) scale(1.1)', opacity: 0.4, offset: A0 }, { transform: 'translate(calc(-50% + ' + dx / 2 + 'px),' + dy / 2 + 'px) scale(.5)', opacity: 0.18, offset: (A0 + A1) / 2 },
+      { transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(1.15)', opacity: 0.4, offset: A1 + 0.04 }, { transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(1)', opacity: 0.38, offset: 1 }], { duration: T, fill: 'forwards' });
+    const dust = (x, y) => { for (let n = 0; n < 6; n++) { const d = document.createElement('i'); d.className = 'hopdust'; d.style.left = x + 'px'; d.style.top = (y - 18) + 'px'; map.appendChild(d); const ax = (n < 3 ? -1 : 1) * (10 + Math.random() * 24), ay = -4 - Math.random() * 12;
+      const q = d.animate([{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 0.85 }, { transform: 'translate(calc(-50% + ' + ax + 'px),calc(-50% + ' + ay + 'px)) scale(1.5)', opacity: 0 }], { duration: 420 + Math.random() * 160, easing: out, fill: 'both' }); q.onfinish = () => d.remove(); } };
+    setTimeout(() => dust(a.x, a.y), T * A0); setTimeout(() => { dust(b.x, b.y); buzz(12); }, T * (A1 + 0.02));
+    { // the camera pans with the bear
+      const mapTop = map.getBoundingClientRect().top + window.scrollY, y0 = window.scrollY, y1 = Math.max(0, mapTop + b.y - window.innerHeight * 0.55), t0 = performance.now();
+      const pan = (now) => { const u = Math.min(1, (now - t0) / T), e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; window.scrollTo(0, y0 + (y1 - y0) * e); if (u < 1) requestAnimationFrame(pan); };
+      if (Math.abs(y1 - y0) > 2) requestAnimationFrame(pan);
+    }
     await anim.finished.catch(() => {});
     S.candy((to - 1) % 10, 3); buzz(15);
     const node = map.querySelector('.node[data-lv="' + to + '"]');
@@ -290,7 +304,7 @@
     // the resting bear now stands at the NEW level (it was drawn at the old one while the hop played)
     if (still) { still.style.left = b.x + 'px'; still.style.top = (b.y - 30) + 'px'; still.style.visibility = ''; }
     else map.insertAdjacentHTML('beforeend', '<div class="mascot" style="left:' + b.x + 'px;top:' + (b.y - 30) + 'px"><svg><use href="#gumi"/></svg><svg class="blink"><use href="#gumiblink"/></svg></div>');
-    h.remove();
+    h.remove(); { const hs = map.querySelector('.hopshadow'); if (hs) hs.remove(); }
     mascotAt = 0; await sleep(260);
   }
 
@@ -643,39 +657,75 @@
   const coinSvg = '<img class="ico" src="art/ic_coin.webp" alt="" draggable="false">';
   /* coins you win fly into the main wallet (the top chip, or a floating bank on the game screen) and the counter ticks up as each lands */
   let coinHold = 0, bankT = 0;
+  // one prize object flies the way it does in the big games: it pops out of its source, hangs for a beat,
+  // then accelerates along a curved path leaving sparkles behind, and lands with a flash.
+  function flyThing(o) {
+    return new Promise((done) => {
+      const L = fxLayer(), p = document.createElement('img'); p.src = o.src; p.className = 'fx-coin'; p.draggable = false;
+      const sz = o.size || 40; p.style.cssText = 'left:' + o.sx + 'px;top:' + o.sy + 'px;width:' + sz + 'px;height:' + sz + 'px;opacity:0'; L.appendChild(p);
+      const hx = o.hx || 0, hy = o.hy || 0;                       // where it hangs, relative to the source
+      const ex = o.tx - o.sx, ey = o.ty - o.sy;                   // the target, relative to the source
+      const side = (ex - hx) >= 0 ? 1 : -1, len = Math.hypot(ex - hx, ey - hy);
+      const cx = (hx + ex) / 2 - side * Math.min(110, len * 0.32) * (o.bow || 1), cy = (hy + ey) / 2 + Math.min(60, len * 0.12);   // control point: swing out sideways and dip a little first
+      const POP = 0.2, HANG = 0.34, N = 12, kf = [], T = o.dur || 760;
+      const tf = (x, y, sc, rot) => 'translate(calc(-50% + ' + x.toFixed(1) + 'px),calc(-50% + ' + y.toFixed(1) + 'px)) scale(' + sc.toFixed(3) + ') rotate(' + rot.toFixed(0) + 'deg)';
+      kf.push({ transform: tf(0, 0, 0.3, -30), opacity: 0, offset: 0, easing: 'cubic-bezier(.23,1,.32,1)' });
+      kf.push({ transform: tf(hx, hy - 6, 1.25, 0), opacity: 1, offset: POP * 0.75, easing: 'ease-in-out' });
+      kf.push({ transform: tf(hx, hy, 1, 0), opacity: 1, offset: POP, easing: 'ease-in-out' });
+      kf.push({ transform: tf(hx, hy + 4, 1.04, 0), opacity: 1, offset: HANG, easing: 'linear' });
+      const pts = [];
+      for (let n = 1; n <= N; n++) {
+        const u = n / N, e = u * u * (0.55 + 0.45 * u);           // ease-in: slow start, fast finish
+        const x = (1 - e) * (1 - e) * hx + 2 * (1 - e) * e * cx + e * e * ex, y = (1 - e) * (1 - e) * (hy + 4) + 2 * (1 - e) * e * cy + e * e * ey;
+        pts.push([x, y, u]); kf.push({ transform: tf(x, y, 1.04 - 0.5 * e, 220 * e), opacity: 1, offset: HANG + (1 - HANG) * u, easing: 'linear' });
+      }
+      const an = p.animate(kf, { duration: T, delay: o.delay || 0, fill: 'both' });
+      // sparkle trail: little stars left behind along the path
+      if (!o.noTrail) pts.forEach((q, n) => {
+        if (n % 2 || n >= N - 1) return;
+        const sp = document.createElement('i'); sp.className = 'fx-trail'; sp.style.left = (o.sx + q[0]) + 'px'; sp.style.top = (o.sy + q[1]) + 'px'; L.appendChild(sp);
+        const a2 = sp.animate([{ transform: 'translate(-50%,-50%) scale(1.1)', opacity: 0.95 }, { transform: 'translate(-50%,calc(-50% + 10px)) scale(.1)', opacity: 0 }], { duration: 380, delay: (o.delay || 0) + T * (HANG + (1 - HANG) * q[2]) + 20, easing: 'ease-out', fill: 'both' });
+        a2.onfinish = () => sp.remove();
+      });
+      an.onfinish = () => {
+        p.remove();
+        const fl = document.createElement('i'); fl.className = 'fx-flash'; fl.style.left = o.tx + 'px'; fl.style.top = o.ty + 'px'; L.appendChild(fl); setTimeout(() => fl.remove(), 420);
+        done();
+      };
+    });
+  }
+  function plusText(x, y, text) {
+    const w = document.createElement('b'); w.className = 'fx-plus'; w.textContent = text; w.style.left = x + 'px'; w.style.top = y + 'px'; fxLayer().appendChild(w); setTimeout(() => w.remove(), 1000);
+  }
   function flyCoins(fromEl, amount, delay, held) {
     if (!amount || amount <= 0) return;
     if (!held) { coinHold += amount; updateHintUi(); }
     const wal = $('walletCoins'), home = !$('home').hidden && wal && wal.getBoundingClientRect().width > 0 && wal.getBoundingClientRect().top >= -4;
-    const tgt = home ? wal : { getBoundingClientRect: () => ({ left: innerWidth * 0.3, top: 6, width: 40, height: 30 }), classList: { remove() {}, add() {} } };
     const settle = () => { coinHold = Math.max(0, coinHold - amount); updateHintUi(); };
     if (!fromEl || !fromEl.getBoundingClientRect) { settle(); return; }
     const a = fromEl.getBoundingClientRect();   // measured now, so it still works if the card is closed this very moment
     setTimeout(() => {
-      const L = fxLayer();
       if (!a.width) { settle(); return; }
       const sx = a.left + a.width / 2, sy = a.top + a.height / 2;
-      const n = Math.min(12, Math.max(5, Math.round(amount / 4))); let left = amount, done = 0;
+      const t = home ? wal.getBoundingClientRect() : { left: innerWidth * 0.3, top: 6, width: 40, height: 30 }, tx = t.left + (home ? 19 : t.width / 2), ty = t.top + t.height / 2;
+      const n = amount >= 40 ? 6 : amount >= 12 ? 5 : amount >= 5 ? 4 : Math.max(1, Math.min(3, amount)); let left = amount, done = 0;
       for (let k = 0; k < n; k++) {
-        const p = document.createElement('img'); p.src = 'art/ic_coin.webp'; p.className = 'fx-coin'; p.draggable = false; p.style.opacity = 0;
-        p.style.left = sx + 'px'; p.style.top = sy + 'px'; L.appendChild(p);
-        const t = tgt.getBoundingClientRect(), tx = t.left + t.width * 0.3 - sx, ty = t.top + t.height / 2 - sy;
-        const jx = (Math.random() - 0.5) * 120, jy = (Math.random() - 0.5) * 70, bow = (Math.random() < 0.5 ? -1 : 1) * (40 + Math.random() * 70);
-        const an = p.animate([
-          { transform: 'translate(-50%,-50%) scale(.4)', opacity: 0 },
-          { transform: 'translate(calc(-50% + ' + jx + 'px),' + jy + 'px) scale(1.15)', opacity: 1, offset: 0.2 },
-          { transform: 'translate(calc(-50% + ' + (tx * 0.55 + bow) + 'px),' + (ty * 0.5 + jy) + 'px) scale(1)', opacity: 1, offset: 0.62 },
-          { transform: 'translate(calc(-50% + ' + tx + 'px),' + ty + 'px) scale(.55)', opacity: 1 }
-        ], { duration: 420 + Math.random() * 140, delay: k * 24, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' });
-        an.onfinish = () => {
-          p.remove(); done++;
-          const part = done === n ? left : Math.round(amount / n); left -= part; coinHold = Math.max(0, coinHold - part); updateHintUi();
-          tgt.classList.remove('bump'); void tgt.offsetWidth; tgt.classList.add('bump');
-          if (done % 2 === 1) S.ui('coin'); buzz(8);
-        };
+        const ang = -Math.PI / 2 + (k - (n - 1) / 2) * 0.62 + (Math.random() - 0.5) * 0.25, rad = n === 1 ? 0 : 38 + Math.random() * 20;
+        flyThing({ src: 'art/ic_coin.webp', size: 40, sx, sy, tx, ty, hx: Math.cos(ang) * rad, hy: Math.sin(ang) * rad * 0.8, delay: k * 55, dur: 700, bow: 0.7 + Math.random() * 0.6 }).then(() => {
+          done++; const part = done === n ? left : Math.round(amount / n); left -= part; coinHold = Math.max(0, coinHold - part); updateHintUi();
+          if (home) { wal.classList.remove('bump'); void wal.offsetWidth; wal.classList.add('bump'); }
+          S.ui('coin'); buzz(8);
+          if (done === n) plusText(tx + 14, ty + 30, '+' + amount);
+        });
       }
     }, delay || 0);
   }
+  if (location.search.includes('dbg')) setTimeout(() => {   // test hook: ?dbg=1&auto=hop|coins runs one animation by itself
+    const m = location.search.match(/auto=(\w+)/); if (!m) return;
+    document.querySelectorAll('.overlay,#intro').forEach((o) => { o.hidden = true; }); const it = $('intro'); if (it) it.style.display = 'none';
+    if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
+    const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
+  }, 1500);
   if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
@@ -1040,7 +1090,7 @@
   async function toMap() {
     const p = pendingHop; pendingHop = null;
     if (p) mascotAt = p.from;
-    await transition(() => { renderHome(); show('home'); scrollToLevel(level); });
+    await transition(() => { renderHome(); show('home'); scrollToLevel(p ? p.from : level); });
     if (p) { await sleep(120); await hopTo(p.from, p.to); }
   }
   async function nextLevel() {
@@ -1049,7 +1099,7 @@
     const from = cur.meta.level, to = level; pendingHop = null;
     try {
       mascotAt = from;
-      await transition(() => { renderHome(); show('home'); scrollToLevel(to); });
+      await transition(() => { renderHome(); show('home'); scrollToLevel(from); });
       await sleep(100);
       await Promise.race([hopTo(from, to), sleep(2500)]); mascotAt = 0;
       if (V && to > 1 && (to - 1) % 10 === 0) V.say('Welcome to ' + zoneOf(to).name + '!', true);
@@ -1579,17 +1629,16 @@
   /* ---------- prize items fly into the matching counter at the top ---------- */
   function flyItems(r) {
     if (!r || !r.p) return;
-    const tgt = { hints: 'hintN', wands: 'wandN' }, keys = prizeKeys(r.p);
+    const tgt = { hints: 'hintN', wands: 'wandN' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
     keys.forEach((k, n) => {
-      if (k === 'coins') return;
-      const from = [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]'))[keys.filter((x) => x !== 'coins').indexOf(k)], img = from && from.querySelector('img'); if (!img) return;
+      const from = [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
       const a = img.getBoundingClientRect(); if (!a.width) return;
       const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width && !$('home').hidden;
-      const tx = ok ? tb.left + tb.width / 2 : innerWidth * 0.62, ty = ok ? tb.top + tb.height / 2 : 20;
-      const p = document.createElement('img'); p.src = img.src; p.className = 'fx-coin'; p.style.cssText = 'left:' + (a.left + a.width / 2) + 'px;top:' + (a.top + a.height / 2) + 'px;width:38px;height:38px'; fxLayer().appendChild(p);
-      const dx = tx - (a.left + a.width / 2), dy = ty - (a.top + a.height / 2);
-      const an = p.animate([{ transform: 'translate(-50%,-50%) scale(.6)', opacity: 0 }, { transform: 'translate(calc(-50% + ' + dx * 0.2 + 'px),' + (dy * 0.2 - 50) + 'px) scale(1.25)', opacity: 1, offset: 0.25 }, { transform: 'translate(calc(-50% + ' + dx + 'px),' + dy + 'px) scale(.5)', opacity: 1 }], { duration: 650, delay: 120 + n * 110, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' });
-      an.onfinish = () => { p.remove(); const c = chip && (chip.closest('.chip') || chip); if (c) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); } S.ui('coin'); buzz(8); };
+      const tx = ok ? tb.left + tb.width / 2 - 12 : innerWidth * 0.62, ty = ok ? tb.top + tb.height / 2 : 20;
+      flyThing({ src: img.src, size: 46, sx: a.left + a.width / 2, sy: a.top + a.height / 2, tx, ty, hx: 0, hy: -34, delay: 80 + n * 140, dur: 820 }).then(() => {
+        const c = chip && (chip.closest('.chip') || chip); if (c && ok) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+        S.ui('coin'); buzz(8); if (ok) plusText(tx + 12, ty + 30, '+' + r.p[k]);
+      });
     });
   }
 

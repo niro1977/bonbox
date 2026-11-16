@@ -1179,3 +1179,13 @@ body.in-game .bar .icon{color:#fff!important}
 @media (prefers-reduced-motion:reduce){
   .overlay .card.popin,.overlay.fadein,.node.fresh .st img.star,.unlockring,.node.current::before{animation:none!important}
 }
+
+/* ===== natural motion: prize flight trail/flash, +N text, hop shadow and dust ===== */
+.fx-coin{will-change:transform;filter:drop-shadow(0 3px 2px rgba(80,40,0,.5))}
+.fx-trail{position:absolute;width:13px;height:13px;pointer-events:none;background:radial-gradient(circle,#fff 0%,#ffe98a 38%,rgba(255,200,60,0) 70%);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)}
+.fx-flash{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.95) 0%,rgba(255,225,110,.7) 35%,rgba(255,200,60,0) 68%);animation:fxflash .4s cubic-bezier(.23,1,.32,1) both}
+@keyframes fxflash{from{opacity:1;transform:scale(.3)}to{opacity:0;transform:scale(1.5)}}
+.fx-plus{position:absolute;transform:translate(-50%,-50%);pointer-events:none;font:900 20px 'Nunito',system-ui,sans-serif;color:#ffe14d;-webkit-text-stroke:3px #5a2a00;paint-order:stroke fill;white-space:nowrap;animation:fxplus .95s cubic-bezier(.23,1,.32,1) both}
+@keyframes fxplus{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}30%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-110%) scale(1)}}
+.hopshadow{position:absolute;width:44px;height:12px;border-radius:50%;background:rgba(30,0,60,.9);filter:blur(2.5px);pointer-events:none;z-index:4}
+.hopdust{position:absolute;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,.35) 60%,rgba(255,255,255,0));pointer-events:none;z-index:4}
