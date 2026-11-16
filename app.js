@@ -1030,7 +1030,7 @@
     updateHintUi();
     $('nextBtn').textContent = m.kind === 'level' ? 'Next level' : 'Back to map';
     setTimeout(() => {
-      $('win').hidden = false; confetti(); celebrate(); candyParty();
+      $('win').hidden = false; celebrate(); candyParty();
       const els = $('winStars').querySelectorAll('img.star');
       const box = $('winStars'), card = document.querySelector('#win .card');
       const burst = (el, good) => {
@@ -1078,7 +1078,7 @@
         show(1);
         await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(-3, 0.99, 1.02, lean) }, { transform: tf(0, 1.01, 0.99, -lean * 0.6) }, { transform: tf(-2, 0.99, 1.01, lean * 0.4) }, { transform: tf(0, 1, 1, 0) }], 760 + Math.random() * 380, soft); if (!live()) break;
         show(2); await A(body, [{ transform: tf(0, 0.97, 1.04, 0) }, { transform: tf(0, 1.05, 0.93, 0) }], 150, out); if (!live()) break;
-        show(3); S.hop(); shadowF(0.6, 0.5, 300, out);
+        show(3); shadowF(0.6, 0.5, 300, out);
         await A(body, [{ transform: tf(0, 1.02, 0.97, 0) }, { transform: tf(-H * 0.34, 0.97, 1.05, lean * 0.3) }], 85, 'linear'); if (!live()) break;
         show(4);
         await A(body, [{ transform: tf(-H * 0.34, 0.98, 1.04, lean * 0.3) }, { transform: tf(-H, 1, 1, lean) }], 240, out); if (!live()) break;
@@ -1104,7 +1104,7 @@
       // anticipation
       await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(0, 1.13, 0.82, 0) }], 190, out); if (!live()) break;
       // spring up
-      pose(true); shadow(0.55, 0.45, 300, out); S.hop();
+      pose(true); shadow(0.55, 0.45, 300, out);
       await A(body, [{ transform: tf(0, 1.13, 0.82, 0) }, { transform: tf(-H * 0.3, 0.9, 1.14, lean * 0.4), offset: 0.25 }, { transform: tf(-H, 1, 1, lean) }], 300, out); if (!live()) break;
       // hang
       await A(body, [{ transform: tf(-H, 1, 1, lean) }, { transform: tf(-H - 2, 1.02, 0.99, lean * 0.6) }, { transform: tf(-H, 1, 1, 0) }], 150, soft); if (!live()) break;
@@ -1122,43 +1122,37 @@
       }
     }
   }
-  /* candies jump for joy behind the win card: they shoot up from the floor, fall, bounce with squash and stretch, and new ones keep hopping in */
+  /* the win screen rains sweets instead of paper confetti: three depths, each sweet sways, spins and tumbles on its way down */
   const partyArt = []; let partyRun = 0;
   function candyParty() {
     const cv = $('winParty'); if (!cv || !cv.getContext) return; const run = ++partyRun;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!partyArt.length) ['lollipop', 'candy', 'doughnut', 'cupcake', 'cookie', 'cherries', 'shortcake', 'dango'].forEach((n) => { const im = new Image(); im.src = 'art/cd_' + n + '.webp'; partyArt.push(im); });
+    if (!partyArt.length) for (let k = 1; k <= 12; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; partyArt.push(im); }
     const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, g = cv.getContext('2d');
     cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const FLOOR = H - 10, G = 2300, P = [];
-    const spawn = (x, vx, vy, sz, delay) => P.push({ x, y: FLOOR + 40, vx, vy, sz, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 9, sq: 0, i: Math.floor(Math.random() * partyArt.length), t: -delay, b: 0, a: 1, up: true });
-    // the opening burst: two fountains from the bottom corners and a row of hoppers
-    for (let k = 0; k < 14; k++) { const left = k % 2 === 0; spawn(left ? W * 0.08 : W * 0.92, (left ? 1 : -1) * (60 + Math.random() * 260), -(1250 + Math.random() * 650), 34 + Math.random() * 22, k * 0.045); }
-    for (let k = 0; k < 9; k++) spawn(W * (0.08 + 0.84 * Math.random()), (Math.random() - 0.5) * 160, -(900 + Math.random() * 500), 30 + Math.random() * 18, 0.5 + k * 0.07);
-    let last = performance.now(), next = 1.6, clock = 0;
+    const P = [];
+    const spawn = (y) => {
+      const z = Math.random() < 0.3 ? 0 : Math.random() < 0.55 ? 1 : 2;        // 0 = far and small, 2 = near and big
+      P.push({ x: Math.random() * W, y, z, sz: [20, 30, 44][z] + Math.random() * [8, 10, 14][z], vy: [120, 185, 265][z] + Math.random() * 70, sway: 14 + Math.random() * 26, sf: 0.8 + Math.random() * 1.4, ph: Math.random() * 6.28,
+        r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 3.4, flip: Math.random() < 0.45 ? 1.6 + Math.random() * 2.2 : 0, fp: Math.random() * 6.28, i: Math.floor(Math.random() * 12), t: 0 });
+    };
+    for (let k = 0; k < 38; k++) spawn(-Math.random() * H * 0.95 - 30);          // the first shower is already on its way
+    let last = performance.now(), clock = 0, acc = 0;
     const tick = (now) => {
       if (run !== partyRun || $('win').hidden) { g.clearRect(0, 0, W, H); return; }
       const dt = Math.min(0.033, (now - last) / 1000); last = now; clock += dt;
-      if (clock > next && P.length < 26) { next = clock + 0.35 + Math.random() * 0.5; spawn(W * (0.05 + 0.9 * Math.random()), (Math.random() - 0.5) * 220, -(800 + Math.random() * 600), 28 + Math.random() * 20, 0); }
+      acc += dt * (clock < 4 ? 9 : 3.5); while (acc >= 1 && P.length < 64) { acc -= 1; spawn(-40); } if (acc > 1) acc = 0;
       g.clearRect(0, 0, W, H);
+      P.sort((a, b) => a.z - b.z);
       for (let n = P.length - 1; n >= 0; n--) {
-        const p = P[n]; p.t += dt; if (p.t < 0) continue;
-        p.vy += G * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt; p.sq *= Math.pow(0.0009, dt);
-        if (p.up && p.vy > 0) p.up = false;
-        const rad = p.sz / 2;
-        if (!p.up && p.y + rad > FLOOR) {                    // landing: squash, lose energy, hop again
-          p.y = FLOOR - rad; p.sq = Math.min(0.45, p.vy / 2600); p.vy = -p.vy * (0.5 - p.b * 0.08); p.vx *= 0.8; p.vr *= 0.6; p.b++;
-          if (p.b > 3 || Math.abs(p.vy) < 170) p.dead = true;
-        }
-        if (p.x < rad) { p.x = rad; p.vx = Math.abs(p.vx) * 0.7; } else if (p.x > W - rad) { p.x = W - rad; p.vx = -Math.abs(p.vx) * 0.7; }
-        if (p.dead) { p.a -= dt * 2.4; p.vy = 0; p.y = FLOOR - rad; if (p.a <= 0) { P.splice(n, 1); continue; } }
-        // stretch along the motion while flying fast, squash flat on impact
-        const st = Math.min(0.22, Math.abs(p.vy) / 5200), sx = 1 + p.sq * 0.9 - st * 0.5, sy = 1 - p.sq * 0.8 + st;
-        const hgt = Math.max(0, Math.min(1, (FLOOR - p.y) / 260));
-        g.globalAlpha = p.a * 0.28 * (1 - hgt * 0.8); g.fillStyle = '#1a0540'; g.beginPath(); g.ellipse(p.x, FLOOR + 2, rad * (1.05 - hgt * 0.45), rad * 0.2, 0, 0, 6.283); g.fill();
-        g.globalAlpha = p.a; g.save(); g.translate(p.x, p.y + rad * (1 - sy)); g.scale(sx, sy); g.rotate(p.sq > 0.05 ? p.r * 0.2 : p.r);
-        const im = partyArt[p.i]; if (im.complete && im.naturalWidth) g.drawImage(im, -rad, -rad, p.sz, p.sz);
-        g.restore();
+        const p = P[n]; p.t += dt; p.y += p.vy * dt; p.r += p.vr * dt;
+        if (p.y - p.sz > H) { P.splice(n, 1); continue; }
+      }
+      for (const p of P) {
+        const im = partyArt[p.i]; if (!im.complete || !im.naturalWidth) continue;
+        const x = p.x + Math.sin(p.ph + p.t * p.sf) * p.sway, sx = p.flip ? Math.cos(p.fp + p.t * p.flip) : 1;
+        g.globalAlpha = [0.7, 0.88, 1][p.z];
+        g.save(); g.translate(x, p.y); g.rotate(p.r); g.scale(Math.abs(sx) < 0.12 ? 0.12 * (sx < 0 ? -1 : 1) : sx, 1); g.drawImage(im, -p.sz / 2, -p.sz / 2, p.sz, p.sz); g.restore();
       }
       g.globalAlpha = 1;
       requestAnimationFrame(tick);
