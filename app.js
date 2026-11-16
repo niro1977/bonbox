@@ -743,7 +743,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1759,7 +1759,7 @@
     { id: 'coins_m', name: 'Jar of Coins', price: '$4.99', img: '3d_chest_med', tag: 'POPULAR', give: { coins: 500 } },
     { id: 'coins_l', name: 'Chest of Coins', price: '$9.99', img: '3d_chest_large', tag: 'BEST VALUE', give: { coins: 1500 } },
     { id: 'helpers', name: 'Helper Pack', price: '$3.99', img: 'ic_wand', give: { hints: 10, wands: 5, shield: 3, sweeper: 3, lens: 3, double: 3 } },
-    { id: 'noads', name: 'No Ads', price: '$2.99', img: 'ic_shield', once: true, give: {}, noads: true }
+    { id: 'noads', name: 'No Ads', price: '$9.99', img: 'ic_shield', once: true, give: {}, noads: true }
   ];
   let owned = store.get('owned', {});
   // called after a purchase is confirmed (by the native app, or by the test mode)
