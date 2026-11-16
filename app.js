@@ -86,8 +86,9 @@
   const baseSize = (lv) => Math.min(10, 5 + Math.floor((lv - 1) / 4));
   // from level 21 the boards are 10x10, with a hard 9x9 or 8x8 mixed in now and then (never on Hard/Very Hard/Extreme levels)
   const varietySize = (lv) => { if (lv < 21 || lv % 5 === 0) return 0; const h = Math.imul(lv, 2654435761) >>> 0; const r = (h >>> 8) % 100; return r < 16 ? 9 : r < 30 ? 8 : 0; };
-  const sizeFor = (lv) => varietySize(lv) || baseSize(lv);
-  const tierOf = (lv) => (lv % 50 === 0 ? 'extreme' : lv % 10 === 0 ? 'veryhard' : lv % 5 === 0 ? 'hard' : 'normal');
+  const LAST_LEVEL = 500, ULTRA_FROM = 301;   // 301-500: only the hardest boards
+  const sizeFor = (lv) => (lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
+  const tierOf = (lv) => (lv >= ULTRA_FROM ? (lv % 10 === 0 ? 'extreme' : 'veryhard') : lv % 50 === 0 ? 'extreme' : lv % 10 === 0 ? 'veryhard' : lv % 5 === 0 ? 'hard' : 'normal');
   const dailySize = () => [6, 7, 8, 9, 10, 8, 7][new Date().getDay()];
   const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard' };
 
@@ -147,7 +148,7 @@
   const MAP_STEP = 96, WORLD_GAP = 96;
   function mapGeom() {
     const W = Math.min(window.innerWidth, 460) - 32;
-    const count = ZONES.length * 10;   // every level of every world is on the map from the start
+    const count = LAST_LEVEL;   // every level of every world is on the map from the start
     const Ht = count * MAP_STEP + (count / 10) * WORLD_GAP + 150;   // a clear band between worlds holds the title ribbon
     return { W, count, Ht, pos: (lv) => ({ x: W / 2 + Math.sin((lv - 1) * 0.9) * W * 0.2, y: Ht - 140 - (lv - 1) * MAP_STEP - Math.floor((lv - 1) / 10) * WORLD_GAP }) };
   }
@@ -240,7 +241,7 @@
       const p = g.pos(lv), tier = tierOf(lv), n = sizeFor(lv);
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tier) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
-      b.dataset.lv = lv; if (lv % 10 === 0) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting');
+      b.dataset.lv = lv; if (lv % 10 === 0) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting'); else if (lv >= ULTRA_FROM) b.classList.add('ultra');
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
       if (tier === 'normal') { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); }
       let html = '' + lv;
@@ -315,8 +316,8 @@
 
   /* ---------- boards ---------- */
   // every Hard / Very Hard / Extreme level (and the mixed-in hard 9x9 / 8x8 boards) takes its own board from the pool: no level repeats an earlier one
-  const POOL_KEY = (lv) => { const t = tierOf(lv); return t !== 'normal' ? t : varietySize(lv) ? 'hard' : null; };
-  const POOL_IDX = (() => { const c = {}, o = {}; for (let lv = 1; lv <= 400; lv++) { const k = POOL_KEY(lv); if (!k) continue; const id = k + sizeFor(lv); o[lv] = c[id] || 0; c[id] = o[lv] + 1; } return o; })();
+  const POOL_KEY = (lv) => { if (lv >= ULTRA_FROM) return 'ultra'; const t = tierOf(lv); return t !== 'normal' ? t : varietySize(lv) ? 'hard' : null; };
+  const POOL_IDX = (() => { const c = {}, o = {}; for (let lv = 1; lv <= LAST_LEVEL; lv++) { const k = POOL_KEY(lv); if (!k) continue; const id = k + sizeFor(lv); o[lv] = c[id] || 0; c[id] = o[lv] + 1; } return o; })();
   function boardFor(lv) {
     const n = sizeFor(lv), key = POOL_KEY(lv);
     if (key) {

@@ -1469,3 +1469,8 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 
 /* long prize titles fit the plate */
 #rwTitle{font-size:clamp(15px,4.9vw,21px)!important;white-space:nowrap}
+
+/* the old header above the map is gone: everything in it lives in the top bar, the side buttons and the bottom menu */
+#home .hero,#home>.daily,#home>.score,#home>.streak{display:none!important}
+/* levels 301-500 are all Very Hard: the crown stays for the boss levels only */
+.node.ultra::before{content:none!important}
