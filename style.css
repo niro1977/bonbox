@@ -1283,3 +1283,9 @@ body.in-game .toast.gtoast{bottom:150px}
 #climb .card{gap:6px}
 #climbInfo{font-size:13px;line-height:1.25;margin:0}
 .overlay{overflow-x:hidden;scrollbar-width:none}.overlay::-webkit-scrollbar{display:none}
+/* Candy Climb always fits: the window is capped to the screen and only the platform area shrinks */
+#climb{align-items:center}
+#climb .card{display:flex;flex-direction:column;max-height:calc(100svh - 150px);min-height:0}
+#climb .cl-scroll{flex:1 1 auto;min-height:110px;max-height:none}
+#climb .card>button,#climb .card>p,#climb .cl-timer{flex:none}
+#climb .btn.wide{padding-top:9px;padding-bottom:11px}
