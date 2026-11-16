@@ -14,25 +14,20 @@
 <link rel="apple-touch-icon" href="icon-180.png?v=85">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
-<link rel="stylesheet" href="style.css?v=134b">
-<link rel="preload" as="image" href="art/splash.jpg">
+<link rel="stylesheet" href="style.css?v=135">
+<link rel="preload" as="image" href="art/splash_tall.jpg">
 <style>
-#splash{position:fixed;inset:0;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:#160a3a;transition:opacity .5s;overflow:hidden}
-#splash::before{content:"";position:absolute;inset:-12%;background:url(art/splash.jpg) center/cover;filter:blur(26px) brightness(.55)}
+#splash{position:fixed;inset:0;z-index:999;background:#120733 url(art/splash_tall.jpg) center 42%/cover no-repeat;transition:opacity .5s;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:10px;padding-bottom:max(46px,calc(env(safe-area-inset-bottom) + 34px))}
 #splash.out{opacity:0;pointer-events:none}
-#splash .sbear{position:relative;width:min(100vw,62vh,560px);aspect-ratio:1;object-fit:cover;border-radius:34px;box-shadow:0 0 0 4px rgba(255,255,255,.3),0 18px 40px rgba(0,0,0,.55);animation:spop .7s cubic-bezier(.23,1,.32,1) both,sbob 3.2s ease-in-out .7s infinite}
-#splash .sbar{position:relative;width:min(64vw,260px);height:16px;border-radius:99px;background:rgba(0,0,0,.45);border:3px solid #fff;overflow:hidden}
+#splash .sbar{width:min(70vw,300px);height:18px;border-radius:99px;background:rgba(10,0,40,.6);border:3px solid #fff;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.5)}
 #splash .sbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffd84a,#ff8a14);animation:sload 7s cubic-bezier(.3,.6,.4,1) forwards}
-#splash b{position:relative;color:#fff;font:900 17px system-ui,sans-serif;letter-spacing:1px;text-shadow:0 2px 4px #000}
-@keyframes sbob{50%{transform:translateY(-8px) scale(1.015)}}
-@keyframes spop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+#splash b{color:#fff;font:900 17px system-ui,sans-serif;letter-spacing:1px;text-shadow:0 2px 5px #000}
 @keyframes sload{from{width:4%}to{width:100%}}
-@media (prefers-reduced-motion:reduce){#splash .sbear{animation:none}}
 </style>
 <script>window.__t0=Date.now()</script>
 </head>
 <body>
-<div id="splash"><img class="sbear" src="art/splash.jpg" alt="Candoku"><div class="sbar"><i></i></div><b>Loading…</b></div>
+<div id="splash"><div class="sbar"><i></i></div><b>Loading…</b></div>
 <div id="scene" aria-hidden="true"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -203,7 +198,7 @@
     <button class="btn" id="maybeBtn" type="button" aria-pressed="false" aria-label="Maybe" title="Maybe"><img loading="lazy" decoding="async" class="tico" src="art/tool_maybe.webp" alt="" draggable="false"></button>
     <button class="btn" id="clearBtn" type="button" aria-label="Restart" title="Restart"><img loading="lazy" decoding="async" class="tico" src="art/tool_restart_red.webp" alt="" draggable="false"></button>
   </div>
-  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v134</span></p>
+  <p class="help">Tap: X (tap again to remove). Double tap: candy. Hold a square or use Maybe to mark a ? <span class="ver">v135</span></p>
 </main>
 
 <!-- WIN -->
