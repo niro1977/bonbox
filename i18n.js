@@ -85,7 +85,7 @@
     // ---- win / lose ----
     'Level reward!': '¡Premio de nivel!', 'Big level reward!': '¡Gran premio de nivel!', 'no hints': 'sin pistas', '🪄 Big reward!': '🪄 ¡Gran premio!', '+1 magic wand': '+1 varita mágica', '🎁 and +1 hint': '🎁 y +1 pista',
     '🎁 Reward!': '🎁 ¡Premio!', '👑 Boss defeated!': '👑 ¡Jefe derrotado!', 'No hearts lost = an even bigger prize!': 'Sin perder corazones = ¡un premio aún mayor!', 'Next level': 'Siguiente', 'Back to map': 'Volver al mapa',
-    'Share': 'Compartir', 'Copied!': '¡Copiado!', 'Out of hearts': 'Sin corazones', 'Take a breath and try this level again.': 'Respira hondo e intenta este nivel otra vez.', '▶ Watch a video · keep playing': '▶ Mira un video · sigue jugando',
+    'Share': 'Compartir', 'Copied!': '¡Copiado!', 'Out of hearts': 'Sin corazones', 'Take a breath and try this level again.': 'Respira hondo e intenta este nivel otra vez.', '▶ Watch video · keep playing': '▶ Video · sigue jugando',
     'Try again': 'Intentar de nuevo', '❤️ One more heart. Keep going!': '❤️ Un corazón más. ¡Sigue!', 'Close': 'Cerrar',
     // ---- intro, tutorial, how to play ----
     'Candy Land was the sweetest place in the world.': 'El País de los Dulces era el lugar más dulce del mundo.', 'Then came a giant sneeze. Achoo! Every candy got mixed up!': 'Entonces llegó un estornudo gigante. ¡Achú! ¡Todos los dulces se revolvieron!',
