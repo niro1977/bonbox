@@ -183,7 +183,28 @@
     { name: 'Gumdrop Garden' },
     { name: 'Royal Cake Palace' },
     { name: 'Rainbow Sherbet Glacier' },
-    { name: 'Sweet Kingdom Gate' }
+    { name: 'Sweet Kingdom Gate' },
+    // worlds 31-50: the road to Baron Sour's castle
+    { name: 'Sour Lemon Grove' },
+    { name: 'Bubblegum Swamp' },
+    { name: 'Marshmallow Clouds' },
+    { name: 'Popcorn Peaks' },
+    { name: 'Jellybean Harbor' },
+    { name: 'Peppermint Blizzard' },
+    { name: 'Fudge Volcano' },
+    { name: 'Taffy Twister Plains' },
+    { name: 'Sprinkle Desert' },
+    { name: 'Gummy Bear Woods' },
+    { name: 'Candy Carnival Night' },
+    { name: 'Blueberry Moon Lagoon' },
+    { name: 'Maple Syrup Marsh' },
+    { name: 'Rock Candy Cliffs' },
+    { name: 'Churro Canyon' },
+    { name: 'Strawberry Storm Fields' },
+    { name: 'Licorice Ruins' },
+    { name: 'Thundercloud Citadel' },
+    { name: 'Sour Storm Summit' },
+    { name: "Baron Sour's Castle" }
   ];
   const ASPECT = { 'd-lolly': [0.6, 1], 'd-bush': [1, 0.6], 'd-cane': [0.5, 1], 'd-cloud': [2, 1], 'd-house': [1, 1], 'd-cone': [0.85, 1.15], 'd-choco': [0.8, 1], 'd-star': [1, 1] };
   const zoneOf = (lv) => ZONES[Math.floor((lv - 1) / 10) % ZONES.length];
@@ -1466,7 +1487,7 @@
   let look = { stand: 'art/gumi_hero.webp', win: 'art/gumi_win.webp', air: 'art/gumi_jump.webp' };
   const FRAMES = [{ id: 'cream', name: 'Cream', bg: '#f7f1e5', at: 0 }, { id: 'mint', name: 'Mint', bg: 'linear-gradient(160deg,#e6fff0,#b9f0d2)', at: 10 }, { id: 'sky', name: 'Sky', bg: 'linear-gradient(160deg,#e6f4ff,#bcdcfb)', at: 25 },
     { id: 'rose', name: 'Rose', bg: 'linear-gradient(160deg,#fff0f6,#ffcfe0)', at: 40 }, { id: 'gold', name: 'Gold', bg: 'linear-gradient(160deg,#fff7c9,#ffd96a)', at: 70 }, { id: 'night', name: 'Night', bg: 'linear-gradient(160deg,#5c4fd0,#2a2470)', at: 100 }];
-  const WORLD_NAMES = ['Lollipop Meadow', 'Chocolate River', 'Frosting Mountains', 'Cotton Candy Sky', 'Ice Cream Beach', 'Gingerbread Winter', 'Donut Lake', 'Cookie Canyon', 'Crystal Caves', 'Jelly Jungle', 'Cupcake Village', 'Candy Cane Forest', 'Caramel Falls', 'Carnival Fairground', 'Macaron Mesa', 'Waffle Castle', 'Soda Springs', 'Honey Hive Hills', 'Berry Bog', 'Mint Mountain', 'Licorice Night Market', 'Sugar Dunes Oasis', 'Pudding Pools', 'Cinnamon Autumn Forest', 'Starlight Sprinkle Galaxy', 'Toffee Treehouse Village', 'Gumdrop Garden', 'Royal Cake Palace', 'Rainbow Sherbet Glacier', 'Sweet Kingdom Gate'];
+  const WORLD_NAMES = ['Lollipop Meadow', 'Chocolate River', 'Frosting Mountains', 'Cotton Candy Sky', 'Ice Cream Beach', 'Gingerbread Winter', 'Donut Lake', 'Cookie Canyon', 'Crystal Caves', 'Jelly Jungle', 'Cupcake Village', 'Candy Cane Forest', 'Caramel Falls', 'Carnival Fairground', 'Macaron Mesa', 'Waffle Castle', 'Soda Springs', 'Honey Hive Hills', 'Berry Bog', 'Mint Mountain', 'Licorice Night Market', 'Sugar Dunes Oasis', 'Pudding Pools', 'Cinnamon Autumn Forest', 'Starlight Sprinkle Galaxy', 'Toffee Treehouse Village', 'Gumdrop Garden', 'Royal Cake Palace', 'Rainbow Sherbet Glacier', 'Sweet Kingdom Gate', 'Sour Lemon Grove', 'Bubblegum Swamp', 'Marshmallow Clouds', 'Popcorn Peaks', 'Jellybean Harbor', 'Peppermint Blizzard', 'Fudge Volcano', 'Taffy Twister Plains', 'Sprinkle Desert', 'Gummy Bear Woods', 'Candy Carnival Night', 'Blueberry Moon Lagoon', 'Maple Syrup Marsh', 'Rock Candy Cliffs', 'Churro Canyon', 'Strawberry Storm Fields', 'Licorice Ruins', 'Thundercloud Citadel', 'Sour Storm Summit', "Baron Sour's Castle"];
   const passed = () => Math.max(0, level - 1);
   let outfit = store.get('outfit', 'hero'), frame = store.get('frame', 'cream');
   const outfitOf = (id) => OUTFITS.find((o) => o.id === id) || OUTFITS[0], frameOf = (id) => FRAMES.find((f) => f.id === id) || FRAMES[0];
