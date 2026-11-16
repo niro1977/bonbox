@@ -419,9 +419,6 @@
     if (!resumed && pendingBoost) { if (pendingBoost.shield) { items.shield--; cur.shield = true; } if (pendingBoost.double) { items.double--; cur.double = true; } saveWallet(); updateHintUi(); }
     pendingBoost = null;
     show('game');
-    if (resumed) setTimeout(() => toast('Welcome back! Continuing where you left off.'), 500);
-    if (cur.shield) setTimeout(() => toast('🛡 Heart Shield is on!'), 900);
-    if (infOn()) setTimeout(() => toast('♾️ Unlimited hearts for ' + fmtMS(infUntil - Date.now()) + '!'), 1500);
     if (V && !preSpoken) setTimeout(() => V.start(lv, tierOf(lv)), 700);
     preSpoken = false;
     if (lv % 10 === 0 && !resumed) setTimeout(bossEnter, 1000);
@@ -439,7 +436,6 @@
     makeGame(E.generate(n, hash('candoku-' + t)), 'Daily Candy', { kind: 'daily', date: t }, 'normal');
     const resumed = applySaved(savedFor(cur.meta));
     show('game');
-    if (resumed) setTimeout(() => toast('Welcome back! Continuing where you left off.'), 500);
   }
   function drawHearts() {
     const h = $('hearts'); h.innerHTML = '';
@@ -846,7 +842,7 @@
     if (!mark.length) { toast('Place a candy first, then sweep!'); return; }   // nothing is spent
     items.sweeper--; saveWallet(); updateHintUi(); snapshot();
     mark.forEach(([yy, xx], k) => { cur.state[yy][xx] = 1; cur.wrongMarks.delete(yy + ',' + xx); setTimeout(() => { const el = cellEl(yy, xx); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted'); }, Math.min(k * 14, 500)); });
-    paint(); toast('🧹 Swept ' + mark.length + ' square' + (mark.length > 1 ? 's' : '') + '!'); buzz(18); S.hint(); S.praise(1);
+    paint(); buzz(18); S.hint(); S.praise(1);
   }
   function armLens() {
     if (!cur || cur.done || items.lens <= 0) return;
@@ -869,7 +865,7 @@
     cur.state[y][x] = 2; cur.wrongMarks.delete(y + ',' + x);
     paint();
     const el = cellEl(y, x); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted');
-    toast('✨ The wand placed a candy for you!'); buzz(20); S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount());
+    buzz(20); S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount());
     if (solved()) win();
   }
   /* ---------- daily bonus: pick one of nine cards ---------- */
@@ -1862,7 +1858,7 @@
   const climbClaim = () => CLIMB.filter((x, i) => i < climb.step && !climb.cl[i]).length;
   const fmtClock = (ms) => { const t = Math.floor(ms / 1000), hh = Math.floor(t / 3600), mm = Math.floor((t % 3600) / 60), ss = t % 60; return hh + ':' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'); };
   function climbWin() { if (!climbOn() || climb.step >= CLIMB.length) return; climb.step++; climb.moved = 1; store.set('climb', climb); }
-  function climbLose() { if (!climbOn() || climb.step <= 0) return; climb.step--; climb.moved = -1; store.set('climb', climb); setTimeout(() => toast('🧗 Candy Climb: down to platform ' + climb.step), 1400); }
+  function climbLose() { if (!climbOn() || climb.step <= 0) return; climb.step--; climb.moved = -1; store.set('climb', climb); }
   function climbStart() {
     if (climbOn()) return; if (climb.day === today()) { toast('Candy Climb is back tomorrow'); return; }
     climb = { start: Date.now(), step: 0, cl: [], day: today(), moved: 0 }; store.set('climb', climb); S.unlock2(); buzz([20, 30, 40]); renderClimb(); updateSides();
