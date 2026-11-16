@@ -1474,3 +1474,8 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 #home .hero,#home>.daily,#home>.score,#home>.streak{display:none!important}
 /* levels 301-500 are all Very Hard: the crown stays for the boss levels only */
 .node.ultra::before{content:none!important}
+
+/* the name box in the daily ranking: dark text on a white field, readable on the light card */
+#ranking .namefield{color:#5a2a00!important;font-weight:800;text-shadow:none}
+#ranking .namefield input{background:#fff!important;color:#3a1500!important;border:2px solid #c98a4d!important;box-shadow:inset 0 2px 3px rgba(90,40,0,.18);-webkit-text-fill-color:#3a1500;caret-color:#c2185b;text-shadow:none;-webkit-text-stroke:0}
+#ranking .namefield input::placeholder{color:#a8876a}
