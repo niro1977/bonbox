@@ -1174,7 +1174,7 @@
     if (!body || !body.animate) return; const live = () => run === celebRun && !$('win').hidden;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { air.style.opacity = 0; gnd.style.opacity = 1; return; }
     const out = 'cubic-bezier(.23,1,.32,1)', inn = 'cubic-bezier(.5,0,.9,.4)', soft = 'cubic-bezier(.45,.05,.55,.95)';
-    const A = (el, kf, ms, ease) => { const an = el.animate(kf, { duration: ms * 0.78, easing: ease || 'linear', fill: 'forwards' }); return an.finished.catch(() => {}); };   // the whole celebration runs about a quarter faster
+    const A = (el, kf, ms, ease) => { const an = el.animate(kf, { duration: ms * 0.7, easing: ease || 'linear', fill: 'forwards' }); return an.finished.catch(() => {}); };   // the whole celebration runs about a quarter faster
     const tf = (y, sx, sy, r) => 'translateY(' + y + 'px) scale(' + sx + ',' + sy + ') rotate(' + (r || 0) + 'deg)';
     if (body.classList.contains('frames')) {
       // real drawn poses: cheer, crouch, take-off, peak, fall, landing. The picture changes with the motion, the way a hand-animated character does.
@@ -1186,9 +1186,9 @@
       while (live()) {
         const H = 28 + Math.random() * 8, lean = (2 + Math.random() * 3) * side; side = -side;   // a lower hop: the bear never climbs over the title
         show(1);
-        await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(-3, 0.99, 1.02, lean) }, { transform: tf(0, 1.01, 0.99, -lean * 0.6) }, { transform: tf(0, 1, 1, 0) }], 520 + Math.random() * 260, soft); if (!live()) break;
+        await A(body, [{ transform: tf(0, 1, 1, 0) }, { transform: tf(-3, 0.99, 1.02, lean) }, { transform: tf(0, 1.01, 0.99, -lean * 0.6) }, { transform: tf(0, 1, 1, 0) }], 470 + Math.random() * 230, soft); if (!live()) break;
         // the whole hop is ONE continuous movement (no stop between its parts); the drawn pose follows the clock of that movement
-        const T = 970, o = (ms) => ms / T, an = body.animate([
+        const T = 875, o = (ms) => ms / 970, an = body.animate([
           { transform: tf(0, 0.97, 1.04, 0), offset: 0, easing: out },
           { transform: tf(0, 1.05, 0.93, 0), offset: o(110), easing: 'linear' },
           { transform: tf(-H * 0.34, 0.97, 1.05, lean * 0.3), offset: o(175), easing: out },
@@ -1200,7 +1200,7 @@
           { transform: tf(0, 1.02, 0.98, 0), offset: o(750), easing: soft },
           { transform: tf(-5, 0.99, 1.02, 0), offset: o(840), easing: soft },
           { transform: tf(0, 1, 1, 0), offset: 1 }], { duration: T, fill: 'forwards' });
-        const marks = [[0, 2], [110, 3], [175, 4], [455, 5], [620, 6], [750, 1]]; let last = 0;
+        const marks = [[0, 2], [110, 3], [175, 4], [455, 5], [620, 6], [750, 1]].map((m) => [m[0] * T / 970, m[1]]); let last = 0;
         const tick = () => {
           if (!live()) { an.cancel(); return; }
           const t = an.currentTime || 0; let p = 2; for (const m of marks) if (t >= m[0]) p = m[1];
