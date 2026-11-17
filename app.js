@@ -2012,7 +2012,7 @@
   const outfitOf = (id) => OUTFITS.find((o) => o.id === id) || OUTFITS[0], frameOf = (id) => FRAMES.find((f) => f.id === id) || FRAMES[0];
   // outfits that have a hand-drawn six-pose victory jump (art/jump_<id>_1..6.webp)
   // outfits that have a hand-animated victory film (video/win_<id>.webm, transparent). Pink bear only: other colours keep the drawn poses
-  const WINVID = { hero: 'gumi_win', chef: 'gumi_chef_win', fire: 'gumi_fire_win', pirate: 'gumi_pirate_win', cowboy: 'gumi_cowboy_win' };
+  const WINVID = { hero: 'gumi_win', chef: 'gumi_chef_win', fire: 'gumi_fire_win', pirate: 'gumi_pirate_win', cowboy: 'gumi_cowboy_win', wizard: 'gumi_wizard_win', king: 'gumi_king_win', ninja: 'gumi_ninja_win' };
   const canAlphaVideo = (() => { try { const v = document.createElement('video'); return !!v.canPlayType && v.canPlayType('video/webm; codecs="vp9"') !== '' && !/iPhone|iPad|Macintosh/.test(navigator.userAgent); } catch (e) { return false; } })();
   const JUMPSETS = ['hero', 'chef', 'fire', 'pirate', 'cowboy', 'wizard', 'king', 'ninja'];
   function applyLook() {
