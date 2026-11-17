@@ -1328,7 +1328,13 @@
         $('bonusStreak').textContent = '🔥 Day ' + streak + (streak % 7 === 0 ? ' · big prize day!' : ' · come back tomorrow for more');
         // the other cards show what they hid
         [...grid.children].forEach((c, k) => { if (c === b) return; setTimeout(() => { c.querySelector('.back').innerHTML = prizeHtml(rollPrize(streak, false)); c.classList.add('open', 'dim'); S.ui('flip', 0.9 + (k % 4) * 0.08, 0.7); }, 450 + k * 90); });
-        setTimeout(() => { $('bonusClaim').hidden = false; announce(prize, streak % 7 === 0 ? 'Big prize day!' : 'Daily Bonus!', streak % 7 === 0); }, 1500);
+        // no second "Claim" card: the prize flies straight from the picked card to its counters, then the window closes by itself
+        setTimeout(() => {
+          if ($('bonus').hidden) { coinHold = 0; updateHintUi(); return; }
+          if (prize.coins) { const ci = b.querySelector('img[src*="ic_coin"]'); flyCoins(ci || b, prize.coins, 0, true); }
+          flyItems({ p: prize }, b);
+        }, 1100);
+        setTimeout(() => { if (!$('bonus').hidden) { $('bonus').hidden = true; updateHintUi(); } }, 3300);
       };
       grid.appendChild(b);
     }
@@ -2723,11 +2729,12 @@
   }
 
   /* ---------- prize items fly into the matching counter at the top ---------- */
-  function flyItems(r) {
+  function flyItems(r, src) {
     if (!r || !r.p) return;
+    const all = prizeKeys(r.p), pz = src ? [...src.querySelectorAll('.pz')] : null;   // src: fly from a card's own prize icons
     const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
     keys.forEach((k, n) => {
-      const from = [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
+      const from = pz ? pz[all.indexOf(k)] : [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
       const a = img.getBoundingClientRect(); if (!a.width) return;
       const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width > 0;
       const tx = ok ? tb.left + tb.width / 2 - 12 : innerWidth * 0.62, ty = ok ? tb.top + tb.height / 2 : 20;
