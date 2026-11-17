@@ -175,13 +175,13 @@
   /* ---------- screen transition: a rainbow wipe with a spinning candy ---------- */
   function transition(mid) {
     return new Promise((resolve) => {
+      // a quick fade (no loading screen): the next screen is built while the colour covers the old one
       const w = $('wipe'); w.hidden = false; S.whoosh();
-      const a = w.animate([{ clipPath: 'circle(0% at 50% 60%)' }, { clipPath: 'circle(150% at 50% 60%)' }], { duration: 420, easing: 'ease-in', fill: 'forwards' });
+      const a = w.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: 'ease-out', fill: 'forwards' });
       a.onfinish = async () => {
-        await sleep(30);
         try { await mid(); } catch (e) { console.error(e); }
-        await sleep(160);
-        const b = w.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, fill: 'forwards' });
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));   // the new screen has been drawn once
+        const b = w.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in', fill: 'forwards' });
         b.onfinish = () => { w.getAnimations().forEach((x) => x.cancel()); w.hidden = true; resolve(); };
       };
     });
@@ -388,20 +388,52 @@
   // every Hard / Very Hard / Extreme level (and the mixed-in hard 9x9 / 8x8 boards) takes its own board from the pool: no level repeats an earlier one
   const POOL_KEY = (lv) => (lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : isBossLv(lv) ? 'veryhard' : isHardLv(lv) || varietySize(lv) ? 'hard' : null);
   const POOL_IDX = (() => { const c = {}, o = {}; for (let lv = 1; lv <= LAST_LEVEL; lv++) { const k = POOL_KEY(lv); if (!k) continue; const id = k + sizeFor(lv); o[lv] = c[id] || 0; c[id] = o[lv] + 1; } return o; })();
-  function boardFor(lv) {
+  /* Boards are made in the BACKGROUND (a worker), ahead of time: when the app opens, when a level is won and when the level card
+     is shown. A big board can take seconds to make on a phone; done this way the screen never freezes and Play opens at once.
+     Finished boards are remembered (also after the app is closed), so going back to a level is instant too. */
+  const clone = (b) => JSON.parse(JSON.stringify(b));
+  function boardPlan(lv) {
     const n = sizeFor(lv), key = POOL_KEY(lv);
-    if (key) {
-      const pool = (SEEDS[key] || {})[n];
-      if (pool && pool.length) return E.generate(n, pool[POOL_IDX[lv] % pool.length]);
-    }
-    // normal levels: skip boards that would need guessing
-    let b = null;
-    for (let k = 0, tries = n >= 9 ? 2 : 6; k < tries; k++) {
-      b = E.generate(n, n * 100000 + lv * 7919 + k * 13);
-      if (H.rate(n, b.regions, b.solution).max <= 2) break;
-    }
-    return b;
+    if (key) { const pool = (SEEDS[key] || {})[n]; if (pool && pool.length) return { n, seeds: [pool[POOL_IDX[lv] % pool.length]], rate: false }; }
+    const seeds = []; for (let k = 0, tries = n >= 9 ? 2 : 6; k < tries; k++) seeds.push(n * 100000 + lv * 7919 + k * 13);
+    return { n, seeds, rate: true };   // normal levels: skip boards that would need guessing
   }
+  const planSig = (p) => p.n + ':' + p.seeds.join(',');
+  function runPlan(p) { let b = null; for (const s of p.seeds) { b = E.generate(p.n, s); if (!p.rate || H.rate(p.n, b.regions, b.solution).max <= 2) break; } return b; }
+  let savedBoards = store.get('boards', {}); const boardWait = {};
+  function keepBoard(lv, sig, b) {
+    savedBoards[lv] = { sig, b, t: Date.now() };
+    const ks = Object.keys(savedBoards); if (ks.length > 10) { ks.sort((a, c) => savedBoards[a].t - savedBoards[c].t); delete savedBoards[ks[0]]; }
+    try { store.set('boards', savedBoards); } catch (e) {}
+  }
+  function readyBoard(lv) { const s = savedBoards[lv]; return s && s.b && s.sig === planSig(boardPlan(lv)) ? s.b : null; }
+  let bWorker = null, bSeq = 0; const bJobs = {};
+  function boardWorker() {
+    if (bWorker !== null) return bWorker;
+    try { bWorker = new Worker('boardworker.js?v=' + ((document.querySelector('.ver') || {}).textContent || '').replace(/\D/g, ''));
+      bWorker.onmessage = (e) => { const cb = bJobs[e.data.id]; if (cb) { delete bJobs[e.data.id]; cb(e.data.board); } };
+      bWorker.onerror = () => { bWorker = false; Object.keys(bJobs).forEach((id) => { const cb = bJobs[id]; delete bJobs[id]; cb(null); }); };
+    } catch (e) { bWorker = false; }
+    return bWorker;
+  }
+  // start making a level's board (does nothing when it is ready or already being made); returns a promise of the board
+  function prepBoard(lv) {
+    if (!lv || lv < 1 || lv > LAST_LEVEL) return Promise.resolve(null);
+    const have = readyBoard(lv); if (have) return Promise.resolve(have);
+    if (boardWait[lv]) return boardWait[lv];
+    const p = boardPlan(lv), sig = planSig(p);
+    boardWait[lv] = new Promise((res) => {
+      const w = boardWorker(), local = () => res(runPlan(p));
+      if (!w) { setTimeout(local, 0); return; }
+      const id = ++bSeq; let done = false; const fin = (b) => { if (done) return; done = true; if (b) res(b); else local(); };
+      bJobs[id] = fin; w.postMessage({ id, n: p.n, seeds: p.seeds, rate: p.rate }); setTimeout(() => fin(null), 25000);   // never wait for ever
+    }).then((b) => { keepBoard(lv, sig, b); delete boardWait[lv]; return b; });
+    return boardWait[lv];
+  }
+  const boardForAsync = (lv) => prepBoard(lv).then(clone);
+  function boardFor(lv) { let b = readyBoard(lv); if (!b) { const p = boardPlan(lv); b = runPlan(p); keepBoard(lv, planSig(p), b); } return clone(b); }   // at once, on this thread (only when there is no time to wait)
+  function makeBoard(lv) { return runPlan(boardPlan(lv)); }
+
 
   /* ---------- game ---------- */
   // which candy sits in which colour region is shuffled per board (stable for the same board), so a colour no longer always has the same candy
@@ -441,7 +473,7 @@
     const bd = $('board'); if (bd) bd.classList.toggle('blk', !!tier && tier !== 'normal');   // special levels: only the board itself is black
     if (box) {
       box.style.setProperty('--bgimg', 'url(art/bg_' + i + '.jpg)'); box.dataset.world = i;
-      sparkField(box, 22);
+      sparkField(box, 10);
     }
     if (M) M.world(i);
   }
@@ -479,11 +511,13 @@
       bx.querySelectorAll('.bst').forEach((b) => { b.onclick = () => { const k = b.dataset.k; if (items[k] <= 0) { toast('You have none. Buy one in the shop!'); return; } pick[k] = !pick[k]; S.tap(); drawBoost(); }; }); };
     drawBoost();
     $('plPlay').onclick = () => { S.unlock(); S.tap(); if (!resume && !canPlay()) { $('prelevel').hidden = true; openLives(); return; } $('prelevel').hidden = true; preSpoken = true; pendingBoost = { shield: pick.shield && items.shield > 0, double: pick.double && items.double > 0 }; if (after) after(); else transition(() => startLevel(lv)); };
-    $('prelevel').hidden = false;
+    $('prelevel').hidden = false; prepBoard(lv);
   }
-  function startLevel(lv) {
+  // startLevel waits (behind the fade) for the board when it is still being made; startLevelNow uses a board that is ready
+  function startLevel(lv) { const b = readyBoard(lv); if (b) { startLevelNow(lv, clone(b)); return Promise.resolve(); } $('wipe').classList.add('busy'); return boardForAsync(lv).then((bd) => { $('wipe').classList.remove('busy'); startLevelNow(lv, bd); }); }
+  function startLevelNow(lv, b) {
     setScene(worldIdx(lv), tierOf(lv));
-    const b = boardFor(lv);
+    b = b || boardFor(lv);
     makeGame(b, 'Level ' + lv, { kind: 'level', level: lv }, tierOf(lv));
     const resumed = applySaved(savedFor(cur.meta));
     if (!resumed && pendingBoost) { if (pendingBoost.shield) { items.shield--; cur.shield = true; } if (pendingBoost.double) { items.double--; cur.double = true; } saveWallet(); updateHintUi(); }
@@ -945,7 +979,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1191,7 +1225,7 @@
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
-        cleared++; store.set('cleared', cleared); if (m.level === bonusLevelOf(Math.floor(m.level / 10))) bonusPending = true;                       // only a first-time pass counts toward the reward
+        cleared++; store.set('cleared', cleared); prepBoard(level); if (m.level === bonusLevelOf(Math.floor(m.level / 10))) bonusPending = true;                       // only a first-time pass counts toward the reward
         if (cleared % HINT_EVERY === 0) { give({ hints: 1 }); reward = true; soon(() => announce({ hints: 1 }, 'Level reward!'), 3600); }
         checkUnlocks(m);
         if (cleared % WAND_EVERY === 0) { give({ wands: 1 }); wandReward = true; soon(() => announce({ wands: 1 }, 'Big level reward!', true), 4200); }
@@ -1514,14 +1548,12 @@
     try {
       mascotAt = from;
       await transition(() => { renderHome(); show('home'); scrollToLevel(from); });
-      await sleep(100);
-      await Promise.race([hopTo(from, to), sleep(2500)]); mascotAt = 0;
+      await Promise.race([hopTo(from, to), sleep(2200)]); mascotAt = 0;
       if (V && to > 1 && (to - 1) % 10 === 0) V.say('Welcome to ' + zoneOf(to).name + '!', true);
-      await sleep(120);
       await new Promise((res) => openPrelevel(to, () => transition(() => startLevel(to)).then(res)));
     } catch (e) {
       console.error(e);
-      try { $('wipe').hidden = true; startLevel(to); } catch (e2) { renderHome(); show('home'); }
+      try { $('wipe').hidden = true; startLevelNow(to); } catch (e2) { renderHome(); show('home'); }
     }
   }
 
@@ -1560,7 +1592,10 @@
   $('shopClose').onclick = () => { S.tap(); $('shop').hidden = true; };
   $('bonusClaim').onclick = () => { S.tap(); $('bonus').hidden = true; updateHintUi(); };
   $('hintCancel').onclick = () => { S.tap(); $('hintInfo').hidden = true; };
-  $('clearBtn').onclick = restart;
+  // Restart clears the whole board, so it asks first (a stray tap in the middle of a game cost all the work)
+  $('clearBtn').onclick = () => { if (!cur || cur.done) return; S.tap(); if (!cur.state.some((r) => r.some((v) => v))) return; $('confirmR').hidden = false; };
+  $('crYes').onclick = () => { $('confirmR').hidden = true; restart(); };
+  $('crNo').onclick = () => { S.tap(); $('confirmR').hidden = true; };
   $('maybeBtn').onclick = () => { cur.maybeMode = !cur.maybeMode; $('maybeBtn').setAttribute('aria-pressed', String(cur.maybeMode)); S.tap(); };
   const openHow = () => { S.tap(); syncOpts(); $('how').hidden = false; };
   $('gearBtn').onclick = openHow; $('howBtn').onclick = openHow;
@@ -1620,28 +1655,45 @@
     const has = (l, y, x) => (l || []).some((c) => c[0] === y && c[1] === x); let hh = '<div class="tb' + (o.bad ? ' isbad' : o.good ? ' isgood' : '') + '">';
     for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
       const k = (o.candies || []).findIndex((c) => c[0] === y && c[1] === x);
-      hh += '<i class="tc' + (has(o.hi, y, x) ? ' hi' : '') + (has(o.red, y, x) ? ' red' : '') + '" data-p="' + y + x + '" style="--c:' + TCOL[TREG[y][x]] + '">' + (k >= 0 ? '<svg style="animation-delay:' + (0.15 + k * 0.18) + 's"><use href="#c' + ((o.ids || [0, 2, 3, 6])[k]) + '"/></svg>' : has(o.xs, y, x) ? '<u></u>' : '') + '</i>';
+      hh += '<i class="tc' + ((o.candies || []).some((c) => c[0] === y && c[1] === x) ? ' tcandy' : '') + (has(o.hi, y, x) ? ' hi' : '') + (has(o.red, y, x) ? ' red' : '') + '" data-p="' + y + x + '" style="--c:' + TCOL[TREG[y][x]] + '">' + (k >= 0 ? '<svg style="animation-delay:' + (0.15 + k * 0.18) + 's"><use href="#c' + ((o.ids || [0, 2, 3, 6])[k]) + '"/></svg>' : has(o.xs, y, x) ? '<u></u>' : '') + '</i>';
     }
     return hh + '</div>' + (o.bad ? '<b class="tmark bad">✗</b>' : o.good ? '<b class="tmark good">✓</b>' : '');
   }
   const pair = (good, bad) => '<div class="tpair"><div class="tside">' + tutBoard(Object.assign({ good: 1 }, good)) + '</div><div class="tside">' + tutBoard(Object.assign({ bad: 1 }, bad)) + '</div></div>';
   const rowOf = (y) => [0, 1, 2, 3].map((x) => [y, x]), colOf = (x) => [0, 1, 2, 3].map((y) => [y, x]), regOf = (r) => { const o = []; TREG.forEach((rw, y) => rw.forEach((v, x) => { if (v === r) o.push([y, x]); })); return o; };
+  const HAND3D = '<svg viewBox="0 0 64 64"><defs><linearGradient id="thg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#ffe9d6"/><stop offset="1" stop-color="#f7c9a6"/></linearGradient></defs><path d="M14 12c0-3 2-5 4.5-5S23 9 23 12v14l15 3.5c4 1 6.5 4.3 6.5 8.3V48c0 5-4 9-9 9H27c-3 0-5.8-1.5-7.5-4L10 39c-1.6-2.4-.8-5.4 1.6-6.8 1-.6 1.8-.7 2.4-.5z" fill="url(#thg)" stroke="#4a1f12" stroke-width="2.6" stroke-linejoin="round"/><path d="M16.5 11.5c.3-1.6 1.2-2.4 2.2-2.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".9"/></svg>';
   const TUT = [
-    { t: 'How to mark', d: 'Tap a square for an X (no candy here). Double-tap to place a candy.', h: () => '<div class="tsolo">' + tutBoard({}) + '<span class="thand" id="tHand">👆</span></div>', run: tutHand },
+    { t: 'Tap and double tap', d: 'Tap once for an X (no candy here). Double tap to place a candy!', h: () => '<div class="tsolo">' + tutBoard({}) + '<span class="thand" id="tHand">' + HAND3D + '</span></div>', run: tutHand },
+    { t: 'Drag for many X', d: 'Hold and drag your finger to mark a whole line of X in one move.', h: () => '<div class="tsolo">' + tutBoard({ candies: [[0, 1]], ids: [0] }) + '<span class="thand" id="tHand">' + HAND3D + '</span></div>', run: tutDrag },
     { t: 'Rows and columns', d: 'Two candies can never share a row or a column.', h: () => pair({ candies: TSOL, hi: rowOf(0).concat(colOf(1)) }, { candies: [[0, 0], [0, 3]], red: rowOf(0), ids: [0, 2] }) },
     { t: 'One per colour', d: 'Each colour area holds exactly one candy.', h: () => pair({ candies: TSOL, hi: regOf(2) }, { candies: [[1, 1], [3, 0]], red: regOf(2), ids: [3, 6] }) },
     { t: 'No touching!', d: 'Not side by side, and not even corner to corner.', h: () => pair({ candies: TSOL }, { candies: [[1, 1], [2, 2]], red: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2], [1, 1]], ids: [0, 3] }) },
-    { t: 'Hearts & helpers', d: 'A wrong candy costs a heart. Stuck? The light bulb gives a hint and the wand places a candy for you.', h: () => '<div class="thelp"><span class="thearts"><img src="art/ic_heart.webp" alt=""><img src="art/ic_heart.webp" alt=""><img class="brk" src="art/ic_heart.webp" alt=""></span><span class="ttools"><img src="art/ic_hint.webp" alt=""><img src="art/ic_wand.webp" alt=""></span></div>' }
+    { t: 'Hearts & helpers', d: 'A wrong candy costs a heart. Stuck? The light bulb gives a hint and the wand places a candy for you.', h: () => '<div class="thelp"><span class="thearts"><img src="art/ic_heart.webp" alt=""><img src="art/ic_heart.webp" alt=""><img class="brk" src="art/ic_heart.webp" alt=""></span><span class="ttools"><b class="ttool"><img src="art/tool_hint.webp" alt=""></b><b class="ttool"><img src="art/tool_wand.webp" alt=""></b></span></div>' }
   ];
   let tutI = 0, tutT = [];
   function tutHand() {
     const box = $('tutStage'), hand = $('tHand'); if (!hand) return; const cell = (p) => box.querySelector('.tc[data-p="' + p + '"]');
-    const go = (p) => { const c = cell(p), b = box.querySelector('.tsolo').getBoundingClientRect(), r = c.getBoundingClientRect(); hand.style.left = (r.left - b.left + r.width / 2) + 'px'; hand.style.top = (r.top - b.top + r.height / 2) + 'px'; };
-    const tap = () => { hand.classList.remove('tap'); void hand.offsetWidth; hand.classList.add('tap'); S.tap(); };
+    const go = (p) => { const c = cell(p), b = box.querySelector('.tsolo').getBoundingClientRect(), r = c.getBoundingClientRect(); box.querySelectorAll('.tc.under').forEach((e) => e.classList.remove('under')); c.classList.add('under'); hand.style.left = (r.left - b.left + r.width / 2) + 'px'; hand.style.top = (r.top - b.top + r.height / 2) + 'px'; };
+    const tap = () => { hand.classList.remove('tap'); void hand.offsetWidth; hand.classList.add('tap'); S.tap(); const c = box.querySelector('.tc.under'); if (c) { c.classList.remove('press'); void c.offsetWidth; c.classList.add('press'); } };
+    // a double tap is counted out loud for the eye: 1 ... 2
+    const bub = (k) => { const c = box.querySelector('.tc.under'), so = box.querySelector('.tsolo'); if (!c || !so) return; const b0 = so.getBoundingClientRect(), r = c.getBoundingClientRect(), e = document.createElement('b'); e.className = 'tnum'; e.textContent = k; e.style.left = (r.left - b0.left + r.width / 2 + (k === 1 ? -16 : 16)) + 'px'; e.style.top = (r.top - b0.top - 6) + 'px'; so.appendChild(e); setTimeout(() => e.remove(), 900); };
     const loop = () => {
-      box.querySelectorAll('.tc').forEach((c) => { c.innerHTML = ''; });
+      box.querySelectorAll('.tc').forEach((c) => { c.innerHTML = ''; c.classList.remove('tcandy'); });
       const seq = [[300, () => go('11')], [1000, () => { tap(); cell('11').innerHTML = '<u></u>'; }], [1900, () => go('22')], [2600, () => { tap(); cell('22').innerHTML = '<u></u>'; }],
-        [3500, () => go('01')], [4200, tap], [4450, () => { tap(); cell('01').innerHTML = '<svg><use href="#c0"/></svg>'; S.candy(0, 3); }], [6200, loop]];
+        [3500, () => go('01')], [4200, () => { tap(); bub(1); }], [4480, () => { tap(); bub(2); cell('01').innerHTML = '<svg><use href="#c0"/></svg>'; cell('01').classList.add('tcandy'); S.candy(0, 3); }], [6400, loop]];
+      seq.forEach((q) => tutT.push(setTimeout(q[1], q[0])));
+    };
+    loop();
+  }
+  // the finger goes down on the first square and slides along the row: an X appears on every square it passes
+  function tutDrag() {
+    const box = $('tutStage'), hand = $('tHand'); if (!hand) return; const cell = (p) => box.querySelector('.tc[data-p="' + p + '"]'), so = box.querySelector('.tsolo');
+    const go = (p, fast) => { const c = cell(p), b = so.getBoundingClientRect(), r = c.getBoundingClientRect(); hand.style.transitionDuration = fast ? '.3s' : ''; hand.style.left = (r.left - b.left + r.width / 2) + 'px'; hand.style.top = (r.top - b.top + r.height / 2) + 'px'; };
+    const x = (p) => { const c = cell(p); c.innerHTML = '<u></u>'; c.classList.remove('press'); void c.offsetWidth; c.classList.add('press'); S.x ? S.x() : S.tap(); };
+    const loop = () => {
+      ['20', '21', '22', '23', '13', '33'].forEach((p) => { cell(p).innerHTML = ''; }); hand.classList.remove('down');
+      const seq = [[250, () => go('20')], [950, () => { hand.classList.add('down'); x('20'); }], [1250, () => go('21', 1)], [1500, () => x('21')], [1600, () => go('22', 1)], [1850, () => x('22')], [1950, () => go('23', 1)], [2200, () => x('23')],
+        [2600, () => hand.classList.remove('down')], [3000, () => go('13')], [3700, () => { hand.classList.add('down'); x('13'); }], [4000, () => go('23', 1)], [4300, () => go('33', 1)], [4550, () => x('33')], [4950, () => hand.classList.remove('down')], [6400, loop]];
       seq.forEach((q) => tutT.push(setTimeout(q[1], q[0])));
     };
     loop();
@@ -2883,16 +2935,17 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
   window.addEventListener('pagehide', saveGame);
   applyLook();
-  (function () { const f = document.createElement('div'); f.id = 'mapfx'; document.body.appendChild(f); sparkField(f, 26); })();
+  (function () { const f = document.createElement('div'); f.id = 'mapfx'; document.body.appendChild(f); sparkField(f, 10); })();
   syncSound();
   renderHome();
   scrollToLevel(level);
+  setTimeout(() => { prepBoard(level).then(() => prepBoard(level + 1)); }, 1200);   // the next boards are ready before the player asks for them
   if (!store.get('seenIntro', false)) showIntro();
   else if (!store.get('seenHow', false)) $('how').hidden = false;
   else {
     const g = store.get('game', null);
     if (g && g.meta && ((g.meta.kind === 'level' && g.meta.level <= level) || (g.meta.kind === 'daily' && g.meta.date === today() && !g.meta.test))) {
-      if (g.meta.kind === 'level') startLevel(g.meta.level); else startDaily();
+      if (g.meta.kind === 'level') startLevelNow(g.meta.level); else startDaily();
     } else maybeBonus();
   }
   { const sp = document.getElementById('splash'), t0 = window.__t0 || Date.now(); let gone = false;

@@ -1825,3 +1825,53 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .med.dot::after{top:0;right:4px}
 @keyframes dotpulse{50%{transform:scale(1.2)}}
 @media (prefers-reduced-motion:reduce){.evcard.dot .evdot,.med.dot::after{animation:none}}
+
+/* ---------- no loading screen between screens: just a quick colour fade ---------- */
+#wipe .ld{display:none!important}
+#wipe{background:radial-gradient(circle at 50% 40%,#7a4dff 0,#4a22c8 55%,#2a0f7a 100%)!important;clip-path:none!important}
+/* ---------- Restart: are you sure? ---------- */
+#confirmR .cr-ico{width:84px;height:84px;margin:0 auto;object-fit:contain;filter:drop-shadow(0 5px 4px rgba(60,0,30,.35))}
+#confirmR p{margin:0}
+/* ---------- tutorial in the same glossy 3D look as the game ---------- */
+.tb{background:linear-gradient(180deg,#6a48ff,#2f1a9a)!important;border:4px solid #fff!important;border-radius:18px!important;gap:3px!important;padding:5px!important;
+  box-shadow:0 5px 0 #1c0b5e,0 10px 16px rgba(40,0,80,.4),inset 0 2px 0 rgba(255,255,255,.35)!important}
+.tb.isgood{border-color:#46e06a!important;box-shadow:0 5px 0 #138a33,0 10px 16px rgba(0,80,30,.35),0 0 14px rgba(70,224,106,.6)!important}
+.tb.isbad{border-color:#ff5a6a!important;box-shadow:0 5px 0 #a8122a,0 10px 16px rgba(120,0,20,.35),0 0 14px rgba(255,90,106,.6)!important}
+.tc{border-radius:22%!important;background-color:var(--c)!important;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.08) 48%,rgba(0,0,0,.12))!important;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.2),inset 0 2px 0 rgba(255,255,255,.6),0 2px 2px rgba(0,0,0,.28)!important;transition:transform .12s}
+.tc::before{content:"";position:absolute;left:14%;top:9%;width:34%;height:18%;border-radius:50%;background:rgba(255,255,255,.55);filter:blur(.4px);pointer-events:none}
+.tc.tcandy{box-shadow:inset 0 0 0 2.5px #1b0d2e,inset 0 -3px 0 rgba(0,0,0,.16),0 0 0 1px rgba(255,255,255,.6),0 2px 3px rgba(0,0,0,.3)!important}
+.tc svg{position:relative;z-index:1;width:84%!important;height:84%!important;filter:drop-shadow(0 0 3px rgba(255,255,255,.95)) drop-shadow(0 2px 2px rgba(0,0,0,.45))}
+.tc u{position:relative;z-index:1;width:56%!important;height:56%!important;opacity:1!important;
+  background:linear-gradient(45deg,transparent 38%,#fff 38% 62%,transparent 62%),linear-gradient(-45deg,transparent 38%,#fff 38% 62%,transparent 62%)!important;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
+.tc.press{animation:tcpress .25s ease-out}
+@keyframes tcpress{50%{transform:scale(.86)}}
+.tmark{width:34px!important;height:34px!important;font-size:20px!important;border:3px solid #fff!important;
+  box-shadow:0 3px 0 rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 0 rgba(0,0,0,.18)!important}
+.tmark.good{background:linear-gradient(180deg,#7cf08f,#22b546)!important}.tmark.bad{background:linear-gradient(180deg,#ff8a95,#e0263c)!important}
+.thand{font-size:0!important;width:58px;height:58px;transform:translate(-26%,-8%)!important;filter:drop-shadow(0 6px 5px rgba(0,0,0,.45))!important;z-index:3}
+.thand svg{width:100%;height:100%;transform-origin:28% 12%;transition:transform .09s}
+.thand.tap{animation:none!important}.thand.tap svg{animation:thandtap .24s ease-out}
+@keyframes thandtap{50%{transform:scale(.82)}}
+.tdots i{width:11px!important;height:11px!important;background:linear-gradient(180deg,#e2d9f5,#b9aadb)!important;box-shadow:inset 0 1px 0 #fff,0 1px 1px rgba(0,0,0,.2)}
+.tdots i.on{background:linear-gradient(180deg,#b37aff,#6a22c8)!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.55),0 2px 2px rgba(60,0,120,.35)}
+.thearts img{filter:drop-shadow(0 4px 3px rgba(120,0,30,.35))}
+.ttools{display:flex;gap:16px;justify-content:center}
+.ttool{display:grid;place-items:center;width:64px;height:64px;filter:drop-shadow(0 4px 3px rgba(40,0,80,.45))}
+.ttool img{width:100%!important;height:100%!important;object-fit:contain}
+
+/* ---------- speed on phones ---------- */
+/* blurring the whole screen behind every window is the most expensive effect there is on a phone: a darker veil does the same job */
+.overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:rgba(22,0,56,.74)}
+#win{background:radial-gradient(circle at 50% 42%,#6fe9ff 0,#2a8ee8 36%,#2a3fb8 66%,#1c1470 100%)}
+/* the 50 world pictures no longer slide all the time: that repainted the whole map on every frame */
+.zone{animation:none!important}
+/* while a board is still being made, a small spinner (no loading screen) */
+#wipe.busy::after{content:"";width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .8s linear infinite;animation-delay:.35s;opacity:0;animation-fill-mode:both;animation-name:busyspin}
+@keyframes busyspin{0%{opacity:0;transform:rotate(0)}1%{opacity:1}100%{opacity:1;transform:rotate(360deg)}}
+/* ---------- tutorial: the double-tap count and the dragging finger ---------- */
+.tnum{position:absolute;z-index:4;transform:translate(-50%,-100%);width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#ffe95c,#ffb21f);border:2.5px solid #fff;color:#5a2a00;font:900 15px/1 Nunito,system-ui,sans-serif;box-shadow:0 3px 0 rgba(120,60,0,.45);animation:tnum .9s ease-out both;pointer-events:none}
+@keyframes tnum{0%{opacity:0;transform:translate(-50%,-60%) scale(.4)}18%{opacity:1;transform:translate(-50%,-100%) scale(1.15)}30%{transform:translate(-50%,-100%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-130%) scale(1)}}
+.thand.down svg{transform:scale(.84)}
