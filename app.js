@@ -61,29 +61,96 @@
     return fetch(RANK_URL + '/score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid, name: pname, points: score.points }) })
       .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   }
+  /* ---------- Today's League: the player races characters of the game (never fake "people") and the real players of the day.
+     Every rival has a goal for the day and moves toward it as the hours pass, so the table is alive from morning to night
+     and starts again at midnight. Their scores come from the date and the clock only: nothing is stored or sent. ---------- */
+  const RIVALS = [{ n: 'Vinegar', img: 'boss_idle' }, { n: 'Sour Cloud', img: 'minion_idle' }, { n: 'Captain Teal', img: 'gumi_pirate', head: 1 }, { n: 'Astro Bear', img: 'gumi_astronaut', head: 1 },
+    { n: 'Ninja Bear', img: 'gumi_ninja', head: 1 }, { n: 'Chef Bear', img: 'gumi_chef', head: 1 }, { n: 'Lolli Pop', c: 0 }, { n: 'Candy Wrap', c: 1 }, { n: 'Choco Bar', c: 2 }, { n: 'Donut Dan', c: 3 },
+    { n: 'Cuppy Cake', c: 4 }, { n: 'Cookie Kid', c: 5 }, { n: 'Cherry Twins', c: 6 }, { n: 'Softy Swirl', c: 7 }, { n: 'Miss Shortcake', c: 8 }, { n: 'Dango Trio', c: 9 }];
+  const LEAGUE_GOALS = [2400, 1900, 1500, 1200, 950, 760, 600, 470, 360, 270, 200, 150, 110, 80, 50, 30];
+  let realTop = [];   // the real players of today, as the ranking server last sent them
+  function rivalsNow() {
+    const day = today(), d = new Date(), hr = d.getHours() + d.getMinutes() / 60;
+    const idx = RIVALS.map((r, i) => i).sort((a, b) => hash(day + 'o' + a) - hash(day + 'o' + b));     // a new order every day
+    const vi = idx.indexOf(0); if (vi > 2) { idx.splice(vi, 1); idx.splice(hash(day + 'v') % 3, 0, 0); }   // Vinegar is always one of the three to beat
+    return idx.map((ri, k) => {
+      const h = hash(day + 'r' + ri), start = (h % 80) / 10, end = 15 + ((h >>> 8) % 85) / 10, p = Math.max(0, Math.min(1, (hr - start) / (end - start))), e = p * p * (3 - 2 * p);
+      return { name: RIVALS[ri].n, rival: RIVALS[ri], points: Math.round(LEAGUE_GOALS[k] * (0.85 + ((h >>> 16) % 31) / 100) * e / 10) * 10 };
+    });
+  }
+  // everyone in one table: rivals, today's real players and (when he has points) the player himself
+  function leagueList(myPts) {
+    const all = rivalsNow().concat((realTop || []).filter((r) => !r.me).map((r) => ({ name: rhide.includes(r.name) ? 'Player' : r.name, real: r.name, points: r.points })));
+    if (myPts > 0) all.push({ name: pname, me: true, points: myPts });
+    return all.sort((a, b) => b.points - a.points || (b.me ? 1 : 0) - (a.me ? 1 : 0));
+  }
+  function leagueAvatar(e) {
+    if (e.me) return '<i class="lav me"><img src="' + look.stand + '" alt="" draggable="false"></i>';
+    if (e.rival && e.rival.img) return '<i class="lav' + (e.rival.head ? ' head' : ' full') + '"><img src="art/' + e.rival.img + '.webp" alt="" draggable="false"></i>';
+    const c = e.rival ? e.rival.c : hash(e.name) % 10;
+    return '<i class="lav candy' + (e.rival ? '' : ' real') + '"><svg><use href="#c' + c + '"/></svg></i>';
+  }
+  const rankBadge = (r) => '<b class="lrk' + (r <= 3 ? ' top r' + r : '') + '">' + r + '</b>';
+  function leagueRow(e, rank) {
+    const row = document.createElement('div'); row.className = 'lrow' + (e.me ? ' me' : '');
+    row.innerHTML = rankBadge(rank) + leagueAvatar(e) + '<span class="lnm"></span>' + (e.me ? '<u class="lyou">YOU</u>' : '') + '<em class="lpt"></em>';
+    row.querySelector('.lnm').textContent = e.name; row.querySelector('.lpt').textContent = e.points;
+    return row;
+  }
   function renderBoard(d) {
     const box = $('rankList'); box.innerHTML = '';
-    if (!d || !d.top) { box.innerHTML = '<p class="small">Cannot reach the ranking. Check your connection and try again.</p>'; $('rankMine').textContent = ''; return; }
-    if (!d.top.length) box.innerHTML = '<p class="small">No one has scored yet today. Be the first!</p>';
-    for (const r of d.top) {
-      const row = document.createElement('div'); row.className = 'rrow' + (r.me ? ' me' : '');
-      const n = document.createElement('b'); n.textContent = r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank;
-      const nm = document.createElement('span'); nm.textContent = rhide.includes(r.name) ? 'Player' : r.name;
-      const pt = document.createElement('em'); pt.textContent = r.points;
-      row.append(n, nm, pt);
-      if (!r.me && !rhide.includes(r.name)) {      // every other player's name can be reported: tap the flag, then tap again to confirm
+    if (d && d.top) realTop = d.top;
+    const list = leagueList(score.points);
+    list.slice(0, 30).forEach((e, i) => {
+      const row = leagueRow(e, i + 1);
+      if (e.real && !rhide.includes(e.real)) {      // a real player's name can be reported: tap the flag, then tap again to confirm
         const fl = document.createElement('button'); fl.type = 'button'; fl.className = 'rflag'; fl.textContent = '⚑'; fl.setAttribute('aria-label', 'Report this name');
         fl.onclick = () => {
           if (!fl.classList.contains('ask')) { fl.classList.add('ask'); fl.textContent = 'Report?'; setTimeout(() => { if (fl.isConnected && fl.classList.contains('ask')) { fl.classList.remove('ask'); fl.textContent = '⚑'; } }, 4000); return; }
-          rhide.push(r.name); rhide = rhide.slice(-200); store.set('rhide', rhide); nm.textContent = 'Player'; fl.remove(); $('rankNameMsg').textContent = 'Thank you. The name was reported and hidden.';
-          fetch(RANK_URL + '/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid, name: r.name }) }).catch(() => {});
+          rhide.push(e.real); rhide = rhide.slice(-200); store.set('rhide', rhide); row.querySelector('.lnm').textContent = 'Player'; fl.remove(); $('rankNameMsg').textContent = 'Thank you. The name was reported and hidden.';
+          fetch(RANK_URL + '/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid, name: e.real }) }).catch(() => {});
         };
         row.appendChild(fl);
       }
       box.appendChild(row);
-    }
-    $('rankMine').textContent = d.mine ? 'You are #' + d.mine.rank + ' of ' + d.mine.players + ' today with ' + d.mine.points + ' pts' : (score.points ? '' : 'Solve a board to join the ranking today');
+    });
+    const mi = list.findIndex((e) => e.me), more = d && d.mine ? Math.max(0, d.mine.players - d.top.length) : 0;
+    $('rankMine').textContent = mi >= 0 ? 'You are #' + (mi + 1) + ' of ' + (list.length + more) + ' today with ' + score.points + ' pts' : 'Solve a board to join the ranking today';
+    const me = box.querySelector('.lrow.me'); if (me && me.scrollIntoView) setTimeout(() => { try { me.scrollIntoView({ block: 'center' }); } catch (x) {} }, 60);
   }
+  /* after a win: the player's points count up and his row climbs past the rivals he has just overtaken */
+  let leaguePending = false, leagueThen = null, leagueT = [];
+  function openLeague(then) {
+    leagueThen = then || null; leagueT.forEach(clearTimeout); leagueT = [];
+    const from = Math.max(0, cur && cur.leagueFrom != null ? cur.leagueFrom : score.points), to = score.points;
+    const oldL = leagueList(from), newL = leagueList(to), key = (e) => (e.me ? '@me' : (e.rival ? 'r:' : 'p:') + e.name);
+    const oi = {}; oldL.forEach((e, i) => { oi[key(e)] = i; });
+    const ni = newL.findIndex((e) => e.me), oldI = oi['@me'] != null ? oi['@me'] : newL.length, SHOW = Math.min(7, newL.length), H = 52;
+    const top = Math.max(0, Math.min(ni - 2, newL.length - SHOW)), box = $('leagueList'); box.innerHTML = ''; box.style.height = SHOW * H + 'px';
+    const rows = newL.slice(top, top + SHOW).map((e, k) => {
+      const o = oi[key(e)] != null ? oi[key(e)] : newL.length, row = leagueRow(e, (e.me ? oldI : o) + 1);
+      row._new = top + k; row._e = e; if (e.me) row.querySelector('.lpt').textContent = from;
+      row.style.transform = 'translateY(' + Math.max(-1, Math.min(SHOW, o - top)) * H + 'px)'; box.appendChild(row); return row;
+    });
+    const gain = to - from, up = Math.max(0, oldI - ni);
+    $('leagueGain').textContent = '+' + gain + ' pts'; $('leagueMsg').textContent = ''; $('league').hidden = false;
+    leagueT.push(setTimeout(() => {
+      rows.forEach((row) => { row.classList.add('go'); row.style.transform = 'translateY(' + (row._new - top) * H + 'px)'; });
+      const me = rows.find((r) => r._e.me), ptEl = me && me.querySelector('.lpt'), t0 = performance.now(), D = 900;
+      if (me) me.classList.add('climb');
+      const tick = () => { const u = Math.min(1, (performance.now() - t0) / D); if (ptEl) ptEl.textContent = Math.round((from + gain * (1 - Math.pow(1 - u, 3))) / 10) * 10; if (u < 1 && !$('league').hidden) leagueT.push(setTimeout(tick, 40)); else if (ptEl) ptEl.textContent = to; };
+      tick(); for (let k = 0; k < Math.min(6, up); k++) leagueT.push(setTimeout(() => { S.candy(k + 2, k + 3); buzz(8); }, 120 + k * (700 / Math.max(1, Math.min(6, up)))));
+      if (!up) S.coin && S.coin();
+    }, 550));
+    leagueT.push(setTimeout(() => {
+      rows.forEach((row) => { const b = row.querySelector('.lrk'); if (b) b.outerHTML = rankBadge(row._new + 1); });
+      const me = rows.find((r) => r._e.me); if (me) { me.classList.remove('climb'); me.classList.add('landed'); }
+      $('leagueMsg').textContent = ni === 0 ? 'You are #1 today!' : (up > 1 ? 'You climbed ' + up + ' places!' : up === 1 ? 'You climbed 1 place!' : '') + (ni > 0 ? ' Only ' + (newL[ni - 1].points - to + 10) + ' pts behind ' + newL[ni - 1].name : '');
+      $('leagueMsg').textContent = $('leagueMsg').textContent.trim();
+      if (ni === 0) { S.fanfare && S.fanfare(); } else if (up) S.praise && S.praise(1);
+    }, 550 + 1000));
+  }
+  function closeLeague() { leagueT.forEach(clearTimeout); leagueT = []; $('league').hidden = true; const t = leagueThen; leagueThen = null; if (t) t(); }
   async function openRanking() {
     S.unlock(); S.tap();
     freshScore();
@@ -451,7 +518,7 @@
     cur.cmap = candyMapFor(board);
     updateHintUi();
     for (let y = 0; y < n; y++) cur.state.push(new Array(n).fill(0)); // 0 empty, 1 X, 2 candy, 3 ?
-    $('gTitle').textContent = label; chalStop(); $('chalTimer').hidden = true;
+    $('gTitle').textContent = label; chalStop(); $('chalTimer').hidden = true; leaguePending = false;
     const t = $('tier');
     t.hidden = tier === 'normal'; t.className = 'tier ' + tier; t.textContent = tierLabel[tier] || '';
     const bd = $('board'); bd.className = 'board ' + (tier === 'normal' ? '' : tier);
@@ -979,7 +1046,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1213,7 +1280,7 @@
     score.run++;
     const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; }
     score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
-    store.set('score', score); postScore();
+    store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true;
     const earnedCoins = (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1);   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
@@ -1541,6 +1608,7 @@
   function closeRate() { $('rate').hidden = true; const t = rateThen; rateThen = null; if (t) t(); }
   async function nextLevel() {
     if (!$('win').hidden && shouldRate()) { openRate(() => nextLevel()); return; }
+    if (leaguePending) { leaguePending = false; openLeague(() => nextLevel()); return; }
     if (bonusPending) { bonusPending = false; startCart(() => nextLevel()); return; }
     $('win').hidden = true;
     if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL) { await toMap(); maybeEnding(); return; }
@@ -1611,7 +1679,7 @@
   $('introSkip').onclick = () => { S.tap(); endIntro(); };
   document.addEventListener('pointerdown', () => { S.unlock(); if (M && $('intro').hidden) M.sync(); }, { once: true });
   $('sndHome').onclick = toggleSound; $('sndGame').onclick = toggleSound;
-  $('homeBtn').onclick = () => { if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(maybeEnding); };
+  $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(maybeEnding); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
   $('reviveBtn').onclick = () => { S.tap(); watchAd(() => {
     cur.revived = true; cur.done = false; cur.hearts = 1; addLives(1); if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
@@ -2919,7 +2987,7 @@
     { const hc = $('heartN') && $('heartN').closest('.chip'); if (hc) { hc.style.cursor = 'pointer'; hc.onclick = openLives; } }
     $('stormStart').onclick = stormStart; $('stormPlay').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); openPrelevel(Math.min(level, LAST_LEVEL)); }; $('stormClose').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); };
     $('climbStart').onclick = climbStart; $('climbPlay').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); openPrelevel(level); }; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
-    $('medRush').onclick = startRush; $('chestOdds').onclick = () => { S.tap(); openOdds(); }; $('oddsClose').onclick = () => { S.tap(); $('odds').hidden = true; }; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === T('Done'); $('quick').hidden = true; $('quick').classList.remove('big'); updateSides(); const th = quickThen; quickThen = null; if (th) th(); else if (was) openEvents(); };
+    $('medRush').onclick = startRush; $('leagueGo').onclick = () => { S.tap(); closeLeague(); }; $('chestOdds').onclick = () => { S.tap(); openOdds(); }; $('oddsClose').onclick = () => { S.tap(); $('odds').hidden = true; }; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === T('Done'); $('quick').hidden = true; $('quick').classList.remove('big'); updateSides(); const th = quickThen; quickThen = null; if (th) th(); else if (was) openEvents(); };
     setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (!$('climb').hidden && climbOn()) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft()); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
   }
   wireExtras();
