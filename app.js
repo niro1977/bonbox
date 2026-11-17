@@ -1610,7 +1610,7 @@
     return h;
   }
   function preloadStory() { STORY.map((p) => p.img + '.jpg').concat(['boss_idle_l.webp', 'boss_laugh_l.webp']).forEach((f) => { const im = new Image(); im.src = 'art/' + f; }); }
-  let introStep = 0, rainTimer = null;
+  let introStep = 0, rainTimer = null, introVoiceAt = 0;
   const logoHtml = () => '<div class="logo big" aria-label="Candoku"><img src="art/logo.webp" alt="Candoku" draggable="false"></div>';
   function sceneHtml(kind) {
     if (kind === 'happy') {
@@ -1645,10 +1645,21 @@
       preloadStory();
       ctl.hidden = true;
       $('introStart').onclick = () => {
-        S.unlock(); S.tap(); if (M) M.start('menu');
+        const bt = $('introStart'); if (bt.classList.contains('go')) return;
+        S.unlock(); S.tap(); if (M) M.start('menu'); buzz(18);
         if (V) V.say('Welcome to Bonbox!', true);
-        setTimeout(() => { introStep = 1; renderIntro(); }, 2700);   // let the narrator finish the welcome before the story starts
-        $('introStart').disabled = true;
+        // the tap is answered at once: the button pops away, the logo jumps, candies burst out, and the story picture is on screen in under a second.
+        // The narrator finishes "Welcome to Bonbox!" over that first picture and only then starts reading it.
+        introVoiceAt = performance.now() + (V && V.isEnabled() && S.isOn() ? (window.LANG === 'es' ? 2300 : 2650) : 0);
+        bt.classList.add('go'); const lg = body.querySelector('.st-logo'); if (lg) lg.classList.add('go');
+        const sp = body.querySelector('.st-splash'), r = bt.getBoundingClientRect(), b0 = sp.getBoundingClientRect();
+        for (let k = 0; k < 16; k++) {
+          const c = document.createElement('span'); c.className = 'st-pop'; c.innerHTML = '<svg><use href="#c' + (k % 10) + '"/></svg>'; c.style.left = (r.left - b0.left + r.width / 2) + 'px'; c.style.top = (r.top - b0.top + r.height / 2) + 'px'; sp.appendChild(c);
+          const a = (k / 16) * Math.PI * 2 + Math.random() * 0.4, d = 120 + Math.random() * 130;
+          c.animate([{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + (Math.cos(a) * d).toFixed(0) + 'px),calc(-50% + ' + (Math.sin(a) * d - 60).toFixed(0) + 'px)) scale(1.1) rotate(' + (Math.random() * 360 - 180).toFixed(0) + 'deg)', opacity: 1, offset: 0.6 }, { transform: 'translate(calc(-50% + ' + (Math.cos(a) * d * 1.15).toFixed(0) + 'px),calc(-50% + ' + (Math.sin(a) * d + 40).toFixed(0) + 'px)) scale(.7) rotate(' + (Math.random() * 360).toFixed(0) + 'deg)', opacity: 0 }], { duration: 750 + Math.random() * 250, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
+        }
+        S.whoosh();
+        setTimeout(() => { introStep = 1; renderIntro(); }, 800);
       };
       return;
     }
@@ -1666,7 +1677,7 @@
     ctl.hidden = false;
     $('introNext').textContent = introStep === PANELS.length ? (PANELS === ENDING ? 'Back to map' : "Let's play!") : 'Next';
     $('introDots').innerHTML = PANELS.map((_, i) => '<i class="' + (i === introStep - 1 ? 'on' : '') + '"></i>').join('');
-    if (V) V.say(p.text, true);
+    if (V) { const wait = introVoiceAt - performance.now(), step = introStep; if (wait > 60) setTimeout(() => { if (introStep === step && !$('intro').hidden) V.say(p.text, true); }, wait); else V.say(p.text, true); }
   }
   function showEnding() { store.set('seenEnd', true); PANELS = ENDING; ENDING.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); introStep = 1; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; if (M) M.start('menu'); renderIntro(); const rb = $('replayEnd'); if (rb) rb.hidden = false; }
   function maybeEnding() { if (level > LAST_LEVEL && !store.get('seenEnd', false)) setTimeout(showEnding, 700); }

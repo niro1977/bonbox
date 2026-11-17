@@ -2053,3 +2053,12 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #profile .pf-grid small{font-size:10.5px;line-height:1.15;text-align:center}
 #profile .pf-grid .pf-items{padding:6px 6px 8px}
 #ranking .rlist{max-height:calc(100svh - 500px)}
+
+/* ---------- first screen: the tap on "Tap to start" is answered at once ---------- */
+.intro .play.go{animation:stgo .34s cubic-bezier(.3,1.5,.5,1) both!important;pointer-events:none}
+@keyframes stgo{0%{transform:scale(1)}35%{transform:scale(1.14)}100%{transform:scale(.2);opacity:0}}
+.st-logo.go{animation:stlogogo .8s cubic-bezier(.3,1.5,.5,1) both!important}
+@keyframes stlogogo{0%{transform:none}40%{transform:translateY(-22px) scale(1.14)}100%{transform:translateY(-8px) scale(1.04);opacity:0}}
+.st-pop{position:absolute;width:44px;height:44px;pointer-events:none;z-index:3}
+.st-pop svg{width:100%;height:100%;filter:drop-shadow(0 3px 3px rgba(20,0,60,.45))}
+.st-panel{animation-duration:.45s!important}
