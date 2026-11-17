@@ -1470,6 +1470,14 @@
     const out = 'cubic-bezier(.23,1,.32,1)', inn = 'cubic-bezier(.5,0,.9,.4)', soft = 'cubic-bezier(.45,.05,.55,.95)';
     const A = (el, kf, ms, ease) => { const an = el.animate(kf, { duration: ms * 0.7, easing: ease || 'linear', fill: 'forwards' }); return an.finished.catch(() => {}); };   // the whole celebration runs about a quarter faster
     const tf = (y, sx, sy, r) => 'translateY(' + y + 'px) scale(' + sx + ',' + sy + ') rotate(' + (r || 0) + 'deg)';
+    if (body.classList.contains('vid')) {
+      // the hand-animated film: it pops in and plays in a loop while the window is open
+      const v = body.querySelector('.gv'); body.style.animation = 'none'; if (sh) sh.style.animation = '';
+      v.currentTime = 0; const pl = v.play(); if (pl && pl.catch) pl.catch(() => {});
+      await A(body, [{ transform: tf(-40, 0.7, 0.7, 0), opacity: 0 }, { transform: tf(2, 1.05, 0.95, 0), opacity: 1, offset: 0.7 }, { transform: tf(0, 1, 1, 0), opacity: 1 }], 480, out);
+      const stop = () => { if (!live()) { v.pause(); return; } setTimeout(stop, 500); }; stop();
+      return;
+    }
     if (body.classList.contains('frames')) {
       // real drawn poses: cheer, crouch, take-off, peak, fall, landing. The picture changes with the motion, the way a hand-animated character does.
       const F = [...body.querySelectorAll('.gf')], show = (k) => F.forEach((im, i) => { im.style.opacity = i === k - 1 ? 1 : 0; });
@@ -1709,6 +1717,21 @@
   }
   function showEnding() { store.set('seenEnd', true); PANELS = ENDING; ENDING.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); introStep = 1; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; if (M) M.start('menu'); renderIntro(); const rb = $('replayEnd'); if (rb) rb.hidden = false; }
   function maybeEnding() { if (level > LAST_LEVEL && !store.get('seenEnd', false)) setTimeout(showEnding, 700); }
+  /* Age screen: asked once, on the very first launch, before the story. Neutral (no age is suggested or preferred).
+     Under 13 the game is marked as child-directed: the Android app reads window.CandokuAge and serves only child-safe ads. */
+  window.CandokuAge = store.get('age', null);
+  function openAge(then) {
+    const sel = $('ageYear'), now = new Date().getFullYear(); sel.innerHTML = '<option value="" selected disabled>' + T('Year') + '</option>';
+    for (let y = now; y >= now - 100; y--) { const o = document.createElement('option'); o.value = y; o.textContent = y; sel.appendChild(o); }
+    $('ageGo').disabled = true; sel.onchange = () => { $('ageGo').disabled = !sel.value; };
+    $('ageGo').onclick = () => {
+      const y = +sel.value; if (!y) return; S.unlock(); S.tap();
+      const a = { y, kid: now - y < 13, at: Date.now() }; store.set('age', a); window.CandokuAge = a;
+      const nat = NATIVE(); if (nat && nat.setAudience) { try { nat.setAudience(a.kid ? 'child' : 'general'); } catch (e) {} }
+      $('age').hidden = true; if (then) then();
+    };
+    $('age').hidden = false;
+  }
   function showIntro() { PANELS = STORY; introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; renderIntro(); }
   function endIntro() {
     const wasEnd = PANELS === ENDING; PANELS = STORY;
@@ -1778,6 +1801,7 @@
   $('backBtn').onclick = () => { S.ui('back', 1, 1); toMap(); };
   $('undoBtn').onclick = undo;
   document.querySelectorAll('.card').forEach((card) => {
+    if (card.closest('#age')) return;   // the age question has to be answered: no close button
     const x = document.createElement('button'); x.type = 'button'; x.className = 'xclose'; x.setAttribute('aria-label', 'Close');
     x.onclick = (e) => {
       e.stopPropagation(); S.tap();
@@ -1987,6 +2011,9 @@
   let outfit = store.get('outfit', 'hero'), frame = store.get('frame', 'cream');
   const outfitOf = (id) => OUTFITS.find((o) => o.id === id) || OUTFITS[0], frameOf = (id) => FRAMES.find((f) => f.id === id) || FRAMES[0];
   // outfits that have a hand-drawn six-pose victory jump (art/jump_<id>_1..6.webp)
+  // outfits that have a hand-animated victory film (video/win_<id>.webm, transparent). Pink bear only: other colours keep the drawn poses
+  const WINVID = { hero: 'gumi_win', chef: 'gumi_chef_win', fire: 'gumi_fire_win', pirate: 'gumi_pirate_win', cowboy: 'gumi_cowboy_win' };
+  const canAlphaVideo = (() => { try { const v = document.createElement('video'); return !!v.canPlayType && v.canPlayType('video/webm; codecs="vp9"') !== '' && !/iPhone|iPad|Macintosh/.test(navigator.userAgent); } catch (e) { return false; } })();
   const JUMPSETS = ['hero', 'chef', 'fire', 'pirate', 'cowboy', 'wizard', 'king', 'ninja'];
   function applyLook() {
     if (passed() < outfitOf(outfit).at) outfit = 'hero'; if (passed() < frameOf(frame).at) frame = 'cream';
@@ -2000,7 +2027,11 @@
       const gg = document.querySelector('#win .g-ground'), ga = document.querySelector('#win .g-air'); if (gg) gg.src = wn; if (ga) ga.src = ar;
       const gb = document.querySelector('#win .gbody');
       if (gb) {
-        gb.querySelectorAll('.gf').forEach((e) => e.remove()); gb.classList.remove('frames');
+        gb.querySelectorAll('.gf,.gv').forEach((e) => e.remove()); gb.classList.remove('frames', 'vid');
+        if (WINVID[o.id] && !hue && canAlphaVideo) {
+          const v = document.createElement('video'); v.className = 'gv'; v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', '');
+          v.src = 'video/' + WINVID[o.id] + '.webm?1'; v.onerror = () => { v.remove(); gb.classList.remove('vid'); }; gb.appendChild(v); gb.classList.add('vid');
+        }
         if (JUMPSETS.includes(o.id)) Promise.all([1, 2, 3, 4, 5, 6].map((k) => recolor('jump_' + o.id + '_' + k, hue))).then((fr) => {
           if (outfitOf(outfit).id !== o.id || bearColorOf(bearColor).hue !== hue) return;
           gb.querySelectorAll('.gf').forEach((e) => e.remove());
@@ -3190,7 +3221,7 @@
   renderHome();
   scrollToLevel(level);
   setTimeout(() => { prepBoard(level).then(() => prepBoard(level + 1)); }, 1200);   // the next boards are ready before the player asks for them
-  if (!store.get('seenIntro', false)) showIntro();
+  if (!store.get('seenIntro', false)) { if (store.get('age', null) == null) openAge(showIntro); else showIntro(); }
   else if (!store.get('seenHow', false)) $('how').hidden = false;
   else {
     const g = store.get('game', null);
