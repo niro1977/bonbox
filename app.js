@@ -775,9 +775,12 @@
   function undo() { if (cur.done || !cur.history.length) return; S.tap(); cur.state = cur.history.pop(); paint(); }
 
   let toastTimer = null;
-  function toast(text) {
-    const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; { const tl = document.querySelector('#game .tools'), r = !$('game').hidden && tl ? tl.getBoundingClientRect() : null; if (r && r.width) { t.style.bottom = 'auto'; t.style.top = Math.max(r.bottom + 8, 0) + 'px'; const hh = t.offsetHeight; if (r.bottom + 8 + hh > innerHeight - 6) t.style.top = Math.max(innerHeight - hh - 6, r.bottom + 2) + 'px'; } else { t.style.top = ''; t.style.bottom = ''; } } t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+  // sticky = a helper's explanation: it stays until the player closes it with the X or touches the board
+  function hideToast() { clearTimeout(toastTimer); const t = $('toast'); if (t) t.classList.remove('show', 'sticky'); }
+  setTimeout(() => { const bd = $('board'); if (bd) bd.addEventListener('pointerdown', () => { if ($('toast').classList.contains('sticky')) hideToast(); }, true); }, 0);
+  function toast(text, sticky) {
+    const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.toggle('sticky', !!sticky); if (sticky) { const x = document.createElement('button'); x.type = 'button'; x.className = 'tx'; x.textContent = '✕'; x.setAttribute('aria-label', 'Close'); x.onclick = (e) => { e.stopPropagation(); hideToast(); }; t.appendChild(x); } { const tl = document.querySelector('#game .tools'), r = !$('game').hidden && tl ? tl.getBoundingClientRect() : null; if (r && r.width) { t.style.bottom = 'auto'; t.style.top = Math.max(r.bottom + 8, 0) + 'px'; const hh = t.offsetHeight; if (r.bottom + 8 + hh > innerHeight - 6) t.style.top = Math.max(innerHeight - hh - 6, r.bottom + 2) + 'px'; } else { t.style.top = ''; t.style.bottom = ''; } } t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, sticky ? 45000 : 4200);
   }
   /* ---------- wallet: coins, hints, wands, helpers ---------- */
   const MAX_LIVES_FALLBACK = 5;
@@ -931,7 +934,7 @@
     for (const [y, x] of h.cells) { cur.state[y][x] = h.type === 'candy' ? 2 : 1; cur.wrongMarks.delete(y + ',' + x); }
     paint();
     for (const [y, x] of h.cells) { const el = cellEl(y, x); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted'); }
-    spotlight(h.cells, 3000); toast(h.text); buzz(15);
+    spotlight(h.cells, 3000); toast(h.text, true); buzz(15);
     if (h.type === 'candy') { const [y, x] = h.cells[0]; S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount()); } else S.hint();
     if (solved()) win();
   }
@@ -953,13 +956,13 @@
   }
   function armLens() {
     if (!cur || cur.done || items.lens <= 0) return;
-    cur.lensArmed = true; $('board').classList.add('lens'); toast('🔍 Tap a square to peek at the truth');
+    cur.lensArmed = true; $('board').classList.add('lens'); toast('🔍 Tap a square to peek at the truth', true);
   }
   function lensPeek(y, x) {
     cur.lensArmed = false; $('board').classList.remove('lens');
     items.lens--; saveWallet(); updateHintUi(); snapshot(); const k = y + ',' + x;
-    if (cur.solution[y] === x) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); paint(); toast('✅ Yes! A candy goes right here'); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc); if (solved()) win(); }
-    else { cur.state[y][x] = 1; cur.wrongMarks.delete(k); paint(); toast('❌ Not here. Marked with an X'); S.x(); }
+    if (cur.solution[y] === x) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); paint(); toast('✅ Yes! A candy goes right here', true); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc); if (solved()) win(); }
+    else { cur.state[y][x] = 1; cur.wrongMarks.delete(k); paint(); toast('❌ Not here. Marked with an X', true); S.x(); }
     spotlight([[y, x]], 3000); buzz(16);
   }
   function useWand() {
@@ -1088,7 +1091,7 @@
 
   /* ---------- win ---------- */
   function win() {
-    cur.done = true; saveGame(); buzz([30, 40, 60]); S.win();
+    cur.done = true; saveGame(); buzz([30, 40, 60]); S.win(); hideToast();
     if (foeKind()) bossDefeat();
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     if (V && !isBoss()) setTimeout(() => V.win(cur.hearts), 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
@@ -2514,6 +2517,8 @@
   /* ---------- Cart Race: a surprise BONUS STAGE that appears once in every 10 levels, right after a win.
      Drag the cart, grab the few coins, dodge the rocks: three hits and you are out with no prize. ---------- */
   let bonusPending = false, quickThen = null;
+  // TEMPORARY: a test button on the map that starts the bonus stage at once (to be removed before the store build)
+  setTimeout(() => { const hm = $('home'); if (!hm || $('tmpBonus')) return; const b = document.createElement('button'); b.type = 'button'; b.id = 'tmpBonus'; b.textContent = 'TEST BONUS'; b.onclick = () => { S.unlock(); startCart(() => {}); }; hm.appendChild(b); }, 0);
   const bonusSeed = (() => { let s = store.get('bseed', 0); if (!s) { s = 1 + Math.floor(Math.random() * 997); store.set('bseed', s); } return s; })();
   // which level of each block of ten brings the bonus (never the Hard or the Extremely Hard one, and never the same place twice in a row)
   const bonusLevelOf = (blk) => blk * 10 + (blk === 0 ? [6, 7, 8][bonusSeed % 3] : [2, 3, 4, 6, 7, 8][(bonusSeed + blk * 5 + blk * blk) % 6]);
