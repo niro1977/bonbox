@@ -87,10 +87,10 @@
       return { name: RIVALS[ri].n, rival: RIVALS[ri], points: Math.round(pts / 10) * 10 };
     });
   }
-  /* The chase. Every time the player wins, the five best rivals that he has now passed stay close behind him (40 to 460 points)
+  /* The chase. Every time the player wins, the five best rivals that he has now passed stay close behind him (60 to 480 points)
      and from that moment keep earning points every minute, the nearest one fastest. Their scores never go down.
      So whoever takes first place has to keep playing to hold it. It all starts again at midnight. */
-  const CHASE_LEAD = [40, 110, 200, 320, 460], CHASE_RATE = [5, 4, 3, 2.5, 2];
+  const CHASE_LEAD = [60, 130, 220, 340, 480], CHASE_RATE = [3, 2.4, 1.8, 1.5, 1.2];   // points behind the player, and points won per minute
   let chase = Object.assign({ day: '', t: 0, ch: {} }, store.get('chase', {}));
   function leagueBump(myPts) {
     const day = today(); if (chase.day !== day) chase = { day, t: Date.now(), ch: {} };
