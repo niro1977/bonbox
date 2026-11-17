@@ -37,10 +37,25 @@
     return { mult, cap: n * 10, gain: Math.min(n * 10, 10 * mult) };
   }
   /* ---------- daily ranking (Cloudflare Worker) ---------- */
-  const RANK_URL = 'https://candoku-ranking.niriangelo.workers.dev';
+  const RANK_URL = 'https://bonbox.pages.dev/api';
+  // Name filter for the public ranking (English + Spanish); the ranking server holds the same list and checks again.
+  // SUB is refused wherever it appears (also f.u.c.k, sh1t, fuuuck); WORD only as a whole word (ass in "class", puta in "disputa").
+  const nameBad = (() => {
+    const SUB = ['fuck', 'shit', 'bitch', 'cunt', 'nigger', 'nigga', 'faggot', 'whore', 'slut', 'pussy', 'penis', 'vagina', 'porn', 'hitler', 'nazi', 'asshole', 'bastard',
+      'retard', 'wank', 'blowjob', 'handjob', 'dildo', 'jizz', 'cumshot', 'rapist', 'pedofil', 'pedophil', 'motherf', 'dickhead', 'cocksuck', 'bullshit',
+      'mierda', 'pendej', 'cabron', 'verga', 'coño', 'chinga', 'culero', 'maricon', 'joder', 'pinche', 'mamada', 'hijueputa', 'hijodeputa', 'hijaputa', 'putamadre', 'gilipolla', 'malparid', 'gonorrea', 'carajo'];
+    const WORD = ['ass', 'arse', 'cum', 'cock', 'dick', 'tit', 'tits', 'sex', 'sexo', 'sexy', 'anal', 'anus', 'rape', 'fag', 'kkk', 'kike', 'spic', 'chink', 'dyke', 'homo', 'twat', 'prick', 'hoe', 'hell', 'damn', 'piss', 'crap',
+      'puta', 'puto', 'putas', 'putos', 'culo', 'polla', 'zorra', 'pedo', 'marica', 'hdp', 'mamon', 'cojones', 'cono', 'pito', 'teta', 'tetas', 'nalga', 'nalgas', 'idiota', 'estupido', 'estupida'];
+    const rx = (w) => w.replace(/(.)\1?/g, (m, c) => (m.length > 1 ? c + '{2,}' : c + '+'));
+    const SUB_RX = new RegExp(SUB.map(rx).join('|')), WORD_RX = new RegExp('^(?:' + WORD.map(rx).join('|') + ')$');
+    const fold = (s) => String(s || '').toLowerCase().replace(/ñ/g, '\u0001').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\u0001/g, 'ñ')
+      .replace(/[@4]/g, 'a').replace(/3/g, 'e').replace(/[1!|]/g, 'i').replace(/0/g, 'o').replace(/[5$]/g, 's').replace(/7/g, 't');
+    return (name) => { const f = fold(name); return SUB_RX.test(f.replace(/[^a-zñ]/g, '')) || f.split(/[^a-zñ]+/).some((w) => w && WORD_RX.test(w)); };
+  })();
   let pid = store.get('pid', ''), pname = store.get('pname', '');
   if (!pid) { pid = (crypto.randomUUID ? crypto.randomUUID() : 'p' + Date.now() + Math.random().toString(36).slice(2, 10)); store.set('pid', pid); }
-  if (!pname) { pname = 'Player' + Math.floor(1000 + Math.random() * 9000); store.set('pname', pname); }
+  if (!pname || nameBad(pname)) { do { pname = 'Player' + Math.floor(1000 + Math.random() * 9000); } while (nameBad(pname)); store.set('pname', pname); }
+  let rhide = store.get('rhide', []);   // names this player reported: they are not shown to him again
   function postScore() {
     if (!score.points) return Promise.resolve(null);
     return fetch(RANK_URL + '/score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid, name: pname, points: score.points }) })
@@ -53,16 +68,26 @@
     for (const r of d.top) {
       const row = document.createElement('div'); row.className = 'rrow' + (r.me ? ' me' : '');
       const n = document.createElement('b'); n.textContent = r.rank <= 3 ? ['🥇', '🥈', '🥉'][r.rank - 1] : r.rank;
-      const nm = document.createElement('span'); nm.textContent = r.name;
+      const nm = document.createElement('span'); nm.textContent = rhide.includes(r.name) ? 'Player' : r.name;
       const pt = document.createElement('em'); pt.textContent = r.points;
-      row.append(n, nm, pt); box.appendChild(row);
+      row.append(n, nm, pt);
+      if (!r.me && !rhide.includes(r.name)) {      // every other player's name can be reported: tap the flag, then tap again to confirm
+        const fl = document.createElement('button'); fl.type = 'button'; fl.className = 'rflag'; fl.textContent = '⚑'; fl.setAttribute('aria-label', 'Report this name');
+        fl.onclick = () => {
+          if (!fl.classList.contains('ask')) { fl.classList.add('ask'); fl.textContent = 'Report?'; setTimeout(() => { if (fl.isConnected && fl.classList.contains('ask')) { fl.classList.remove('ask'); fl.textContent = '⚑'; } }, 4000); return; }
+          rhide.push(r.name); rhide = rhide.slice(-200); store.set('rhide', rhide); nm.textContent = 'Player'; fl.remove(); $('rankNameMsg').textContent = 'Thank you. The name was reported and hidden.';
+          fetch(RANK_URL + '/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid, name: r.name }) }).catch(() => {});
+        };
+        row.appendChild(fl);
+      }
+      box.appendChild(row);
     }
     $('rankMine').textContent = d.mine ? 'You are #' + d.mine.rank + ' of ' + d.mine.players + ' today with ' + d.mine.points + ' pts' : (score.points ? '' : 'Solve a board to join the ranking today');
   }
   async function openRanking() {
     S.unlock(); S.tap();
     freshScore();
-    $('rankName2').value = pname;
+    $('rankName2').value = pname; $('rankNameMsg').textContent = '';
     $('rankList').innerHTML = '<p class="small">Loading…</p>'; $('rankMine').textContent = '';
     $('ranking').hidden = false;
     const posted = await postScore();     // also refreshes my row
@@ -71,6 +96,8 @@
   }
   function saveName() {
     const v = $('rankName2').value.replace(/[<>&"'`]/g, '').trim().slice(0, 16);
+    if (v && nameBad(v)) { $('rankName2').value = pname; $('rankNameMsg').textContent = 'Please choose another name.'; return; }
+    $('rankNameMsg').textContent = '';
     if (v && v !== pname) { pname = v; store.set('pname', pname); postScore().then((d) => { if (d && !$('ranking').hidden) renderBoard(d); }); }
   }
   function renderScore() {
@@ -1838,7 +1865,7 @@
   let quests = store.get('quests', null), chest = store.get('chest', { n: 0 }), wheel = store.get('wheel', { date: '', extra: 0 });
   let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0, odd: 0, jars: 0, shoot: 0, hoop: 0, cart: 0 });
 
-  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm', 'chal'].forEach((id) => { $(id).hidden = true; }); };
+  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm', 'chal', 'odds'].forEach((id) => { $(id).hidden = true; }); };
   const QDEF = [
     { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 3 },
     { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 3 },
@@ -1999,6 +2026,17 @@
       $('chestBar').style.width = (chest.n / CHEST_AT) * 100 + '%'; updateSides();
     }, 950);
   }
+  // the chance of every prize is worked out from the same table the chest really draws from
+  function openOdds() {
+    const tier = chest.q ? chest.q.tier : chestTier(), pct = (list) => { const sum = list.reduce((a, p) => a + p.w, 0); return list.map((p) => [p, Math.round(p.w / sum * 100)]); };
+    const row = (p, n) => '<div class="oddrow"><span class="rwd">' + prizeHtml(p) + '</span><b>' + n + '%</b></div>';
+    const always = tier === 'med' ? { coins: 4 } : tier === 'large' ? { coins: 8, inf: 15 } : null;
+    let h = '';
+    if (always) h += '<h3>Always inside</h3><div class="oddrow"><span class="rwd">' + prizeHtml(always) + '</span><b>100%</b></div>';
+    h += '<h3>' + (always ? 'Plus one of these' : 'One of these') + '</h3>' + pct(PRIZES.filter((p) => !p.rare)).map((x) => row(x[0], x[1])).join('');
+    if (tier === 'large') h += '<h3>Plus one rare prize</h3>' + pct(PRIZES.filter((p) => p.rare)).map((x) => row(x[0], x[1])).join('');
+    $('oddsTitle').textContent = CHEST_NAME[tier]; $('oddsList').innerHTML = h; $('odds').hidden = false;
+  }
   function renderChestTick() { if (chest.q && !chestBusy && !$('chest').hidden && !$('chestPrize').innerHTML) renderChest(); }
   function speedChest() {
     if (!chest.q || chestLeft() <= 0) return; const c = speedCost(); if (coins < c) { toast('Not enough coins'); return; }
@@ -2140,7 +2178,12 @@
   let adsOff = store.get('adsOff', false), adDay = store.get('adDay', { d: '', n: 0 });
   const AD_CAP = 12;
   const adsLeft = () => { if (adDay.d !== today()) { adDay = { d: today(), n: 0 }; } return AD_CAP - adDay.n; };
-  const adAvailable = () => !!(NATIVE() && NATIVE().showRewarded) || DBG;
+  const TESTSTORE = DBG && !location.search.includes('nostore');          // ?dbg=1 simulates the store and the videos; add &nostore=1 to see the game without them
+  const adAvailable = () => !!(NATIVE() && NATIVE().showRewarded) || TESTSTORE;
+  const payAvailable = () => !!(NATIVE() && NATIVE().purchase) || TESTSTORE;
+  // nothing that costs real money and no "watch a video" button is shown unless it really works on this device
+  const storeFlags = () => { document.body.classList.toggle('nopay', !payAvailable()); document.body.classList.toggle('noads', !adAvailable()); };
+  storeFlags(); window.addEventListener('load', storeFlags); setTimeout(storeFlags, 1500);
   // show a rewarded video; `grant` runs only when the video was watched to the end
   function watchAd(grant) {
     if (adsLeft() <= 0) { toast('No more videos today. Come back tomorrow!'); return; }
@@ -2404,7 +2447,7 @@
     freshDay(); buildEventItems(); const grid = $('evGrid'); grid.innerHTML = '';
     evItems.forEach((o) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'evcard'; b.style.setProperty('--a', o.a); b.style.setProperty('--b', o.b);
-      b.innerHTML = '<span class="evart"><img alt="" draggable="false"></span><b>' + o.name + '</b><em></em>'; o.el = b; b.onclick = () => { S.unlock(); S.tap(); o.go(); }; grid.appendChild(b);
+      b.innerHTML = '<span class="evart"><img alt="" draggable="false"></span><b>' + o.name + '</b><em></em><i class="evdot"></i>'; o.el = b; b.onclick = () => { S.unlock(); S.tap(); o.go(); }; grid.appendChild(b);
     });
     refreshEvents();
   }
@@ -2612,8 +2655,6 @@
   /* ---------- Cart Race: a surprise BONUS STAGE that appears once in every 10 levels, right after a win.
      Drag the cart, grab the few coins, dodge the rocks: three hits and you are out with no prize. ---------- */
   let bonusPending = false, quickThen = null;
-  // TEMPORARY: a test button on the map that starts a challenge at once (to be removed before the store build)
-  setTimeout(() => { const hm = $('home'); if (!hm || $('tmpChal')) return; const b = document.createElement('button'); b.type = 'button'; b.id = 'tmpChal'; b.textContent = 'TEST CHALLENGE'; b.onclick = () => { S.unlock(); S.tap(); transition(() => startDaily(true)); }; hm.appendChild(b); }, 0);
   const bonusSeed = (() => { let s = store.get('bseed', 0); if (!s) { s = 1 + Math.floor(Math.random() * 997); store.set('bseed', s); } return s; })();
   // which level of each block of ten brings the bonus (never the Hard or the Extremely Hard one, and never the same place twice in a row)
   const bonusLevelOf = (blk) => blk * 10 + (blk === 0 ? [6, 7, 8][bonusSeed % 3] : blk === 1 ? [2, 3, 4, 7, 8][bonusSeed % 5] : [2, 3, 4, 6, 7, 8][(bonusSeed + blk * 5 + blk * blk) % 6]);
@@ -2826,7 +2867,7 @@
     { const hc = $('heartN') && $('heartN').closest('.chip'); if (hc) { hc.style.cursor = 'pointer'; hc.onclick = openLives; } }
     $('stormStart').onclick = stormStart; $('stormPlay').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); openPrelevel(Math.min(level, LAST_LEVEL)); }; $('stormClose').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); };
     $('climbStart').onclick = climbStart; $('climbPlay').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); openPrelevel(level); }; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
-    $('medRush').onclick = startRush; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === T('Done'); $('quick').hidden = true; $('quick').classList.remove('big'); updateSides(); const th = quickThen; quickThen = null; if (th) th(); else if (was) openEvents(); };
+    $('medRush').onclick = startRush; $('chestOdds').onclick = () => { S.tap(); openOdds(); }; $('oddsClose').onclick = () => { S.tap(); $('odds').hidden = true; }; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === T('Done'); $('quick').hidden = true; $('quick').classList.remove('big'); updateSides(); const th = quickThen; quickThen = null; if (th) th(); else if (was) openEvents(); };
     setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (!$('climb').hidden && climbOn()) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft()); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
   }
   wireExtras();

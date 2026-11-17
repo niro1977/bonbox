@@ -1784,14 +1784,7 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 .chaltimer .chal-for img{width:24px;height:24px;object-fit:contain}
 .chaltimer.low .chal-for{border-left-color:rgba(255,255,255,.5)}
 
-/* ---------- red dot: something here can be played or claimed right now ---------- */
-.evcard.dot::after,.med.dot::after{content:"";position:absolute;top:-5px;right:-4px;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a8a,#ff2020 60%,#c40000);border:2.5px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.45);z-index:5;animation:dotpulse 1.4s ease-in-out infinite}
-.med.dot::after{top:-2px;right:2px}
-.evcard{overflow:visible!important}
-@keyframes dotpulse{50%{transform:scale(1.18)}}
-@media (prefers-reduced-motion:reduce){.evcard.dot::after,.med.dot::after{animation:none}}
 
-#tmpChal{position:fixed;left:8px;top:118px;z-index:40;padding:6px 10px;border-radius:12px;border:2px solid #fff;background:#111;color:#ffe14d;font:900 12px Nunito,system-ui,sans-serif}
 
 /* a mini-game clock that is about to run out */
 #quickInfo.low{background:linear-gradient(180deg,#ff8a8a,#e02020)!important;color:#fff!important;box-shadow:0 3px 0 #8a0f0f!important;animation:chalpulse .7s ease-in-out infinite}
@@ -1801,3 +1794,34 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 body.in-game.full10 .toast.gtoast{font-size:14px;line-height:1.2;padding:8px 14px}
 body.in-game.full10 .toast.gtoast.sticky{padding-right:44px}
 @media (min-height:660px){#game.full .boardwrap{margin-top:6px}}
+
+/* ---------- first release: nothing that costs real money and no video buttons unless the app really provides them ---------- */
+body.nopay #shopPacks,body.nopay .shoph.payonly,body.nopay #livesBuy{display:none!important}
+body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #livesAd,body.noads #reviveBtn{display:none!important}
+/* ---------- ranking: report a name ---------- */
+.rrow{grid-template-columns:34px 1fr auto auto}
+.rrow .rflag{min-width:30px;height:28px;padding:0 6px;border-radius:9px;border:0;background:rgba(0,0,0,.14);color:#7a3b00;font:800 13px/1 Nunito,system-ui,sans-serif;text-shadow:none;-webkit-text-stroke:0;cursor:pointer}
+.rrow .rflag.ask{background:#e23a3a;color:#fff}
+.rnmsg{min-height:0;margin:-4px 0 0;color:#c2185b;font-weight:800}
+.rnmsg:empty{display:none}
+/* ---------- chest: what is inside ---------- */
+.oddsbtn{align-self:center;padding:5px 14px;border-radius:999px;border:2px solid #fff;background:linear-gradient(180deg,#fff,#dff0ff);box-shadow:0 3px 0 #9cbfe0;color:#143a6b;font:800 14px/1.1 Nunito,system-ui,sans-serif;text-shadow:none;-webkit-text-stroke:0;cursor:pointer}
+.oddslist{display:flex;flex-direction:column;gap:5px;max-height:calc(100svh - 360px);overflow-y:auto;padding:2px 4px}
+.oddslist h3{margin:8px 0 2px;font:900 15px/1.1 Nunito,system-ui,sans-serif;color:#c2185b;text-align:left}
+.oddslist h3:first-child{margin-top:0}
+.oddrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 12px;border-radius:12px;background:linear-gradient(180deg,#fff,#eaf4ff);box-shadow:0 2px 0 #b9d2ea}
+.oddrow b{font:900 17px/1 Nunito,system-ui,sans-serif;color:#143a6b}
+.oddrow .rwd{display:flex;flex-wrap:wrap;gap:4px}
+
+.rrow{grid-template-columns:34px minmax(0,1fr) auto auto}
+.rrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .rflag{white-space:nowrap;overflow:visible}
+.rrow .rflag.ask{min-width:66px;font-size:12px;padding:0 8px}
+
+/* ---------- red dot: something here can be played or claimed right now. Small, pure red, with a glow, so it is seen at once ---------- */
+.evcard{overflow:visible!important}
+.evcard .evdot{display:none}
+.evcard.dot .evdot,.med.dot::after{content:"";display:block;position:absolute;top:-4px;right:-3px;width:12px;height:12px;border-radius:50%;background:#ff0000;border:2px solid #fff;box-shadow:0 0 0 1px rgba(120,0,0,.55),0 0 7px 2px rgba(255,0,0,.85),0 1px 3px rgba(0,0,0,.5);z-index:5;pointer-events:none;animation:dotpulse 1.4s ease-in-out infinite}
+.med.dot::after{top:0;right:4px}
+@keyframes dotpulse{50%{transform:scale(1.2)}}
+@media (prefers-reduced-motion:reduce){.evcard.dot .evdot,.med.dot::after{animation:none}}
