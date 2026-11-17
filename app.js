@@ -2340,7 +2340,7 @@
 
   // artwork for the arcade mini-games (made in Overchat)
   const arcArt = {};
-  function loadArc() { if (arcArt.coin) return; [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg', 'cart_bg2'], ['cart_rock', 'webp'], ['cart_bear', 'webp'], ['cart_rival', 'webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + (f[2] || f[0]) + '.' + f[1]; arcArt[f[0]] = im; }); const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
+  function loadArc() { if (arcArt.coin) return; [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg', 'cart_bg2'], ['cart_rock', 'webp'], ['cart_bear', 'webp', 'cart_bear2'], ['cart_rival', 'webp', 'cart_rival2']].forEach((f) => { const im = new Image(); im.src = 'art/' + (f[2] || f[0]) + '.' + f[1]; arcArt[f[0]] = im; }); const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
   /* ---------- Candy Shooter: a Zuma-style chain of gumdrops; shoot matching colours to pop them ---------- */
   function startShoot() {
     loadArc();
@@ -2560,10 +2560,10 @@
         else { const sx = 0.55 + 0.45 * Math.abs(Math.cos(t * 3 + it.lane)); if (ok(A.coin)) g.drawImage(A.coin, x - 15 * sx, y - 15, 30 * sx, 30); else glossBall(g, x, y, 12, '#ffd21f', '#c28a00'); }
       });
       // the rival runs in a ghost lane beside you, ahead or behind by the real gap
-      const ry = snap(CART_Y - (rival - dist) * 5); if (ry > -80 && ry < H + 60 && ok(A.cart_rival)) { g.globalAlpha = 0.9; g.drawImage(A.cart_rival, (cx < 150 ? 252 : 8), ry - 44, 40, 52.5); g.globalAlpha = 1; }
+      const ry = snap(CART_Y - (rival - dist) * 5); if (ry > -80 && ry < H + 60 && ok(A.cart_rival)) { g.globalAlpha = 0.9; g.drawImage(A.cart_rival, (cx < 150 ? 250 : 6), ry - 44, 44, 44 * A.cart_rival.naturalHeight / A.cart_rival.naturalWidth); g.globalAlpha = 1; }
       const bx = cx + (shake > 0 ? Math.sin(t * 55) * 5 * (shake / 0.4) : 0), lean = Math.max(-0.16, Math.min(0.16, (tx - cx) * 0.01)), bob = Math.sin(t * 9) * 0.8;
       g.fillStyle = 'rgba(20,8,0,.4)'; g.beginPath(); g.ellipse(bx, CART_Y + 30, 30, 9, 0, 0, 6.283); g.fill();
-      if (ok(A.cart_bear)) { g.save(); g.translate(bx, CART_Y + 26); g.rotate(lean); if (safe > 0) g.globalAlpha = 0.6; g.drawImage(A.cart_bear, -34, -86 + bob, 68, 89.2); g.restore(); }
+      if (ok(A.cart_bear)) { g.save(); g.translate(bx, CART_Y + 26); g.rotate(lean); if (safe > 0) g.globalAlpha = 0.6; const bw2 = 78, bh2 = bw2 * A.cart_bear.naturalHeight / A.cart_bear.naturalWidth; g.drawImage(A.cart_bear, -bw2 / 2, 4 - bh2 + bob, bw2, bh2); g.restore(); }   // the sprite is drawn from straight behind and centred on the cart's own middle, so it never looks tilted
       // top strip: the race line, and the three hearts under it
       g.fillStyle = 'rgba(0,0,0,.45)'; rr(g, 26, 8, 248, 14, 7); g.fill(); g.fillStyle = '#fff'; g.font = '900 11px Nunito'; g.textAlign = 'center'; g.fillText('🏁', 270, 19);
       const mp = 30 + 232 * Math.min(1, dist / GOAL), rp = 30 + 232 * Math.min(1, rival / GOAL);
