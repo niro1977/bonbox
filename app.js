@@ -151,9 +151,9 @@
   let medals = Object.assign({ g: 0, s: 0, b: 0 }, store.get('medals', {}));
   // a podium: second, first, third. `under` gives what is written under each place
   function podiumHtml(list, under) {
-    // the three winners stand on a real gold / silver / bronze podium (one picture, all three on the same ground line)
+    // the three winners stand on the party-cake podium: gold, silver and bronze bands (one picture, all three on the same ground line)
     const who = [1, 0, 2].map((i) => { const e = list[i]; return '<div class="pwho w' + (i + 1) + (e && e.me ? ' me' : '') + '"><b class="pnm">' + (e ? esc(e.name) : '-') + '</b>' + (e ? leagueAvatar(e) : '<i class="lav"></i>') + '</div>'; }).join('');
-    return '<div class="pstage"><img class="pimg" src="art/podium.webp" alt="" draggable="false">' + who + '</div><div class="podunder">' + [1, 0, 2].map((i) => '<span class="punder">' + under(i, list[i]) + '</span>').join('') + '</div>';
+    return '<div class="pstage"><img class="pimg" src="art/podium2.webp" alt="" draggable="false">' + who + '</div><div class="podunder">' + [1, 0, 2].map((i) => '<span class="punder">' + under(i, list[i]) + '</span>').join('') + '</div>';
   }
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const midnightIn = () => { const d = new Date(), e = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); return fmtWait(e - d); };
