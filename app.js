@@ -1619,7 +1619,7 @@
      layer, exactly over the original, and that layer moves (Gumi bobs and waves, shivers, pumps his fist; Vinegar roars and
      flees; the tornado twists). Places are given in pixels of the 768 x 1376 picture: centre x, y and half-width, half-height. */
   // the story scenes as short animated films (made from the same pictures); the picture is the fallback
-  const STORYVID = { story1: 'story1.mp4?2', story2p: 'story2p.mp4?2', story3: 'story3.mp4?2', story4: 'story4.mp4?2' };   // ?2 = the second, livelier films
+  const STORYVID = { story1: 'story1.mp4?3', story2p: 'story2p.mp4?3', story3: 'story3.mp4?3', story4: 'story4.mp4?3' };   // ?2 = the second, livelier films
   const LIVE = {
     story1: [{ x: 422, y: 560, rx: 215, ry: 290, a: 'bob' }],
     story2p: [{ x: 379, y: 965, rx: 135, ry: 160, a: 'shiver' }],
