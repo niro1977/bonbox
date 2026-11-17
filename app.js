@@ -486,6 +486,18 @@
       if (lv === (mascotAt || level)) map.insertAdjacentHTML('beforeend', '<div class="mascot" style="left:' + p.x + 'px;top:' + (p.y - 30) + 'px"><svg><use href="#gumi"/></svg><svg class="blink"><use href="#gumiblink"/></svg></div>');
     }
     fitRibbons(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitRibbons);
+    requestAnimationFrame(mascotBesideRibbon);
+  }
+  // Gumi stands on top of his level; when that would cover a world's title he stands beside the level instead (away from Vinegar)
+  function mascotBesideRibbon() {
+    const m = document.querySelector('.map .mascot'); if (!m) return;
+    m.classList.remove('side', 'sr'); const mb = m.getBoundingClientRect(); if (!mb.width) return;
+    const hit = [...document.querySelectorAll('.map .ribbon')].some((r) => { const b = r.getBoundingClientRect(); return b.width && mb.left < b.right && mb.right > b.left && mb.top - 6 < b.bottom && mb.bottom > b.top; });
+    if (!hit) return;
+    const lv = mascotAt || level, n = document.querySelector('.node[data-lv="' + lv + '"]'), map = $('map');
+    const nb = n && n.getBoundingClientRect(), mr = map.getBoundingClientRect();
+    const roomLeft = nb ? nb.left - mr.left : 999;
+    m.classList.add('side'); if (roomLeft < mb.width + 8 && !(n && n.classList.contains('bossn'))) m.classList.add('sr');
   }
   function scrollToLevel(lv) {
     const g = mapGeom(), map = $('map');
@@ -1858,7 +1870,9 @@
   { const rb = $('replayEnd'); rb.hidden = !store.get('seenEnd', false); rb.onclick = () => { $('how').hidden = true; showEnding(); }; }
   $('introNext').onclick = () => { S.tap(); if (introStep >= PANELS.length) { if (V && PANELS !== ENDING) V.say("Let's play!", true); endIntro(); } else { introStep++; renderIntro(); } };
   $('introSkip').onclick = () => { S.tap(); endIntro(); };
-  document.addEventListener('pointerdown', () => { S.unlock(); if (M && $('intro').hidden) M.sync(); }, { once: true });
+  // the loading screen stays silent: a tap there only wakes the sound, the music waits until the loading screen is gone
+  const musicAfterSplash = () => { if (!M || !$('intro').hidden) return; const sp = $('splash'); if (sp && sp.isConnected) { setTimeout(musicAfterSplash, 300); return; } M.sync(); };
+  document.addEventListener('pointerdown', () => { S.unlock(); musicAfterSplash(); }, { once: true });
   $('sndHome').onclick = toggleMusic; $('sndGame').onclick = toggleMusic;
   $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(maybeEnding); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
