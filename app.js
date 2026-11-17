@@ -997,7 +997,10 @@
   function prizeText(p) { return prizeKeys(p).map((k) => p[k] + ' ' + PNAME[k] + (p[k] > 1 && k !== 'coins' && k !== 'inf' ? 's' : '') + (k === 'coins' && p[k] > 1 ? 's' : '')).join(' and '); }
   /* every prize pops up with a message and the narrator, one after another */
   const rewardQueue = []; let rewardOpen = false, curReward = null;
+  // on a world's last level every prize of the win is collected here and shown on ONE card, with one narrator line
+  let merge = null; const soon = (fn, ms) => { if (merge) fn(); else setTimeout(fn, ms); };
   function announce(p, title, big, html, voice) {
+    if (merge) { merge.push({ p, title, html }); return; }
     rewardQueue.push({ p, title, big, html, voice }); if (!rewardOpen) nextReward();
   }
   function nextReward() {
@@ -1006,6 +1009,7 @@
     $('rwTitle').textContent = r.title || 'You got a prize!';
     const kk = prizeKeys(r.p);
     $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + r.p[k] + ' min' : '+' + r.p[k]) + '</b></div>').join('');
+    $('rwItems').classList.toggle('many', $('rwItems').children.length > 4);
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
     $('reward').hidden = false; S.win(); buzz([25, 30, 45]);
     r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900); setTimeout(() => flyItems(r), 1000);
@@ -1102,13 +1106,14 @@
     $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins';
     $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>';
     if (m.kind === 'level') {
+      if (m.level % 10 === 0) merge = [];
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
         cleared++; store.set('cleared', cleared);                       // only a first-time pass counts toward the reward
-        if (cleared % HINT_EVERY === 0) { give({ hints: 1 }); reward = true; setTimeout(() => announce({ hints: 1 }, 'Level reward!'), 3600); }
+        if (cleared % HINT_EVERY === 0) { give({ hints: 1 }); reward = true; soon(() => announce({ hints: 1 }, 'Level reward!'), 3600); }
         checkUnlocks(m);
-        if (cleared % WAND_EVERY === 0) { give({ wands: 1 }); wandReward = true; setTimeout(() => announce({ wands: 1 }, 'Big level reward!', true), 4200); }
+        if (cleared % WAND_EVERY === 0) { give({ wands: 1 }); wandReward = true; soon(() => announce({ wands: 1 }, 'Big level reward!', true), 4200); }
       }
     } else if (m.kind === 'daily' && daily.last !== m.date) {
       const y = new Date(); y.setDate(y.getDate() - 1);
@@ -1125,7 +1130,11 @@
     else wr.hidden = true;
     if (m.kind === 'level' && m.level % 10 === 0) {
       const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
-      give(bp); setTimeout(() => announce(bp, '👑 Vinegar defeated!', true, '<div class="rw-it"><img class="rw-boss" src="art/boss_lose.webp" alt="" draggable="false"></div>', true), 3600); wr.hidden = false;
+      give(bp);
+      const all = merge || []; merge = null; const sum = {}; let more = '', album = false;
+      [{ p: bp }].concat(all).forEach((e) => { for (const k in (e.p || {})) if (e.p[k]) sum[k] = (sum[k] || 0) + e.p[k]; if (e.title === 'Album prize ready!') album = true; else more += e.html || ''; });
+      if (album) more += '<div class="rw-note"><b>Album prize ready!</b><span>Open My Collection → Stickers to claim it</span></div>';
+      setTimeout(() => announce(sum, '👑 Vinegar defeated!', true, '<div class="rw-it"><img class="rw-boss" src="art/boss_lose.webp" alt="" draggable="false"></div>' + more, true), 3600); wr.hidden = false;
       wr.innerHTML = '👑 Vinegar defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
     updateHintUi();
@@ -1698,7 +1707,7 @@
       const i = lv / 10 - 1; extra.push({ t: lv >= 20 ? 'Sticker won back!' : 'New sticker!', html: '<div class="rw-it"><div class="sticker big" style="background-image:url(art/bg_' + i + '.jpg)"></div><b>' + WORLD_NAMES[i] + '</b></div>' });
       const n = lv / 10; if (stkPrize(n)) extra.push({ p: {}, t: 'Album prize ready!', html: '<div class="rw-it"><b>Open My Collection → Stickers to claim it</b></div>', big: false });
     }
-    extra.forEach((e, k) => setTimeout(() => announce(e.p || {}, e.t, e.big, e.html), 5200 + k * 100));
+    extra.forEach((e, k) => soon(() => announce(e.p || {}, e.t, e.big, e.html), 5200 + k * 100));
   }
 
   /* ---------- challenges: daily, weekly, trophies ---------- */

@@ -1711,3 +1711,18 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 /* lucky wheel: a little bigger, and tilted less so nothing hides behind the rim */
 #wheel .wheelbox{width:min(318px,100%)!important;transform:perspective(760px) rotateX(10deg)!important;margin-left:-8px;margin-right:-8px}
 #wheel .wheelbox .whub{width:21%!important}
+
+/* ---------- Hard / Extremely Hard boards are dark: a found candy gets a white frame so its square stands out ---------- */
+.board.hard .cell.has:not(.lit),.board.veryhard .cell.has:not(.lit),.board.extreme .cell.has:not(.lit){box-shadow:inset 0 0 0 3px #fff,inset 0 -3px 0 rgba(0,0,0,.16),0 0 6px 1px rgba(255,255,255,.75)}
+/* ---------- one prize card with many prizes (end of a world): smaller icons so all of them fit ---------- */
+.rw-items.many{gap:6px 10px}
+.rw-items.many .rw-it img{width:60px;height:60px}
+.rw-items.many .rw-it img.rw-boss{width:84px;height:84px}
+.rw-items.many .rw-it b{font-size:19px}
+.rw-items.many .rw-it .sticker.big,.rw-items.many .rw-it .swatch.big{transform:scale(.7);margin:-10px}
+.rw-note{flex-basis:100%;display:flex;flex-direction:column;align-items:center;font:700 14px var(--body,inherit);color:#7a3b00;margin-top:2px}
+.rw-note b{font-size:16px;color:#c2185b}
+.rw-note{order:9}
+.rw-items.many .rw-it{max-width:132px}
+.rw-items.many .rw-it b{font-size:16px;line-height:1.15;text-align:center}
+.rw-items.many .rw-it img+b{font-size:19px}
