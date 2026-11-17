@@ -1982,3 +1982,34 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* ---------- the "maybe" mark on the board: big, in its own purple bubble ---------- */
 .cell svg.q{position:absolute;inset:14%;width:72%;height:72%;display:block;overflow:visible;pointer-events:none;filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.4));animation:qpop .28s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes qpop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ---------- league prizes: the strip in the Ranking window, the podium, the result ---------- */
+.rankprizes{display:flex;align-items:center;gap:8px;width:100%;padding:6px 12px;border-radius:14px;border:2.5px solid #fff;background:linear-gradient(180deg,#ffe77a,#ffb21f);box-shadow:0 4px 0 #c97a00,inset 0 2px 0 rgba(255,255,255,.6);color:#5a2a00;text-align:left;cursor:pointer;-webkit-text-stroke:0;text-shadow:none}
+.rankprizes img{width:30px;height:30px;object-fit:contain}
+.rankprizes b{font:900 15px/1.1 Nunito,system-ui,sans-serif;flex:1}
+.rankprizes small{font:800 12px/1.1 Nunito,system-ui,sans-serif;opacity:.85;white-space:nowrap}
+.rankprizes i{font:900 20px/1 Nunito,system-ui,sans-serif;font-style:normal}
+.podium{display:grid;grid-template-columns:1fr 1.12fr 1fr;align-items:end;gap:6px;padding:2px 2px 0}
+.pod{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.pod .lav{width:48px;height:48px}
+.pod.p1 .lav{width:60px;height:60px;box-shadow:0 0 0 3px #ffd84a,0 0 14px 3px rgba(255,210,60,.8),inset 0 0 0 2px #fff}
+.pod.me .lav{box-shadow:0 0 0 3px #ff5fae,inset 0 0 0 2px #fff}
+.pod .pnm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:900 13px/1.1 Nunito,system-ui,sans-serif;color:#143a6b}
+.pod .pstep{display:grid;place-items:center;width:100%;height:44px;border-radius:12px 12px 4px 4px;background:linear-gradient(180deg,#f3f6fb,#a9b6c8);box-shadow:0 4px 0 #6d7a8c,inset 0 3px 0 #fff}
+.pod.p1 .pstep{height:64px;background:linear-gradient(180deg,#ffe77a,#f0a400);box-shadow:0 4px 0 #a86a00,inset 0 3px 0 #fff7c2}
+.pod.p3 .pstep{height:32px;background:linear-gradient(180deg,#ffc79a,#c9712a);box-shadow:0 4px 0 #8a4410,inset 0 3px 0 #ffe3c9}
+.pod .pstep u{text-decoration:none;font:900 24px/1 Nunito,system-ui,sans-serif;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+.pod .punder{min-height:52px;display:flex;align-items:flex-start;justify-content:center;margin-top:6px}
+.pod .punder em{font:900 16px/1 Nunito,system-ui,sans-serif;font-style:normal;color:#0f3a78}
+.pod .punder .rwd{gap:2px 3px;font-size:13px}
+.pod .punder .rwd .pz{padding:1px 4px}
+.pod .punder .rwd .pico{width:20px;height:20px}
+#lgRes .pod .punder{min-height:20px}
+.lgtop10{display:flex;align-items:center;justify-content:center;gap:10px;padding:6px 12px;border-radius:14px;background:linear-gradient(180deg,#fff,#e3f0ff);box-shadow:0 3px 0 #a9c6e6,inset 0 2px 0 #fff}
+.lgtop10 b{font:900 16px/1 Nunito,system-ui,sans-serif;color:#143a6b}
+.lgplace{margin:0;font:900 20px/1.2 Nunito,system-ui,sans-serif;color:#c2185b}
+.lzone{margin:-4px 0 0;min-height:18px;font:800 13px/1.2 Nunito,system-ui,sans-serif;color:#27507f}
+.lzone:empty{display:none}
+.lzone.in{color:#1f8a3a}.lzone.gold{color:#b06a00}
+.pfmed{display:flex;gap:5px;justify-content:center}
+.pfmed .lrk{width:26px;height:26px;font-size:13px;font-style:normal}

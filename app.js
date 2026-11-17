@@ -28,7 +28,11 @@
   const RANKS = [[0, 'Rookie'], [200, 'Candy Fan'], [500, 'Sweet Tooth'], [1000, 'Sugar Pro'], [2000, 'Candy Master'], [4000, 'Candy Legend']];
   function freshScore() {
     const t = today();
-    if (score.date !== t) { score = { date: t, points: 0, run: 0, best: score.best || 0 }; store.set('score', score); }   // every day starts at 0
+    if (score.date !== t) {
+      // yesterday's points are put aside (with the state of the chase) so the league of that day can be closed and its prize given
+      if (score.date && score.points > 0 && !store.get('lgprev', null)) store.set('lgprev', { day: score.date, pts: score.points, chase: store.get('chase', null) });
+      score = { date: t, points: 0, run: 0, best: score.best || 0 }; store.set('score', score);   // every day starts at 0
+    }
   }
   // Each board solved in a row multiplies the reward: x1, x2, x3 ... up to x10.
   // Reward = 10 points x multiplier, capped by board size (10x10 = 100, 9x9 = 90, 8x8 = 80 ...).
@@ -75,15 +79,15 @@
     { n: 'Berry Blue', img: 'sw_15' }, { n: 'Apple Pop', img: 'sw_16' }, { n: 'Zesty Slice', img: 'sw_17' }, { n: 'Grape Gummy', img: 'sw_18' }, { n: 'Starry Sue', img: 'sw_19' }, { n: 'Truffle Tom', img: 'sw_20' }, { n: 'Melon Max', img: 'sw_21' }];
   const LEAGUE_GOALS = RIVALS.map((r, k) => Math.max(20, Math.round(2400 * Math.pow(0.9, k) / 10) * 10));   // from about 2400 points for the leader of the day down to 20
   let realTop = [];   // the real players of today, as the ranking server last sent them
-  function rivalsNow() {
-    const day = today(), d = new Date(), hr = d.getHours() + d.getMinutes() / 60;
+  function rivalsNow() { const d = new Date(); return rivalsAt(today(), d.getHours() + d.getMinutes() / 60, Date.now(), chase); }
+  function rivalsAt(day, hr, tms, chase) {
     const idx = RIVALS.map((r, i) => i).sort((a, b) => hash(day + 'o' + a) - hash(day + 'o' + b));     // a new order every day
     const vi = idx.indexOf(0); if (vi > 2) { idx.splice(vi, 1); idx.splice(hash(day + 'v') % 3, 0, 0); }   // Vinegar is always one of the three to beat
     return idx.map((ri, k) => {
       const h = hash(day + 'r' + ri), start = (h % 80) / 10, end = 20 + ((h >>> 8) % 40) / 10, p = Math.max(0, Math.min(1, (hr - start) / (end - start))), e = p * p * (3 - 2 * p);
       let pts = LEAGUE_GOALS[k] * (0.85 + ((h >>> 16) % 31) / 100) * e;
       // a rival the player has overtaken does not give up: it keeps playing and wins points every minute, so the lead is never safe
-      const c = chase.day === day ? chase.ch[RIVALS[ri].n] : null; if (c) pts = Math.max(pts, c.s + c.r * Math.max(0, Date.now() - chase.t) / 60000);
+      const c = chase && chase.day === day && chase.ch ? chase.ch[RIVALS[ri].n] : null; if (c) pts = Math.max(pts, c.s + c.r * Math.max(0, tms - chase.t) / 60000);
       return { name: RIVALS[ri].n, rival: RIVALS[ri], points: Math.round(pts / 10) * 10 };
     });
   }
@@ -135,9 +139,55 @@
       }
       box.appendChild(row);
     });
+    $('rankPrizeEnds').textContent = 'ends in ' + midnightIn();
     const mi = list.findIndex((e) => e.me), more = d && d.mine ? Math.max(0, d.mine.players - d.top.length) : 0;
     $('rankMine').textContent = mi >= 0 ? 'You are #' + (mi + 1) + ' of ' + (list.length + more) + ' today with ' + score.points + ' pts' : 'Solve a board to join the ranking today';
     const me = box.querySelector('.lrow.me'); if (me && me.scrollIntoView) setTimeout(() => { try { me.scrollIntoView({ block: 'center' }); } catch (x) {} }, 60);
+  }
+  /* ---------- League prizes: the first three of the day, and a small prize for places 4 to 10.
+     The day closes at midnight. The result is worked out the next time the game is opened and shown on a podium. ---------- */
+  const LEAGUE_PRIZES = [{ coins: 30, wands: 1, hints: 2, inf: 60 }, { coins: 20, hints: 2, shield: 1 }, { coins: 10, hints: 1 }], LEAGUE_TOP10 = { coins: 3 };
+  const leaguePrize = (rank) => (rank >= 1 && rank <= 3 ? LEAGUE_PRIZES[rank - 1] : rank <= 10 ? LEAGUE_TOP10 : null);
+  let medals = Object.assign({ g: 0, s: 0, b: 0 }, store.get('medals', {}));
+  // a podium: second, first, third. `under` gives what is written under each place
+  function podiumHtml(list, under) {
+    return '<div class="podium">' + [1, 0, 2].map((i) => { const e = list[i]; return '<div class="pod p' + (i + 1) + (e && e.me ? ' me' : '') + '">' + (e ? leagueAvatar(e) + '<b class="pnm">' + esc(e.name) + '</b>' : '<i class="lav"></i><b class="pnm">-</b>') + '<i class="pstep"><u>' + (i + 1) + '</u></i><span class="punder">' + under(i, e) + '</span></div>'; }).join('') + '</div>';
+  }
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const midnightIn = () => { const d = new Date(), e = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); return fmtWait(e - d); };
+  // today's prizes, on a live podium
+  function openLeaguePrizes() {
+    S.tap(); freshScore(); const list = leagueList(score.points);
+    $('lgpPodium').innerHTML = podiumHtml(list, (i) => '<span class="rwd">' + prizeHtml(LEAGUE_PRIZES[i]) + '</span>');
+    $('lgpTop10').innerHTML = '<b>4 - 10</b><span class="rwd">' + prizeHtml(LEAGUE_TOP10) + '</span>';
+    $('lgpEnds').textContent = 'The league ends in ' + midnightIn(); $('lgPrizes').hidden = false;
+  }
+  // close yesterday's league (once): where the player finished and what he won
+  function leagueSettle() {
+    const pv = store.get('lgprev', null); if (!pv || !pv.day || !(pv.pts > 0)) return null;
+    const p = pv.day.split('-').map(Number), end = new Date(p[0], p[1] - 1, p[2] + 1).getTime();
+    const all = rivalsAt(pv.day, 24, end, pv.chase).concat([{ name: pname, me: true, points: pv.pts }]).sort((a, b) => b.points - a.points || (b.me ? 1 : 0) - (a.me ? 1 : 0));
+    return { day: pv.day, rank: all.findIndex((e) => e.me) + 1, pts: pv.pts, top: all.slice(0, 3), total: all.length };
+  }
+  let lgResThen = null;
+  function maybeLeagueResult(then) {
+    freshScore(); const r = leagueSettle(); if (!r) { if (then) then(); return; }
+    lgResThen = then || null; const prize = leaguePrize(r.rank);
+    $('lgrPodium').innerHTML = podiumHtml(r.top, (i, e) => '<em>' + (e ? e.points : 0) + '</em>');
+    $('lgrPlace').textContent = r.rank === 1 ? 'You won the league!' : 'You finished #' + r.rank + ' of ' + r.total;
+    $('lgrPrize').innerHTML = prize ? '<div class="rwd big">' + prizeHtml(prize) + '</div>' : ''; $('lgrNote').textContent = prize ? '' : 'Reach the top 10 today to win a prize!';
+    const b = $('lgrGo'); b.textContent = prize ? 'Claim' : 'Continue'; b.classList.toggle('claim', !!prize);
+    b.onclick = () => {
+      store.set('lgprev', null);
+      if (prize) { give(prize); if (r.rank <= 3) { medals['gsb'[r.rank - 1]]++; store.set('medals', medals); } S.prize(); buzz([20, 30, 50]);
+        if (prize.coins) flyCoins($('lgrPrize').querySelector('img[src*="ic_coin"]') || $('lgrPrize'), prize.coins, 0, true);
+        const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN' }; prizeKeys(prize).filter((k) => k !== 'coins').forEach((k, n) => { const im = $('lgrPrize').querySelector('img[src*="ic_' + PICO[k] + '."]'), a = im && im.getBoundingClientRect(), ch = $(tgt[k] || 'walletMe'), tb = ch && ch.getBoundingClientRect(); if (!a || !a.width || !tb || !tb.width) return;
+          flyThing({ src: im.src, size: 46, sx: a.left + a.width / 2, sy: a.top + a.height / 2, tx: tb.left + tb.width / 2 - 12, ty: tb.top + tb.height / 2, hx: 0, hy: -34, delay: 120 + n * 150, dur: 820 }).then(() => { S.ui('item'); updateHintUi(); }); }); }
+      else S.tap();
+      setTimeout(() => { $('lgRes').hidden = true; const t = lgResThen; lgResThen = null; if (t) t(); }, prize ? 1500 : 0);
+    };
+    if (r.rank <= 3 && S.fanfare) setTimeout(() => S.fanfare(), 400);
+    $('lgRes').hidden = false;
   }
   /* after a win: the player's points count up and his row climbs past the rivals he has just overtaken */
   let leaguePending = false, leagueThen = null, leagueT = [];
@@ -154,7 +204,7 @@
       row.style.transform = 'translateY(' + Math.max(-1, Math.min(SHOW, o - top)) * H + 'px)'; box.appendChild(row); return row;
     });
     const gain = to - from, up = Math.max(0, oldI - ni);
-    $('leagueGain').textContent = '+' + gain + ' pts'; $('leagueMsg').textContent = ''; $('league').hidden = false;
+    $('leagueGain').textContent = '+' + gain + ' pts'; $('leagueMsg').textContent = ''; $('leagueZone').textContent = ''; $('leagueZone').className = 'lzone'; $('league').hidden = false;
     leagueT.push(setTimeout(() => {
       rows.forEach((row) => { row.classList.add('go'); row.style.transform = 'translateY(' + (row._new - top) * H + 'px)'; });
       const me = rows.find((r) => r._e.me), ptEl = me && me.querySelector('.lpt'), t0 = performance.now(), D = 900;
@@ -168,6 +218,7 @@
       const me = rows.find((r) => r._e.me); if (me) { me.classList.remove('climb'); me.classList.add('landed'); }
       $('leagueMsg').textContent = ni === 0 ? 'You are #1 today!' : (up > 1 ? 'You climbed ' + up + ' places!' : up === 1 ? 'You climbed 1 place!' : '') + (ni > 0 ? ' Only ' + (newL[ni - 1].points - to + 10) + ' pts behind ' + newL[ni - 1].name : '');
       $('leagueMsg').textContent = $('leagueMsg').textContent.trim();
+      $('leagueZone').textContent = ni < 3 ? 'On the podium! Hold your place until midnight' : ni < 10 ? 'Top 10: a prize is waiting at midnight' : (ni + 1 - 10) + ' places to the prize zone'; $('leagueZone').className = 'lzone' + (ni < 3 ? ' gold' : ni < 10 ? ' in' : '');
       if (ni === 0) { S.fanfare && S.fanfare(); } else if (up) S.praise && S.praise(1);
     }, 550 + 1000));
   }
@@ -225,7 +276,7 @@
   document.addEventListener('pointerdown', (e) => { if (hapticOn && e.target.closest && e.target.closest('button,.cell,.node,.bcard,.mcard,.med,.chip,.colcell,.bst')) { try { if (navigator.vibrate) navigator.vibrate(7); } catch (_) {} } }, true);
   // the ranking day turns over at midnight in the server's zone; show that zone as a plain GMT offset (it moves between +2 and +3 with summer time)
   { let off = 2; try { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', timeZoneName: 'shortOffset' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName'); const m = p && p.value.match(/GMT([+-]\d+)/); if (m) off = +m[1]; } catch (e) {}
-    const el = $('rankNote'); if (el) el.textContent = 'Top players today. Resets every day at midnight (GMT' + (off >= 0 ? '+' : '') + off + ').'; }
+    void off; }
   /* ---------- window titles: always one line, centred on the plate, shrunk just enough to fit inside it ---------- */
   function fitTitle(h) {
     const box = h && h.getBoundingClientRect(); if (!box || !box.width || !h.clientWidth) return;
@@ -1088,7 +1139,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1235,7 +1286,7 @@
     $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + r.p[k] + ' min' : '+' + r.p[k]) + '</b></div>').join('');
     $('rwItems').classList.toggle('many', $('rwItems').children.length > 4);
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
-    $('reward').hidden = false; S.win(); buzz([25, 30, 45]);
+    $('reward').hidden = false; S.prize(); buzz([25, 30, 45]);
     r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900); setTimeout(() => flyItems(r), 1000);
     if (V && r.voice) setTimeout(() => V.say('bigreward', true), 350);   // the narrator speaks only for the big prize of a world's last level; every other prize just flies to its counter
   }
@@ -1259,7 +1310,7 @@
         const prize = rollPrize(streak, streak % 7 === 0);
         bonus = { last: t, streak }; store.set('bonus', bonus);
         give(prize);
-        b.querySelector('.back').innerHTML = prizeHtml(prize); b.classList.add('open', 'mine'); S.ui('flip', 1, 1); S.win(); buzz([20, 30, 40]);
+        b.querySelector('.back').innerHTML = prizeHtml(prize); b.classList.add('open', 'mine'); S.ui('flip', 1, 1); S.prize(); buzz([20, 30, 40]);
         $('bonusMsg').textContent = 'You won ' + prizeText(prize) + '!';
         $('bonusStreak').textContent = '🔥 Day ' + streak + (streak % 7 === 0 ? ' · big prize day!' : ' · come back tomorrow for more');
         // the other cards show what they hid
@@ -1287,7 +1338,7 @@
     ];
     $('pfGrid').innerHTML = rows.map((r) => '<div><b>' + r[1] + '</b><small>' + r[0] + '</small></div>').join('')
       + '<div><b>' + coinSvg + ' ' + coins + '</b><small>Coins</small></div>'
-      + '<div><b>' + (level > LAST_LEVEL ? LAST_LEVEL : level) + '</b><small>Current level</small></div>'
+      + '<div><b class="pfmed"><i class="lrk top r1">' + medals.g + '</i><i class="lrk top r2">' + medals.s + '</i><i class="lrk top r3">' + medals.b + '</i></b><small>League medals</small></div>'
       + '<div class="pf-items"><small>My helpers</small><span>' + [['hint', hintsLeft, 'Hints'], ['wand', wands, 'Magic wands'], ['shield', items.shield || 0, 'Heart shields'], ['sweeper', items.sweeper || 0, 'Sweepers'], ['lens', items.lens || 0, 'Magnifiers'], ['double', items.double || 0, 'x2 Points']]
         .map((x) => '<i title="' + x[2] + '"><img src="art/ic_' + x[0] + '.webp" alt="' + x[2] + '" draggable="false"><b>' + x[1] + '</b></i>').join('') + '</span></div>';
     $('profile').hidden = false;
@@ -2198,7 +2249,7 @@
     setTimeout(() => {
       art.src = 'art/3d_chest_' + tier + '_open.webp'; art.classList.remove('opening'); art.classList.add('opened'); stage.classList.remove('charge'); stage.classList.add('open');
       card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
-      chestStars(art); chestSpill(art, p); S.win(); if (S.fanfare) setTimeout(() => S.fanfare(), 250); buzz([40, 40, 80]);
+      chestStars(art); chestSpill(art, p); S.prize(); if (S.fanfare) setTimeout(() => S.fanfare(), 250); buzz([40, 40, 80]);
       $('chestPrize').innerHTML = '<div class="rwd big pop">' + prizeHtml(p) + '</div>';
       $('chestPrize').querySelectorAll('.pz').forEach((e, i) => { e.style.setProperty('--i', i); setTimeout(() => { S.ui && S.ui('item'); buzz(8); }, 450 + i * 240); });
       $('chestMsg').textContent = CHEST_NAME[tier] + '!';
@@ -2530,7 +2581,7 @@
     S.unlock(); S.tap();
     if (rushActive()) { toast('⚡ Coin Rush is on: double coins from every level you win!'); return; }
     if (rush.day === today()) { toast('Coin Rush is back tomorrow'); return; }
-    rush = { until: Date.now() + 30 * 60e3, day: today() }; store.set('rush', rush); S.win(); buzz([20, 30, 40]);
+    rush = { until: Date.now() + 30 * 60e3, day: today() }; store.set('rush', rush); S.prize(); buzz([20, 30, 40]);
     toast('⚡ Coin Rush! Double coins from level wins for 30 minutes'); updateRushTag();
   }
 
@@ -2560,7 +2611,7 @@
     // side-game prizes are half of what they were
     if (reward > 0) reward = Math.max(1, Math.floor(reward / 2)); if (extra && extra.inf) extra = Object.assign({}, extra, { inf: Math.ceil(extra.inf / 2) });
     stopQuick(); $('quickInfo').classList.remove('low'); if (reward) { coinHold += reward; } if (reward) give({ coins: reward }, true); if (extra) give(extra);
-    S.win(); buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + (reward || extra ? ' +' + reward + ' ' + coinSvg : '') + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
+    S.prize(); buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + (reward || extra ? ' +' + reward + ' ' + coinSvg : '') + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
     if (reward) { updateHintUi(); setTimeout(() => flyCoins($('quickMsg'), reward, 0, true), 400); }
   }
   // Odd One Out: one candy is different, tap it. 6 boards, 30 seconds, a wrong tap costs 3 seconds.
@@ -2943,7 +2994,7 @@
     const grid = $('memGrid'); grid.innerHTML = ''; let first = null, lock = false, found = 0, moves = 14;
     $('memMoves').textContent = 'Moves left: ' + moves; $('memMsg').textContent = ''; $('memClose').textContent = 'Give up';
     const finish = (win) => {
-      const reward = win ? Math.max(1, Math.floor((2 + Math.floor(moves / 3)) / 2)) : 0; give({ coins: reward }, true); S.win(); updateSides();
+      const reward = win ? Math.max(1, Math.floor((2 + Math.floor(moves / 3)) / 2)) : 0; give({ coins: reward }, true); S.prize(); updateSides();
       $('memMsg').innerHTML = (win ? 'Great memory! +' : 'Out of moves. +') + reward + ' ' + coinSvg; $('memClose').textContent = 'Done'; lock = true;
     };
     deck.forEach((id) => {
@@ -3066,7 +3117,7 @@
     { const hc = $('heartN') && $('heartN').closest('.chip'); if (hc) { hc.style.cursor = 'pointer'; hc.onclick = openLives; } }
     $('stormStart').onclick = stormStart; $('stormPlay').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); openPrelevel(Math.min(level, LAST_LEVEL)); }; $('stormClose').onclick = () => { S.tap(); $('storm').hidden = true; updateSides(); };
     $('climbStart').onclick = climbStart; $('climbPlay').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); openPrelevel(level); }; $('climbClose').onclick = () => { S.tap(); $('climb').hidden = true; updateSides(); };
-    $('medRush').onclick = startRush; $('leagueGo').onclick = () => { S.tap(); closeLeague(); }; $('chestOdds').onclick = () => { S.tap(); openOdds(); }; $('oddsClose').onclick = () => { S.tap(); $('odds').hidden = true; }; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === T('Done'); $('quick').hidden = true; $('quick').classList.remove('big'); updateSides(); const th = quickThen; quickThen = null; if (th) th(); else if (was) openEvents(); };
+    $('medRush').onclick = startRush; $('rankPrizes').onclick = openLeaguePrizes; $('lgpClose').onclick = () => { S.tap(); $('lgPrizes').hidden = true; }; $('leagueGo').onclick = () => { S.tap(); closeLeague(); }; $('chestOdds').onclick = () => { S.tap(); openOdds(); }; $('oddsClose').onclick = () => { S.tap(); $('odds').hidden = true; }; $('quickClose').onclick = () => { S.tap(); stopQuick(); quickKey = null; const was = $('quickClose').textContent === T('Done'); $('quick').hidden = true; $('quick').classList.remove('big'); updateSides(); const th = quickThen; quickThen = null; if (th) th(); else if (was) openEvents(); };
     setInterval(() => { if (rushActive() || rushWas) updateRushTag(); if (!$('events').hidden) refreshEvents(); if (!$('climb').hidden && climbOn()) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft()); if (chest.q) { const was = chestLeft() <= 0; updateSides(); if (!$('chest').hidden) renderChestTick(was); } }, 1000);
   }
   wireExtras();
@@ -3093,7 +3144,7 @@
     const g = store.get('game', null);
     if (g && g.meta && ((g.meta.kind === 'level' && g.meta.level <= level) || (g.meta.kind === 'daily' && g.meta.date === today() && !g.meta.test))) {
       if (g.meta.kind === 'level') startLevelNow(g.meta.level); else startDaily();
-    } else maybeBonus();
+    } else maybeLeagueResult(maybeBonus);
   }
   { const sp = document.getElementById('splash'), t0 = window.__t0 || Date.now(); let gone = false;
     const bye = () => { if (gone || !sp) return; gone = true; sp.classList.add('out'); setTimeout(() => sp.remove(), 450); if ($('game').hidden) scrollToLevel(level); };

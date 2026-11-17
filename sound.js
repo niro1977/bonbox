@@ -145,6 +145,8 @@
     item() { if (!ready()) return; const t = ctx.currentTime; bell(1047 * jit(), t, 0.4, 0.13, 0.25); },
     wrong() { if (!ready()) return; const t = ctx.currentTime, k = pickV('wrong', [1, 0.94, 1.06]); osc('sine', 220 * k, t, 0.34, 0.34, 110 * k); pluck(196 * k, t, 0.28, 0.22); pluck(147 * k, t + 0.09, 0.3, 0.2); },
     hint() { if (!ready()) return; const t = ctx.currentTime; reverb(); [0, 4, 7, 12, 16].forEach((s, i) => bell(hz(s + 12), t + i * 0.06, 0.8, 0.16)); sparkle(t + 0.1, 0.06); },
+    // a prize: three soft, warm notes (a little different each time). The bright jingle is kept for finishing a level only.
+    prize() { if (!ready()) return; const t = ctx.currentTime, r = pickV('prize', [0, 2, -3, 5]); reverb(); pluck(hz(7 + r), t, 0.3, 0.17); pluck(hz(12 + r), t + 0.11, 0.34, 0.17); bell(hz(16 + r), t + 0.22, 0.75, 0.085, 0.3); },
     win() { if (!ready()) return; if (sample('stars', 1, 0.95)) return; const t = ctx.currentTime; [0, 4, 7, 12, 16, 19, 24].forEach((s, i) => { osc('triangle', hz(s + 12), t + i * 0.09, 0.45, 0.28); osc('sine', hz(s + 24), t + i * 0.09, 0.3, 0.1); }); },
     // a candy lands: soft thump + glassy sparkle run, the run climbs with progress
     place(step) {
