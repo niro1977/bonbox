@@ -870,8 +870,8 @@
     setTimeout(() => { if (cur && !cur.done && !$('game').hidden) { bossCard('laugh', "Vinegar stole this world's sticker! Beat him on level " + (lv + 9) + ' to win it back!', 'in steal'); S.whoosh(); buzz([30, 40, 30]); } }, 900);
   }
 
-  // the "maybe" mark: a round purple bubble with a big yellow question mark, so it can never be mistaken for the white X and shows on every colour
-  const QMARK = '<svg class="q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.2" fill="#5b2fd6" stroke="#fff" stroke-width="1.7"/><ellipse cx="9" cy="7.2" rx="4.6" ry="2.3" fill="rgba(255,255,255,.32)"/><text x="12" y="18.9" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="19.5" fill="#ffe14d" stroke="#2a0f6e" stroke-width="1.1" paint-order="stroke">?</text></svg>';
+  // the "maybe" mark: a big yellow question mark with a dark outline (no background), so it can never be mistaken for the white X
+  const QMARK = '<svg class="q" viewBox="0 0 24 24"><text x="12" y="20.6" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="25" fill="#ffdc1f" stroke="#2a1040" stroke-width="2.6" stroke-linejoin="round" paint-order="stroke">?</text><text x="12" y="20.6" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="25" fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".5" clip-path="inset(0 0 55% 0)">?</text></svg>';
   function paint() {
     const n = cur.n; setTimeout(saveGame, 0); bossUpdate();
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
