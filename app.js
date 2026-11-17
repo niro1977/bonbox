@@ -1873,7 +1873,7 @@
     else { $('chestMsg').textContent = 'Solve ' + (CHEST_AT - chest.n) + ' more level' + (CHEST_AT - chest.n > 1 ? 's' : '') + ' · ' + CHEST_NAME[chestTier()] + ' so far (keep your hearts for a bigger one)'; b.disabled = true; b.textContent = 'Start opening'; }
   }
   function openChest() {
-    S.unlock(); S.tap(); closeAll(); renderChest(); $('chest').hidden = false;
+    S.unlock(); S.tap(); closeAll(); chestBusy = false; renderChest(); $('chest').hidden = false;
   }
   function coinBurst(el) {
     const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.35, L = fxLayer();
@@ -1885,6 +1885,45 @@
       an.onfinish = () => p.remove();
     }
   }
+  // the chest opens: its coins jump out and land around it, the prize is shown with its numbers, and after a moment
+  // every coin and every item rises by itself into its own counter at the top (no second window)
+  let chestTestKeep, chestBusy = false;   // busy = an opening is on screen: the window is not redrawn under it
+  function chestSpill(art, p) {
+    const r = art.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.42, L = fxLayer();
+    const amount = p.coins || 0, n = amount ? Math.max(6, Math.min(14, amount)) : 0, rest = [];
+    for (let k = 0; k < n; k++) {
+      const c = document.createElement('img'); c.src = 'art/ic_coin.webp'; c.className = 'fx-coin'; c.draggable = false; c.style.cssText = 'left:' + cx + 'px;top:' + cy + 'px;width:38px;height:38px'; L.appendChild(c);
+      let dx = (n === 1 ? 0 : (k / (n - 1) - 0.5) * Math.min(270, innerWidth - 90)) + (Math.random() - 0.5) * 22; dx = Math.max(24 - cx, Math.min(innerWidth - 24 - cx, dx));
+      const dy = 46 + Math.random() * 64 - Math.abs(dx) * 0.12, up = 80 + Math.random() * 80, rot = (Math.random() - 0.5) * 500;
+      const tf = (x, y, s, a) => 'translate(calc(-50% + ' + x.toFixed(1) + 'px),calc(-50% + ' + y.toFixed(1) + 'px)) scale(' + s + ') rotate(' + a.toFixed(0) + 'deg)';
+      c.animate([{ transform: tf(0, 0, 0.3, 0), opacity: 0, easing: 'cubic-bezier(.2,.8,.4,1)' }, { transform: tf(dx * 0.55, -up, 1.1, rot * 0.5), opacity: 1, offset: 0.42, easing: 'cubic-bezier(.5,0,.9,.5)' }, { transform: tf(dx, dy, 1, rot), opacity: 1, offset: 0.8, easing: 'ease-out' }, { transform: tf(dx, dy - 9, 1, rot), opacity: 1, offset: 0.9, easing: 'ease-in' }, { transform: tf(dx, dy, 1, rot), opacity: 1 }], { duration: 760 + Math.random() * 240, delay: k * 28, fill: 'both' });
+      rest.push({ el: c, x: cx + dx, y: cy + dy });
+    }
+    setTimeout(() => {
+      const wal = $('walletCoins'), home = !!wal && wal.getBoundingClientRect().width > 0;
+      const t = home ? wal.getBoundingClientRect() : { left: innerWidth * 0.3, top: 6, width: 40, height: 30 }, tx = t.left + (home ? 19 : t.width / 2), ty = t.top + t.height / 2;
+      let left = amount, done = 0;
+      rest.forEach((c, k) => {
+        setTimeout(() => c.el.remove(), k * 60 + 40);
+        flyThing({ src: 'art/ic_coin.webp', size: 38, sx: c.x, sy: c.y, tx, ty, hx: 0, hy: -12, delay: k * 60, dur: 700, bow: 0.7 + Math.random() * 0.6 }).then(() => {
+          done++; const part = done === n ? left : Math.min(left, Math.round(amount / n)); left -= part; coinHold = Math.max(0, coinHold - part); updateHintUi();
+          if (home) { wal.classList.remove('bump'); void wal.offsetWidth; wal.classList.add('bump'); }
+          S.ui('coin'); buzz(8); if (done === n) plusText(tx + 14, ty + 30, '+' + amount);
+        });
+      });
+      // the other prizes leave their picture in the chest window and fly to their own counters
+      const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'shieldN', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' };
+      prizeKeys(p).filter((x) => x !== 'coins').forEach((k, i) => {
+        const img = $('chestPrize').querySelector('img[src*="ic_' + PICO[k] + '."]'), a = img && img.getBoundingClientRect(); if (!a || !a.width) return;
+        const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width > 0;
+        const ix = ok ? tb.left + tb.width / 2 - 12 : innerWidth * 0.62, iy = ok ? tb.top + tb.height / 2 : 20;
+        flyThing({ src: img.src, size: 46, sx: a.left + a.width / 2, sy: a.top + a.height / 2, tx: ix, ty: iy, hx: 0, hy: -34, delay: 200 + i * 160, dur: 820 }).then(() => {
+          const c = chip && (chip.closest('.chip') || chip); if (c && ok) { c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
+          S.ui(k === 'inf' ? 'heart' : 'item'); buzz(8); if (ok) plusText(ix + 12, iy + 30, '+' + p[k]);
+        });
+      });
+    }, 1700);
+  }
   function openChestNow() {
     if (!chest.q) {                                                   // start the timer
       if (chest.n < CHEST_AT) return;
@@ -1892,20 +1931,20 @@
       S.tap(); buzz(14); renderChest(); updateSides(); return;
     }
     if (chestLeft() > 0) return;
-    const tier = chest.q.tier, p = chestLoot(tier); chest.q = null; store.set('chest', chest);
+    const tier = chest.q.tier, p = chestLoot(tier); chest.q = null; if (chestTestKeep !== undefined) { chest.q = chestTestKeep; chestTestKeep = undefined; } store.set('chest', chest);
     give(p);
-    const art = document.querySelector('#chest .chest-art'), btn = $('chestOpen'); btn.hidden = true; $('chestMsg').textContent = 'Opening…';
+    const art = document.querySelector('#chest .chest-art'), btn = $('chestOpen'); btn.hidden = true; $('chestMsg').textContent = 'Opening…'; chestBusy = true;
+    { const pre = new Image(); pre.src = 'art/3d_chest_' + tier + '_open.webp'; }
     art.classList.remove('opened'); void art.offsetWidth; art.classList.add('opening'); S.tap();
     [0, 220, 440, 660].forEach((t) => setTimeout(() => { S.tap(); buzz(14); }, t));
     setTimeout(() => {
-      art.classList.remove('opening'); art.classList.add('opened'); coinBurst(art); S.win(); buzz([30, 40, 60]);
+      art.src = 'art/3d_chest_' + tier + '_open.webp'; art.classList.remove('opening'); art.classList.add('opened'); chestSpill(art, p); S.win(); buzz([30, 40, 60]);   // the lid is open now and the chest is full of coins
       $('chestPrize').innerHTML = '<div class="rwd big">' + prizeHtml(p) + '</div>';
       $('chestMsg').textContent = CHEST_NAME[tier] + ': ' + prizeText(p);
       $('chestBar').style.width = (chest.n / CHEST_AT) * 100 + '%'; updateSides();
-      setTimeout(() => announce(p, CHEST_NAME[tier] + '!', tier !== 'small'), 1300);
     }, 950);
   }
-  function renderChestTick() { if (chest.q && !$('chest').hidden && !$('chestPrize').innerHTML) renderChest(); }
+  function renderChestTick() { if (chest.q && !chestBusy && !$('chest').hidden && !$('chestPrize').innerHTML) renderChest(); }
   function speedChest() {
     if (!chest.q || chestLeft() <= 0) return; const c = speedCost(); if (coins < c) { toast('Not enough coins'); return; }
     coins -= c; saveWallet(); updateHintUi(); chest.q.ready = Date.now() - 1; store.set('chest', chest); S.ui('buy', 1, 1); renderChest(); updateSides();
@@ -2518,7 +2557,8 @@
      Drag the cart, grab the few coins, dodge the rocks: three hits and you are out with no prize. ---------- */
   let bonusPending = false, quickThen = null;
   // TEMPORARY: a test button on the map that starts the bonus stage at once (to be removed before the store build)
-  setTimeout(() => { const hm = $('home'); if (!hm || $('tmpBonus')) return; const b = document.createElement('button'); b.type = 'button'; b.id = 'tmpBonus'; b.textContent = 'TEST BONUS'; b.onclick = () => { S.unlock(); startCart(() => {}); }; hm.appendChild(b); }, 0);
+  setTimeout(() => { const hm = $('home'); if (!hm || $('tmpBonus')) return; const b = document.createElement('button'); b.type = 'button'; b.id = 'tmpBonus'; b.textContent = 'TEST BONUS'; b.onclick = () => { S.unlock(); startCart(() => {}); }; hm.appendChild(b);
+    const c = document.createElement('button'); c.type = 'button'; c.id = 'tmpChest'; c.textContent = 'TEST CHEST'; let tn = 0; c.onclick = () => { if (chestTestKeep === undefined) chestTestKeep = chest.q || null; chest.q = { tier: ['large', 'med', 'small'][tn++ % 3], ready: Date.now() }; openChest(); }; hm.appendChild(c); }, 0);
   const bonusSeed = (() => { let s = store.get('bseed', 0); if (!s) { s = 1 + Math.floor(Math.random() * 997); store.set('bseed', s); } return s; })();
   // which level of each block of ten brings the bonus (never the Hard or the Extremely Hard one, and never the same place twice in a row)
   const bonusLevelOf = (blk) => blk * 10 + (blk === 0 ? [6, 7, 8][bonusSeed % 3] : [2, 3, 4, 6, 7, 8][(bonusSeed + blk * 5 + blk * blk) % 6]);

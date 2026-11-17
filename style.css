@@ -1764,3 +1764,8 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 /* bonus stage: the track always starts just under the top bar, never behind it */
 #quick.big{align-items:flex-start!important;padding-top:58px!important}
 #quick.big .card{transform:none}
+
+#tmpChest{position:fixed;left:8px;top:152px;z-index:40;padding:6px 10px;border-radius:12px;border:2px solid #fff;background:#111;color:#ffe14d;font:900 12px Nunito,system-ui,sans-serif}
+/* the chest's prize line: big clear numbers */
+#chest .chest-prize .rwd.big .pz b{font-size:24px}
+#chest .chest-prize .rwd.big .pz .pico{width:44px;height:44px}
