@@ -1978,3 +1978,7 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* ---------- every Claim button in the game is green ---------- */
 .btn.claim,.btn.main.claim,.card .btn.main.claim{background:url(art/btn_green.webp) center/100% 100% no-repeat!important;border:0!important;box-shadow:none!important;color:#fff!important;text-shadow:0 2px 0 rgba(0,70,10,.65)!important;filter:drop-shadow(0 4px 3px rgba(0,60,0,.45))}
 .btn.claim:disabled,.btn.main.claim:disabled{filter:grayscale(.75) brightness(.9)!important;opacity:.75}
+
+/* ---------- the "maybe" mark on the board: big, in its own purple bubble ---------- */
+.cell svg.q{position:absolute;inset:6%;width:88%;height:88%;display:block;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4));animation:qpop .28s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes qpop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}

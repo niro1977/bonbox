@@ -870,6 +870,8 @@
     setTimeout(() => { if (cur && !cur.done && !$('game').hidden) { bossCard('laugh', "Vinegar stole this world's sticker! Beat him on level " + (lv + 9) + ' to win it back!', 'in steal'); S.whoosh(); buzz([30, 40, 30]); } }, 900);
   }
 
+  // the "maybe" mark: a round purple bubble with a big yellow question mark, so it can never be mistaken for the white X and shows on every colour
+  const QMARK = '<svg class="q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.2" fill="#5b2fd6" stroke="#fff" stroke-width="1.7"/><ellipse cx="9" cy="7.2" rx="4.6" ry="2.3" fill="rgba(255,255,255,.32)"/><text x="12" y="18.9" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="19.5" fill="#ffe14d" stroke="#2a0f6e" stroke-width="1.1" paint-order="stroke">?</text></svg>';
   function paint() {
     const n = cur.n; setTimeout(saveGame, 0); bossUpdate();
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
@@ -881,7 +883,7 @@
       el.dataset.k = key;
       if (s === 2) el.innerHTML = '<svg class="candy" style="--idur:' + (3 + Math.random() * 2.5).toFixed(1) + 's;--idelay:' + (0.4 + Math.random() * 1.6).toFixed(1) + 's"><use href="#c' + cur.cmap[cur.regions[y][x]] + '"/></svg>';
       else if (s === 1) el.innerHTML = '<span class="x' + (wrongX ? ' bad' : '') + '"></span>';
-      else if (s === 3) el.innerHTML = '<span class="q">?</span>';
+      else if (s === 3) el.innerHTML = QMARK;
       else el.innerHTML = '';
     }
     drawFound();
