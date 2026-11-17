@@ -1795,3 +1795,9 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 
 /* a mini-game clock that is about to run out */
 #quickInfo.low{background:linear-gradient(180deg,#ff8a8a,#e02020)!important;color:#fff!important;box-shadow:0 3px 0 #8a0f0f!important;animation:chalpulse .7s ease-in-out infinite}
+
+/* ---------- 10x10 boards fill the screen: the helpers sit 3 mm higher still, and their explanation is a little more compact, so it always stays on the screen ---------- */
+#game.full .tools{margin-top:-37px}
+body.in-game.full10 .toast.gtoast{font-size:14px;line-height:1.2;padding:8px 14px}
+body.in-game.full10 .toast.gtoast.sticky{padding-right:44px}
+@media (min-height:660px){#game.full .boardwrap{margin-top:6px}}
