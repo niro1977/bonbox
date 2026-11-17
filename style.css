@@ -2111,6 +2111,3 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .node.bossn.beaten::before{top:2px}
 /* in a boss level Vinegar's crown cleared the level title by a hair: a little lower and above it */
 .bosshud>img{margin-top:-31px;z-index:2}
-/* Gumi beside his level when standing on top of it would cover a world's title */
-.map .mascot.side{margin:-14px 0 0 calc(-35px - 76px)}
-.map .mascot.side.sr{margin-left:41px}

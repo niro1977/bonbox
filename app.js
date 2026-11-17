@@ -486,18 +486,6 @@
       if (lv === (mascotAt || level)) map.insertAdjacentHTML('beforeend', '<div class="mascot" style="left:' + p.x + 'px;top:' + (p.y - 30) + 'px"><svg><use href="#gumi"/></svg><svg class="blink"><use href="#gumiblink"/></svg></div>');
     }
     fitRibbons(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitRibbons);
-    requestAnimationFrame(mascotBesideRibbon);
-  }
-  // Gumi stands on top of his level; when that would cover a world's title he stands beside the level instead (away from Vinegar)
-  function mascotBesideRibbon() {
-    const m = document.querySelector('.map .mascot'); if (!m) return;
-    m.classList.remove('side', 'sr'); const mb = m.getBoundingClientRect(); if (!mb.width) return;
-    const hit = [...document.querySelectorAll('.map .ribbon')].some((r) => { const b = r.getBoundingClientRect(); return b.width && mb.left < b.right && mb.right > b.left && mb.top - 6 < b.bottom && mb.bottom > b.top; });
-    if (!hit) return;
-    const lv = mascotAt || level, n = document.querySelector('.node[data-lv="' + lv + '"]'), map = $('map');
-    const nb = n && n.getBoundingClientRect(), mr = map.getBoundingClientRect();
-    const roomLeft = nb ? nb.left - mr.left : 999;
-    m.classList.add('side'); if (roomLeft < mb.width + 8 && !(n && n.classList.contains('bossn'))) m.classList.add('sr');
   }
   function scrollToLevel(lv) {
     const g = mapGeom(), map = $('map');
