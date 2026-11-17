@@ -1766,3 +1766,11 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 /* the chest's prize line: big clear numbers */
 #chest .chest-prize .rwd.big .pz b{font-size:24px}
 #chest .chest-prize .rwd.big .pz .pico{width:44px;height:44px}
+
+/* ---------- Daily Challenge: the clock above the board, and the explanation card ---------- */
+.chaltimer{align-self:center;margin:-2px 0 0;padding:4px 16px;border-radius:999px;background:linear-gradient(180deg,#fff,#dff0ff);border:2px solid #fff;box-shadow:0 3px 0 #7fa9d6,0 5px 8px rgba(20,0,60,.3);color:#143a6b;font:900 20px/1.1 Nunito,system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.chaltimer.low{background:linear-gradient(180deg,#ff8a8a,#e02020);color:#fff;box-shadow:0 3px 0 #8a0f0f,0 5px 8px rgba(20,0,60,.3);animation:chalpulse .9s ease-in-out infinite}
+@keyframes chalpulse{50%{transform:scale(1.08)}}
+.chal-time{align-self:center;padding:6px 22px;border-radius:999px;background:linear-gradient(180deg,#fff,#dff0ff);box-shadow:0 4px 0 #7fa9d6,inset 0 2px 0 #fff;color:#143a6b;font:900 30px/1.1 Nunito,system-ui,sans-serif;font-variant-numeric:tabular-nums}
+#chal .chest-prize .rwd.big .pz b{font-size:24px}
+#chal .chest-prize .rwd.big .pz .pico{width:44px;height:44px}

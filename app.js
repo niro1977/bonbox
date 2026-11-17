@@ -89,7 +89,7 @@
   const LAST_LEVEL = 500, ULTRA_FROM = 301;   // 301-500: only the hardest boards
   const sizeFor = (lv) => (lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
   const tierOf = (lv) => (lv % 10 === 0 ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : lv % 5 === 0 ? 'hard' : 'normal');   // every world ends with an Extremely Hard level
-  const dailySize = () => [6, 7, 8, 9, 10, 8, 7][new Date().getDay()];
+  const dailySize = () => [7, 6, 7, 6, 7, 6, 7][new Date().getDay()];   // the daily challenge is a small board, 6x6 or 7x7, a different one each day
   const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard' };
 
   function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -257,7 +257,7 @@
   window.addEventListener('resize', () => { fitRibbons(); });
   function renderHome() {
     const t = today();
-    $('dailyInfo').textContent = daily.last === t ? 'Solved today ✓ come back tomorrow' : dailySize() + '×' + dailySize() + ' · new board today';
+    $('dailyInfo').textContent = daily.last === t ? 'Solved today ✓ come back tomorrow' : dailySize() + '×' + dailySize() + ' · beat the clock, win a prize';
     renderScore(); updateHintUi(); updateSides();
     $('streak').textContent = daily.streak > 1 ? '🔥 ' + daily.streak + ' day streak' : '';
     const map = $('map'), g = mapGeom();
@@ -384,7 +384,7 @@
     cur.cmap = candyMapFor(board);
     updateHintUi();
     for (let y = 0; y < n; y++) cur.state.push(new Array(n).fill(0)); // 0 empty, 1 X, 2 candy, 3 ?
-    $('gTitle').textContent = label;
+    $('gTitle').textContent = label; chalStop(); $('chalTimer').hidden = true;
     const t = $('tier');
     t.hidden = tier === 'normal'; t.className = 'tier ' + tier; t.textContent = tierLabel[tier] || '';
     const bd = $('board'); bd.className = 'board ' + (tier === 'normal' ? '' : tier);
@@ -471,12 +471,46 @@
       setTimeout(() => { u.hidden = true; }, 3300);
     }
   }
+  /* ---------- Daily Challenge: today's board against the clock. Solve it before the time runs out and win 1 hint + 1 magnifier (once a day).
+     The clock stops while a window is open or the game is in the background; running out of time costs no life, you may simply try again. ---------- */
+  const CHAL_PRIZE = { hints: 1, lens: 1 }, chalLimit = () => (level > 30 ? 60 : level > 20 ? 90 : level > 10 ? 120 : 180) * 1000;   // the further the player is, the less time: 3 min for beginners, 2 min after level 10, 1.5 after 20, 1 after 30
+  const fmtMs = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  let chalT = 0, chalLast = 0, chalSaved = 0;
+  function chalStop() { clearInterval(chalT); chalT = 0; }
+  function chalDraw() { const el = $('chalTimer'); el.hidden = false; el.textContent = '⏱ ' + fmtMs(cur.left); el.classList.toggle('low', cur.left <= 30000); }
+  function chalTick() {
+    if (!cur || !cur.timed || cur.done || $('game').hidden) { chalStop(); return; }
+    const now = performance.now(), dt = Math.min(1000, now - chalLast); chalLast = now;
+    if (document.hidden || document.querySelector('.overlay:not([hidden])')) return;      // the clock waits while a window is open
+    const before = cur.left; cur.left -= dt; chalDraw();
+    if (before > 10000 && cur.left <= 10000) buzz([30, 60, 30]);
+    if (now - chalSaved > 2000) { chalSaved = now; store.set('chal', { date: cur.meta.date, left: Math.round(cur.left) }); }
+    if (cur.left <= 0) chalTimeUp();
+  }
+  function chalTimeUp() {
+    chalStop(); cur.done = true; saveGame(); store.set('chal', { date: '', left: 0 }); hideToast();
+    setTimeout(() => { S.lose(); loseText(true); $('lose').classList.remove('bossw'); $('loseLives').textContent = ''; $('reviveBtn').hidden = true; $('lose').hidden = false; }, 300);
+  }
+  // the "out of hearts" window is also used when the challenge clock runs out
+  function loseText(timeUp) {
+    const h = document.querySelector('#lose h2'), p = document.querySelector('#lose .card > p:not(.small)');
+    if (h) h.textContent = timeUp ? "Time's up!" : 'Out of hearts'; if (p) p.textContent = timeUp ? 'The prize is still waiting. Try the challenge again!' : 'Take a breath and try this level again.';
+  }
   function startDaily() {
     const t = today(), n = dailySize();
     setScene(new Date().getDate() % ZONES.length, 'normal');
-    makeGame(E.generate(n, hash('candoku-' + t)), 'Daily Candy', { kind: 'daily', date: t }, 'normal');
-    const resumed = applySaved(savedFor(cur.meta));
+    makeGame(E.generate(n, hash('candoku-' + t)), 'Challenge', { kind: 'daily', date: t }, 'normal');
+    const resumed = applySaved(savedFor(cur.meta)), sv = store.get('chal', {});
+    cur.timed = true; cur.left = resumed && sv.date === t && sv.left > 0 ? sv.left : chalLimit(n);
+    chalDraw(); chalStop(); chalLast = performance.now(); chalT = setInterval(chalTick, 250);
     show('game');
+  }
+  function openChal() {
+    S.unlock(); S.tap(); closeAll(); const done = daily.last === today(), n = dailySize();
+    $('chalText').textContent = done ? 'Done for today ✓ Come back tomorrow for a new challenge.' : 'Solve today\'s ' + n + '×' + n + ' board before the time runs out and win the prize!';
+    $('chalTime').textContent = '⏱ ' + fmtMs(chalLimit(n)); $('chalTime').hidden = done;
+    $('chalPrize').innerHTML = '<div class="rwd big">' + prizeHtml(CHAL_PRIZE) + '</div>'; $('chalGo').hidden = done;
+    $('chal').hidden = false;
   }
   function drawHearts() {
     const h = $('hearts'); h.innerHTML = '';
@@ -762,7 +796,7 @@
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); setTimeout(() => { S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -867,7 +901,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1062,7 +1096,7 @@
     const totalStars = Object.values(stars).reduce((x, y) => x + (y || 0), 0);
     const rows = [
       ['Levels passed', Math.max(0, level - 1)], ['Stars', totalStars], ['Best day', best + ' pts'],
-      ['Today', score.points + ' pts'], ['Daily bonus streak', bonus.streak ? bonus.streak + ' days' : '-'], ['Daily Candy streak', daily.streak ? daily.streak + ' days' : '-']
+      ['Today', score.points + ' pts'], ['Daily bonus streak', bonus.streak ? bonus.streak + ' days' : '-'], ['Daily Challenge streak', daily.streak ? daily.streak + ' days' : '-']
     ];
     $('pfGrid').innerHTML = rows.map((r) => '<div><b>' + r[1] + '</b><small>' + r[0] + '</small></div>').join('')
       + '<div><b>' + coinSvg + ' ' + coins + '</b><small>Coins</small></div>'
@@ -1091,7 +1125,7 @@
 
   /* ---------- win ---------- */
   function win() {
-    cur.done = true; saveGame(); buzz([30, 40, 60]); S.win(); hideToast();
+    cur.done = true; saveGame(); buzz([30, 40, 60]); S.win(); hideToast(); chalStop(); store.set('chal', { date: '', left: 0 });
     if (foeKind()) bossDefeat();
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     if (V && !isBoss()) setTimeout(() => V.win(cur.hearts), 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
@@ -1122,6 +1156,7 @@
       const y = new Date(); y.setDate(y.getDate() - 1);
       const yd = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
       daily = { last: m.date, streak: daily.last === yd ? daily.streak + 1 : 1 }; store.set('daily', daily);
+      give(CHAL_PRIZE); cur.chalWon = true; setTimeout(() => announce(CHAL_PRIZE, 'Challenge complete!', true), 3600);
     }
     let st = ''; for (let i = 1; i <= 3; i++) st += starSvg(i <= earned);
     $('winStars').innerHTML = st;
@@ -1131,6 +1166,7 @@
     else if (reward) { wr.hidden = false; wr.innerHTML = '🎁 Reward! <b>+1 hint</b> for passing ' + HINT_EVERY + ' levels · wand in ' + (WAND_EVERY - (cleared % WAND_EVERY)) + ' more'; }
     else if (m.kind === 'level') { wr.hidden = false; wr.textContent = (cleared % HINT_EVERY) + ' / ' + HINT_EVERY + ' levels to a free hint · wand in ' + (WAND_EVERY - (cleared % WAND_EVERY)) + ' more'; }
     else wr.hidden = true;
+    if (cur.chalWon) { wr.hidden = false; wr.innerHTML = '⏱ Challenge prize: <b>+1 hint and +1 magnifier</b>'; }
     if (m.kind === 'level' && m.level % 10 === 0) {
       const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
       give(bp);
@@ -1444,7 +1480,7 @@
   }
 
   /* ---------- wiring ---------- */
-  $('daily').onclick = () => { S.unlock(); S.tap(); if (!canPlay()) { openLives(); return; } transition(() => startDaily()); };
+  $('daily').onclick = () => openChal();
   $('backBtn').onclick = () => { S.ui('back', 1, 1); toMap(); };
   $('undoBtn').onclick = undo;
   document.querySelectorAll('.card').forEach((card) => {
@@ -1783,7 +1819,7 @@
   let quests = store.get('quests', null), chest = store.get('chest', { n: 0 }), wheel = store.get('wheel', { date: '', extra: 0 });
   let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0, odd: 0, jars: 0, shoot: 0, hoop: 0, cart: 0 });
 
-  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm'].forEach((id) => { $(id).hidden = true; }); };
+  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm', 'chal'].forEach((id) => { $(id).hidden = true; }); };
   const QDEF = [
     { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 3 },
     { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 3 },
@@ -1807,7 +1843,7 @@
   function updateSides() {
     freshDay();
     const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
-    set('medDailyTag', daily.last === today() ? '✓' : 'Play');
+    set('medDailyTag', daily.last === today() ? '✓' : '⏱ Play');
     const free = wheel.date !== today() || wheel.extra > 0;
     set('medWheelTag', free ? 'FREE' : 'Soon'); $('medWheel').classList.toggle('ready', free);
     { const q = chest.q, rd = q ? chestLeft() <= 0 : chest.n >= CHEST_AT;
@@ -2743,7 +2779,9 @@
     quickRaf = requestAnimationFrame((x) => { last = x; tick(x); });
   }
   function wireExtras() {
-    $('medDaily').onclick = () => { S.unlock(); S.tap(); if (daily.last === today()) { alert('Daily Candy is done for today. Come back tomorrow!'); return; } transition(() => startDaily()); };
+    $('medDaily').onclick = () => openChal();
+    $('chalGo').onclick = () => { S.tap(); $('chal').hidden = true; if (!canPlay()) { openLives(); return; } transition(() => startDaily()); };
+    $('chalClose').onclick = () => { S.tap(); $('chal').hidden = true; };
     $('medWheel').onclick = openWheel; $('medChest').onclick = openChest; $('medGames').onclick = openGames;
     $('navGifts').onclick = openGifts; $('navQuests').onclick = openQuests;
     $('navHome').onclick = () => { S.tap(); closeAll(); scrollToLevel(level); }; $('navShop').onclick = openShop; $('navRank').onclick = openRanking;
