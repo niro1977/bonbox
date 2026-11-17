@@ -1911,3 +1911,29 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #ranking .rlist .lrow .rflag{min-width:30px;height:28px;padding:0 6px;border-radius:9px;border:0;background:rgba(0,0,0,.12);color:#7a3b00;font:800 13px/1 Nunito,system-ui,sans-serif;text-shadow:none;-webkit-text-stroke:0;white-space:nowrap}
 #ranking .rlist .lrow .rflag.ask{background:#e23a3a;color:#fff;font-size:12px;padding:0 8px}
 #ranking .rlist .lrow:has(.rflag){grid-template-columns:30px 38px minmax(0,1fr) auto auto auto}
+
+/* ---------- league avatars: every character on its own coloured disc ---------- */
+.lav.candy,.lav.sweet{background:linear-gradient(180deg,hsl(var(--bg,40) 95% 88%),hsl(var(--bg,40) 85% 66%))}
+.lav.sweet img{width:78%;height:78%}
+.lav.head{background:linear-gradient(180deg,hsl(var(--bg,200) 90% 86%),hsl(var(--bg,200) 80% 62%))}
+/* ---------- world pictures: a slow drift, only for the world on screen, done by sliding a layer (the map is not repainted) ---------- */
+.map .zone{overflow:hidden}
+.map .zone.live::before{content:"";position:absolute;top:0;bottom:0;left:-7%;right:-7%;background:inherit;background-position:50% 50%;will-change:transform;animation:zonedrift 22s ease-in-out infinite alternate}
+@keyframes zonedrift{from{transform:translate3d(-5.5%,0,0)}to{transform:translate3d(5.5%,0,0)}}
+@media (prefers-reduced-motion:reduce){.map .zone.live::before{animation:none}}
+/* ---------- tutorial: the dragging finger is big, presses with a glow and leaves a bright trail ---------- */
+.thand{width:70px!important;height:70px!important}
+.thand::before{content:"";position:absolute;left:28%;top:12%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95) 0,rgba(255,236,110,.75) 45%,rgba(255,236,110,0) 72%);opacity:0;transform:scale(.4);transition:opacity .15s,transform .15s;z-index:-1}
+.thand.down::before{opacity:1;transform:scale(1);animation:tglow .7s ease-in-out infinite}
+@keyframes tglow{50%{transform:scale(1.3)}}
+.ttrail{position:absolute;z-index:2;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:7px;background:linear-gradient(180deg,#fffbe0,#ffe14d);box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 10px 3px rgba(255,225,77,.9);opacity:.92;pointer-events:none}
+
+/* ---------- top bar: the speaker (music on / off) sits next to Settings ---------- */
+#musicTop svg{width:20px;height:20px;color:#7a2fd0}
+#musicTop.off svg{color:#b23a3a}
+/* ---------- My Profile: every helper with its count ---------- */
+.pf-grid .pf-items{grid-column:1/-1;gap:5px;padding:7px 6px 9px}
+.pf-grid .pf-items>span{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:100%}
+.pf-grid .pf-items i{display:flex;flex-direction:column;align-items:center;gap:1px;font-style:normal}
+.pf-grid .pf-items img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(60,20,0,.3))}
+.pf-grid .pf-items b{font:900 15px/1 Nunito,system-ui,sans-serif;color:#5b2a14}

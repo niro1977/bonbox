@@ -64,10 +64,16 @@
   /* ---------- Today's League: the player races characters of the game (never fake "people") and the real players of the day.
      Every rival has a goal for the day and moves toward it as the hours pass, so the table is alive from morning to night
      and starts again at midnight. Their scores come from the date and the clock only: nothing is stored or sent. ---------- */
-  const RIVALS = [{ n: 'Vinegar', img: 'boss_idle' }, { n: 'Sour Cloud', img: 'minion_idle' }, { n: 'Captain Teal', img: 'gumi_pirate', head: 1 }, { n: 'Astro Bear', img: 'gumi_astronaut', head: 1 },
-    { n: 'Ninja Bear', img: 'gumi_ninja', head: 1 }, { n: 'Chef Bear', img: 'gumi_chef', head: 1 }, { n: 'Lolli Pop', c: 0 }, { n: 'Candy Wrap', c: 1 }, { n: 'Choco Bar', c: 2 }, { n: 'Donut Dan', c: 3 },
-    { n: 'Cuppy Cake', c: 4 }, { n: 'Cookie Kid', c: 5 }, { n: 'Cherry Twins', c: 6 }, { n: 'Softy Swirl', c: 7 }, { n: 'Miss Shortcake', c: 8 }, { n: 'Dango Trio', c: 9 }];
-  const LEAGUE_GOALS = [2400, 1900, 1500, 1200, 950, 760, 600, 470, 360, 270, 200, 150, 110, 80, 50, 30];
+  // img = a picture from art/ ; head = show the bear's head ; hue = the same bear in another colour ; c = one of the ten board candies
+  const RIVALS = [{ n: 'Vinegar', img: 'boss_idle' }, { n: 'Sour Cloud', img: 'minion_idle' },
+    { n: 'Captain Teal', img: 'gumi_pirate', head: 1 }, { n: 'Astro Bear', img: 'gumi_astronaut', head: 1 }, { n: 'Ninja Bear', img: 'gumi_ninja', head: 1 }, { n: 'Chef Bear', img: 'gumi_chef', head: 1 },
+    { n: 'Fireman Finn', img: 'gumi_fire_stand', head: 1, hue: 200 }, { n: 'Cowboy Coco', img: 'gumi_cowboy_stand', head: 1, hue: 60 }, { n: 'Wizard Wiz', img: 'gumi_wizard_stand', head: 1, hue: 150 },
+    { n: 'King Karamel', img: 'gumi_king_stand', head: 1, hue: 90 }, { n: 'Shadow Ninja', img: 'gumi_ninja_stand', head: 1, hue: 250 }, { n: 'Pirate Plum', img: 'gumi_pirate_stand', head: 1, hue: 300 }, { n: 'Baker Bun', img: 'gumi_chef_stand', head: 1, hue: 120 },
+    { n: 'Lolli Pop', c: 0 }, { n: 'Candy Wrap', c: 1 }, { n: 'Choco Bar', c: 2 }, { n: 'Donut Dan', c: 3 }, { n: 'Cuppy Cake', c: 4 }, { n: 'Cookie Kid', c: 5 }, { n: 'Cherry Twins', c: 6 }, { n: 'Softy Swirl', c: 7 }, { n: 'Miss Shortcake', c: 8 }, { n: 'Dango Trio', c: 9 },
+    { n: 'Peppermint Pat', img: 'sw_1' }, { n: 'Bluey Twist', img: 'sw_2' }, { n: 'Violet Twist', img: 'sw_3' }, { n: 'Gumdrop Gus', img: 'sw_4' }, { n: 'Jelly Jo', img: 'sw_5' }, { n: 'Pinky Bean', img: 'sw_6' }, { n: 'Lemmy Drop', img: 'sw_7' },
+    { n: 'Swirly Ray', img: 'sw_8' }, { n: 'Ruby Ring', img: 'sw_9' }, { n: 'Minty Gem', img: 'sw_10' }, { n: 'Sweet Heart', img: 'sw_11' }, { n: 'Butterscotch Bo', img: 'sw_12' }, { n: 'Cane Cody', img: 'sw_13' }, { n: 'Cherry Bomb', img: 'sw_14' },
+    { n: 'Berry Blue', img: 'sw_15' }, { n: 'Apple Pop', img: 'sw_16' }, { n: 'Zesty Slice', img: 'sw_17' }, { n: 'Grape Gummy', img: 'sw_18' }, { n: 'Starry Sue', img: 'sw_19' }, { n: 'Truffle Tom', img: 'sw_20' }, { n: 'Melon Max', img: 'sw_21' }];
+  const LEAGUE_GOALS = RIVALS.map((r, k) => Math.max(20, Math.round(2400 * Math.pow(0.9, k) / 10) * 10));   // from about 2400 points for the leader of the day down to 20
   let realTop = [];   // the real players of today, as the ranking server last sent them
   function rivalsNow() {
     const day = today(), d = new Date(), hr = d.getHours() + d.getMinutes() / 60;
@@ -86,9 +92,9 @@
   }
   function leagueAvatar(e) {
     if (e.me) return '<i class="lav me"><img src="' + look.stand + '" alt="" draggable="false"></i>';
-    if (e.rival && e.rival.img) return '<i class="lav' + (e.rival.head ? ' head' : ' full') + '"><img src="art/' + e.rival.img + '.webp" alt="" draggable="false"></i>';
+    if (e.rival && e.rival.img) return '<i class="lav' + (e.rival.head ? ' head' : /^sw_/.test(e.rival.img) ? ' sweet' : ' full') + '" style="--bg:' + (hash(e.name) % 360) + '"><img src="art/' + e.rival.img + '.webp" alt="" draggable="false" loading="lazy"' + (e.rival.hue ? ' style="filter:hue-rotate(' + e.rival.hue + 'deg)"' : '') + '></i>';
     const c = e.rival ? e.rival.c : hash(e.name) % 10;
-    return '<i class="lav candy' + (e.rival ? '' : ' real') + '"><svg><use href="#c' + c + '"/></svg></i>';
+    return '<i class="lav candy' + (e.rival ? '' : ' real') + '" style="--bg:' + (hash(e.name) % 360) + '"><svg><use href="#c' + c + '"/></svg></i>';
   }
   const rankBadge = (r) => '<b class="lrk' + (r <= 3 ? ' top r' + r : '') + '">' + r + '</b>';
   function leagueRow(e, rank) {
@@ -101,7 +107,7 @@
     const box = $('rankList'); box.innerHTML = '';
     if (d && d.top) realTop = d.top;
     const list = leagueList(score.points);
-    list.slice(0, 30).forEach((e, i) => {
+    list.slice(0, 60).forEach((e, i) => {
       const row = leagueRow(e, i + 1);
       if (e.real && !rhide.includes(e.real)) {      // a real player's name can be reported: tap the flag, then tap again to confirm
         const fl = document.createElement('button'); fl.type = 'button'; fl.className = 'rflag'; fl.textContent = '⚑'; fl.setAttribute('aria-label', 'Report this name');
@@ -345,6 +351,7 @@
     const els = document.querySelectorAll('.zone[data-bg],.ribbon[data-bg]');
     if (!('IntersectionObserver' in window)) { els.forEach((e) => { e.style.backgroundImage = 'url(' + e.dataset.bg + ')'; }); return; }
     if (zoneObs) zoneObs.disconnect();
+    liveZones();
     zoneObs = new IntersectionObserver((es) => es.forEach((en) => { if (en.isIntersecting) { en.target.style.backgroundImage = 'url(' + en.target.dataset.bg + ')'; zoneObs.unobserve(en.target); } }), { rootMargin: '900px 0px' });
     els.forEach((e) => zoneObs.observe(e));
   }
@@ -529,6 +536,14 @@
     buildBoard(); drawHearts(); drawFound();
   }
   const worldIdx = (lv) => Math.floor((lv - 1) / 10) % ZONES.length;
+  // the picture of a world drifts slowly only while that world is on the screen
+  let liveObs = null;
+  function liveZones() {
+    if (!('IntersectionObserver' in window) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (liveObs) liveObs.disconnect();
+    liveObs = new IntersectionObserver((es) => es.forEach((en) => en.target.classList.toggle('live', en.isIntersecting)), { rootMargin: '0px' });
+    document.querySelectorAll('#map .zone').forEach((z) => liveObs.observe(z));
+  }
   function sparkField(box, n) {
     if (!box || box.querySelector('.sparkfield')) return;
     const f = document.createElement('div'); f.className = 'sparkfield';
@@ -1245,7 +1260,9 @@
     ];
     $('pfGrid').innerHTML = rows.map((r) => '<div><b>' + r[1] + '</b><small>' + r[0] + '</small></div>').join('')
       + '<div><b>' + coinSvg + ' ' + coins + '</b><small>Coins</small></div>'
-      + '<div><b>' + hintsLeft + ' · ' + wands + '</b><small>Hints · Wands</small></div>';
+      + '<div><b>' + (level > LAST_LEVEL ? LAST_LEVEL : level) + '</b><small>Current level</small></div>'
+      + '<div class="pf-items"><small>My helpers</small><span>' + [['hint', hintsLeft, 'Hints'], ['wand', wands, 'Magic wands'], ['shield', items.shield || 0, 'Heart shields'], ['sweeper', items.sweeper || 0, 'Sweepers'], ['lens', items.lens || 0, 'Magnifiers'], ['double', items.double || 0, 'x2 Points']]
+        .map((x) => '<i title="' + x[2] + '"><img src="art/ic_' + x[0] + '.webp" alt="' + x[2] + '" draggable="false"><b>' + x[1] + '</b></i>').join('') + '</span></div>';
     $('profile').hidden = false;
   }
   function saveProfileName() {
@@ -1577,6 +1594,7 @@
   function syncOpts() {
     const set = (id, on) => $(id).setAttribute('aria-checked', String(!!on));
     set('optHaptic', hapticOn); set('optMusic', M && M.isEnabled()); set('optVoice', V && V.isEnabled()); set('optAll', S.isOn());
+    { const u = document.querySelector('#musicTop use'), on = !!(M && M.isEnabled()) && S.isOn(); if (u) u.setAttribute('href', on ? '#snd-on' : '#snd-off'); const b = $('musicTop'); if (b) b.classList.toggle('off', !on); }
   }
 
   /* ---------- navigation ---------- */
@@ -1670,6 +1688,8 @@
   $('howClose').onclick = () => { S.tap(); $('how').hidden = true; store.set('seenHow', true); };
   const toggleSound = () => { S.toggle(); syncSound(); if (M) M.sync(); if (!S.isOn() && V) V.cancel(); syncOpts(); };
   $('optMusic').onclick = () => { S.unlock(); M.setEnabled(!M.isEnabled()); syncOpts(); };
+  $('musicTop').onclick = () => { S.unlock(); if (!S.isOn()) { S.toggle(); syncSound(); M.setEnabled(true); } else M.setEnabled(!M.isEnabled()); if (M.isEnabled()) S.tap(); syncOpts(); };
+  setTimeout(syncOpts, 0);   // the speaker shows the saved state from the start
   $('optVoice').onclick = () => { V.setEnabled(!V.isEnabled()); syncOpts(); if (V.isEnabled()) V.say('Sweet!', true); };
   $('optAll').onclick = toggleSound;
   $('optHaptic').onclick = () => { hapticOn = !hapticOn; store.set('haptic', hapticOn); syncOpts(); if (hapticOn) { try { navigator.vibrate && navigator.vibrate(25); } catch (_) {} } };
@@ -1753,15 +1773,19 @@
     };
     loop();
   }
-  // the finger goes down on the first square and slides along the row: an X appears on every square it passes
+  // the finger goes down on the first square and slides slowly along the row: a bright trail follows it and an X pops on every square it passes
   function tutDrag() {
     const box = $('tutStage'), hand = $('tHand'); if (!hand) return; const cell = (p) => box.querySelector('.tc[data-p="' + p + '"]'), so = box.querySelector('.tsolo');
-    const go = (p, fast) => { const c = cell(p), b = so.getBoundingClientRect(), r = c.getBoundingClientRect(); hand.style.transitionDuration = fast ? '.3s' : ''; hand.style.left = (r.left - b.left + r.width / 2) + 'px'; hand.style.top = (r.top - b.top + r.height / 2) + 'px'; };
-    const x = (p) => { const c = cell(p); c.innerHTML = '<u></u>'; c.classList.remove('press'); void c.offsetWidth; c.classList.add('press'); S.x ? S.x() : S.tap(); };
+    const mid = (p) => { const b = so.getBoundingClientRect(), r = cell(p).getBoundingClientRect(); return [r.left - b.left + r.width / 2, r.top - b.top + r.height / 2]; };
+    const move = (p, ms, lin) => { const m = mid(p), e = lin ? 'linear' : 'cubic-bezier(.77,0,.175,1)'; hand.style.transition = 'left ' + ms + 'ms ' + e + ',top ' + ms + 'ms ' + e; hand.style.left = m[0] + 'px'; hand.style.top = m[1] + 'px'; };
+    const x = (p) => { const c = cell(p); if (c.querySelector('u')) return; c.innerHTML = '<u></u>'; c.classList.remove('press'); void c.offsetWidth; c.classList.add('press'); if (S.x) S.x(); else S.tap(); };
+    const trail = (a, b, ms) => { const p = mid(a), q = mid(b), t = document.createElement('i'), hor = Math.abs(q[0] - p[0]) > Math.abs(q[1] - p[1]); t.className = 'ttrail'; t.style.left = p[0] + 'px'; t.style.top = p[1] + 'px'; so.insertBefore(t, hand);
+      t.style.transition = (hor ? 'width ' : 'height ') + ms + 'ms linear,opacity .5s'; void t.offsetWidth; if (hor) t.style.width = (q[0] - p[0]) + 'px'; else t.style.height = (q[1] - p[1]) + 'px'; };
+    const lift = () => { hand.classList.remove('down'); so.querySelectorAll('.ttrail').forEach((t) => { t.style.opacity = 0; setTimeout(() => t.remove(), 500); }); };
     const loop = () => {
-      ['20', '21', '22', '23', '13', '33'].forEach((p) => { cell(p).innerHTML = ''; }); hand.classList.remove('down');
-      const seq = [[250, () => go('20')], [950, () => { hand.classList.add('down'); x('20'); }], [1250, () => go('21', 1)], [1500, () => x('21')], [1600, () => go('22', 1)], [1850, () => x('22')], [1950, () => go('23', 1)], [2200, () => x('23')],
-        [2600, () => hand.classList.remove('down')], [3000, () => go('13')], [3700, () => { hand.classList.add('down'); x('13'); }], [4000, () => go('23', 1)], [4300, () => go('33', 1)], [4550, () => x('33')], [4950, () => hand.classList.remove('down')], [6400, loop]];
+      ['20', '21', '22', '23', '13', '33'].forEach((p) => { cell(p).innerHTML = ''; }); lift();
+      const seq = [[300, () => move('20', 650)], [1150, () => { hand.classList.add('down'); x('20'); }], [1500, () => { move('23', 1650, 1); trail('20', '23', 1650); }], [2050, () => x('21')], [2600, () => x('22')], [3150, () => x('23')], [3500, lift],
+        [3900, () => move('13', 650)], [4750, () => { hand.classList.add('down'); x('13'); }], [5100, () => { move('33', 1100, 1); trail('13', '33', 1100); }], [6200, () => x('33')], [6550, lift], [8000, loop]];
       seq.forEach((q) => tutT.push(setTimeout(q[1], q[0])));
     };
     loop();
@@ -2114,7 +2138,7 @@
         });
       });
       // the other prizes leave their picture in the chest window and fly to their own counters
-      const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'shieldN', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' };
+      const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' };
       prizeKeys(p).filter((x) => x !== 'coins').forEach((k, i) => {
         const img = $('chestPrize').querySelector('img[src*="ic_' + PICO[k] + '."]'), a = img && img.getBoundingClientRect(); if (!a || !a.width) return;
         const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width > 0;
@@ -2458,7 +2482,7 @@
   /* ---------- prize items fly into the matching counter at the top ---------- */
   function flyItems(r) {
     if (!r || !r.p) return;
-    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'shieldN', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
+    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
     keys.forEach((k, n) => {
       const from = [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
       const a = img.getBoundingClientRect(); if (!a.width) return;
