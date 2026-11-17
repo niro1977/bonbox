@@ -1472,8 +1472,8 @@
     const tf = (y, sx, sy, r) => 'translateY(' + y + 'px) scale(' + sx + ',' + sy + ') rotate(' + (r || 0) + 'deg)';
     if (body.classList.contains('vid')) {
       // the hand-animated film: it pops in and plays in a loop while the window is open
-      const v = body.querySelector('.gv'); body.style.animation = 'none'; if (sh) sh.style.animation = '';
-      v.currentTime = 0; const pl = v.play(); if (pl && pl.catch) pl.catch(() => {});
+      const v = body.querySelector('.gv').film; body.style.animation = 'none'; if (sh) sh.style.animation = '';
+      v.play();
       await A(body, [{ transform: tf(-40, 0.7, 0.7, 0), opacity: 0 }, { transform: tf(2, 1.05, 0.95, 0), opacity: 1, offset: 0.7 }, { transform: tf(0, 1, 1, 0), opacity: 1 }], 480, out);
       const stop = () => { if (!live()) { v.pause(); return; } setTimeout(stop, 500); }; stop();
       return;
@@ -2011,9 +2011,50 @@
   let outfit = store.get('outfit', 'hero'), frame = store.get('frame', 'cream');
   const outfitOf = (id) => OUTFITS.find((o) => o.id === id) || OUTFITS[0], frameOf = (id) => FRAMES.find((f) => f.id === id) || FRAMES[0];
   // outfits that have a hand-drawn six-pose victory jump (art/jump_<id>_1..6.webp)
-  // outfits that have a hand-animated victory film (video/win_<id>.webm, transparent). Pink bear only: other colours keep the drawn poses
+  // every outfit has a hand-animated victory film (video/<name>_s.mp4), in every bear colour and every browser
   const WINVID = { hero: 'gumi_win', chef: 'gumi_chef_win', fire: 'gumi_fire_win', pirate: 'gumi_pirate_win', cowboy: 'gumi_cowboy_win', wizard: 'gumi_wizard_win', king: 'gumi_king_win', ninja: 'gumi_ninja_win' };
-  const canAlphaVideo = (() => { try { const v = document.createElement('video'); return !!v.canPlayType && v.canPlayType('video/webm; codecs="vp9"') !== '' && !/iPhone|iPad|Macintosh/.test(navigator.userAgent); } catch (e) { return false; } })();
+  /* The film is one mp4 for every browser (iPhone too): colour on top, transparency below. A tiny WebGL shader joins them and
+     recolours the pink jelly to the chosen bear colour with the same rule as recolor() (clothes, muzzle and eyes stay). */
+  const FILM_VS = 'attribute vec2 p;varying vec2 u;void main(){u=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}';
+  const FILM_FS = 'precision mediump float;varying vec2 u;uniform sampler2D t;uniform float hs;' +
+    'vec3 rgb2hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));float d=q.x-min(q.w,q.y);float e=1.0e-10;return vec3(abs(q.z+(q.w-q.y)/(6.*d+e)),d/(q.x+e),q.x);}' +
+    'vec3 hsv2rgb(vec3 c){vec4 K=vec4(1.,2./3.,1./3.,3.);vec3 p=abs(fract(c.xxx+K.xyz)*6.-K.www);return c.z*mix(K.xxx,clamp(p-K.xxx,0.,1.),c.y);}' +
+    'void main(){vec3 c=texture2D(t,vec2(u.x,u.y*.5)).rgb;float a=smoothstep(.04,.96,texture2D(t,vec2(u.x,u.y*.5+.5)).r);' +
+    'if(hs!=0.){float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b));vec3 h=rgb2hsv(c);float deg=h.x*360.;' +
+    'if(mx-mn>=.18&&mx>=.3&&deg>=312.&&deg<=349.){h.x=fract(h.x+hs/360.+1.);c=hsv2rgb(h);}}' +
+    'gl_FragColor=vec4(c*a,a);}';
+  function makeFilm(name, hue) {
+    const cv = document.createElement('canvas'); cv.className = 'gv'; cv.width = 420; cv.height = 606;
+    const gl = cv.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false }) || cv.getContext('experimental-webgl');
+    if (!gl) return null;
+    const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; };
+    try {
+      const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, FILM_VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FILM_FS)); gl.linkProgram(pr);
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return null;
+      gl.useProgram(pr);
+      const bf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+      const lp = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(lp); gl.vertexAttribPointer(lp, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform1f(gl.getUniformLocation(pr, 'hs'), hue || 0);
+      const tx = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tx);
+      [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE));
+      [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
+    } catch (e) { return null; }
+    const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
+    v.className = 'gvsrc'; v.src = 'video/' + name + '_s.mp4?1';
+    let on = false, ok = false;
+    const draw = () => {
+      if (v.readyState >= 2) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); gl.viewport(0, 0, 420, 606); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); ok = true; } catch (e) {} }
+    };
+    const loop = () => { if (!on) return; draw(); if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(loop); else requestAnimationFrame(loop); };
+    v.addEventListener('loadeddata', draw);
+    cv.film = {
+      video: v,
+      play() { on = true; v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => {}); loop(); },
+      pause() { on = false; v.pause(); },
+      get ok() { return ok; },
+    };
+    return cv;
+  }
   const JUMPSETS = ['hero', 'chef', 'fire', 'pirate', 'cowboy', 'wizard', 'king', 'ninja'];
   function applyLook() {
     if (passed() < outfitOf(outfit).at) outfit = 'hero'; if (passed() < frameOf(frame).at) frame = 'cream';
@@ -2028,9 +2069,11 @@
       const gb = document.querySelector('#win .gbody');
       if (gb) {
         gb.querySelectorAll('.gf,.gv').forEach((e) => e.remove()); gb.classList.remove('frames', 'vid');
-        if (WINVID[o.id] && !hue && canAlphaVideo) {
-          const v = document.createElement('video'); v.className = 'gv'; v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', '');
-          v.src = 'video/' + WINVID[o.id] + '.webm?1'; v.onerror = () => { v.remove(); gb.classList.remove('vid'); }; gb.appendChild(v); gb.classList.add('vid');
+        gb.querySelectorAll('.gvsrc').forEach((e) => { e.pause(); e.removeAttribute('src'); e.load(); e.remove(); });
+        const fc = WINVID[o.id] ? makeFilm(WINVID[o.id], hue) : null;
+        if (fc) {
+          const v = fc.film.video; v.onerror = () => { fc.remove(); v.remove(); gb.classList.remove('vid'); };
+          gb.appendChild(fc); gb.appendChild(v); gb.classList.add('vid');
         }
         if (JUMPSETS.includes(o.id)) Promise.all([1, 2, 3, 4, 5, 6].map((k) => recolor('jump_' + o.id + '_' + k, hue))).then((fr) => {
           if (outfitOf(outfit).id !== o.id || bearColorOf(bearColor).hue !== hue) return;

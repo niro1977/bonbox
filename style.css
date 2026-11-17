@@ -2102,6 +2102,7 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* ---------- the victory film ---------- */
 #win .win-gumi .gbody.vid{width:150px;height:216px;margin-left:-75px;bottom:2px}
 #win .win-gumi .gbody.vid .g-ground,#win .win-gumi .gbody.vid .g-air,#win .win-gumi .gbody.vid .gf{display:none}
+#win .win-gumi .gbody .gvsrc{position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
 #win .win-gumi .gbody .gv{position:absolute;left:0;bottom:0;width:100%;height:100%;object-fit:contain;object-position:50% 100%;pointer-events:none}
 /* ---------- age screen ---------- */
 .ageyear{align-self:center;width:min(220px,80%);padding:10px 14px;border-radius:14px;border:3px solid #fff;background:linear-gradient(180deg,#fff,#e6f1ff);box-shadow:0 4px 0 #9cbfe0;font:900 20px/1.2 Nunito,system-ui,sans-serif;color:#143a6b;text-align:center}
