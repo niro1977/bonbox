@@ -269,7 +269,10 @@
 
   /* ---------- sound button state ---------- */
   function syncSound() {
-    document.querySelectorAll('.sndBtn use').forEach((u) => u.setAttribute('href', S.isOn() ? '#snd-on' : '#snd-off'));
+    // every speaker button in the game is the MUSIC switch (sound effects and the narrator are switched in Settings)
+    const on = !!(M && M.isEnabled()) && S.isOn();
+    document.querySelectorAll('.sndBtn use, #musicTop use').forEach((u) => u.setAttribute('href', on ? '#snd-on' : '#snd-off'));
+    document.querySelectorAll('.sndBtn, #musicTop').forEach((b) => b.classList.toggle('off', !on));
   }
 
   /* ---------- level map ---------- */
@@ -1601,7 +1604,7 @@
   function syncOpts() {
     const set = (id, on) => $(id).setAttribute('aria-checked', String(!!on));
     set('optHaptic', hapticOn); set('optMusic', M && M.isEnabled()); set('optVoice', V && V.isEnabled()); set('optAll', S.isOn());
-    { const u = document.querySelector('#musicTop use'), on = !!(M && M.isEnabled()) && S.isOn(); if (u) u.setAttribute('href', on ? '#snd-on' : '#snd-off'); const b = $('musicTop'); if (b) b.classList.toggle('off', !on); }
+    syncSound();
   }
 
   /* ---------- navigation ---------- */
@@ -1695,7 +1698,8 @@
   $('howClose').onclick = () => { S.tap(); $('how').hidden = true; store.set('seenHow', true); };
   const toggleSound = () => { S.toggle(); syncSound(); if (M) M.sync(); if (!S.isOn() && V) V.cancel(); syncOpts(); };
   $('optMusic').onclick = () => { S.unlock(); M.setEnabled(!M.isEnabled()); syncOpts(); };
-  $('musicTop').onclick = () => { S.unlock(); if (!S.isOn()) { S.toggle(); syncSound(); M.setEnabled(true); } else M.setEnabled(!M.isEnabled()); if (M.isEnabled()) S.tap(); syncOpts(); };
+  const toggleMusic = () => { S.unlock(); if (!S.isOn()) { S.toggle(); M.setEnabled(true); } else M.setEnabled(!M.isEnabled()); S.tap(); syncSound(); syncOpts(); };   // only the music stops; effects and narrator keep playing
+  $('musicTop').onclick = toggleMusic;
   setTimeout(syncOpts, 0);   // the speaker shows the saved state from the start
   $('optVoice').onclick = () => { V.setEnabled(!V.isEnabled()); syncOpts(); if (V.isEnabled()) V.say('Sweet!', true); };
   $('optAll').onclick = toggleSound;
@@ -1705,7 +1709,7 @@
   $('introNext').onclick = () => { S.tap(); if (introStep >= PANELS.length) { if (V && PANELS !== ENDING) V.say("Let's play!", true); endIntro(); } else { introStep++; renderIntro(); } };
   $('introSkip').onclick = () => { S.tap(); endIntro(); };
   document.addEventListener('pointerdown', () => { S.unlock(); if (M && $('intro').hidden) M.sync(); }, { once: true });
-  $('sndHome').onclick = toggleSound; $('sndGame').onclick = toggleSound;
+  $('sndHome').onclick = toggleMusic; $('sndGame').onclick = toggleMusic;
   $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(maybeEnding); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
   $('reviveBtn').onclick = () => { S.tap(); watchAd(() => {
