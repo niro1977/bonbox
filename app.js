@@ -88,8 +88,12 @@
   const varietySize = (lv) => { if (lv < 21 || lv % 5 === 0) return 0; const h = Math.imul(lv, 2654435761) >>> 0; const r = (h >>> 8) % 100; return r < 16 ? 9 : r < 30 ? 8 : 0; };
   const LAST_LEVEL = 500, ULTRA_FROM = 301;   // 301-500: only the hardest boards
   const sizeFor = (lv) => (lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
-  const tierOf = (lv) => (lv % 10 === 0 ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : lv % 5 === 0 ? 'hard' : 'normal');   // every world ends with an Extremely Hard level
-  const dailySize = () => [7, 6, 7, 6, 7, 6, 7][new Date().getDay()];   // the daily challenge is a small board, 6x6 or 7x7, a different one each day
+  // the first ten levels are all plain. The first Hard level is 11, then 16, and level 20 is the first Extremely Hard one (with Vinegar);
+  // from there on it is the usual rhythm: Hard on every 5th level, Extremely Hard at the end of every world.
+  const isBossLv = (lv) => lv % 10 === 0 && lv > 10;
+  const isHardLv = (lv) => (lv <= 20 ? lv === 11 || lv === 16 : lv % 5 === 0 && lv % 10 !== 0);
+  const tierOf = (lv) => (isBossLv(lv) ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : isHardLv(lv) ? 'hard' : 'normal');
+  const dailySize = () => [5, 6, 7, 5, 6, 7, 6][new Date().getDay()];   // the daily challenge is a small board (5x5, 6x6 or 7x7): never the same size two days in a row, and the board itself is new every day
   const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard' };
 
   function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -102,13 +106,17 @@
     const el = $('rankNote'); if (el) el.textContent = 'Top players today. Resets every day at midnight (GMT' + (off >= 0 ? '+' : '') + off + ').'; }
   /* ---------- window titles: always one line, centred on the plate, shrunk just enough to fit inside it ---------- */
   function fitTitle(h) {
-    if (!h || !h.getBoundingClientRect().width) return;
-    const max = Math.min(24, Math.max(15, h.clientHeight * 0.5)), room = h.clientWidth * 0.8, rg = document.createRange();
+    const box = h && h.getBoundingClientRect(); if (!box || !box.width || !h.clientWidth) return;
+    // a title is measured once for its text and its plate, and then keeps that size: it never changes while the window is open.
+    // The text and the plate are measured on screen together, so the window's pop-in animation (which scales both) cannot change the result.
+    const key = h.textContent + '|' + h.clientWidth + '|' + h.clientHeight; if (h._fit === key) return;
+    const max = Math.min(24, Math.max(15, h.clientHeight * 0.5)), sc = box.width / h.clientWidth, room = h.clientWidth * 0.78, rg = document.createRange();
     let f = max; h.style.fontSize = f + 'px'; rg.selectNodeContents(h);
-    while (f > 10 && rg.getBoundingClientRect().width > room) { f -= 0.5; h.style.fontSize = f + 'px'; }
+    while (f > 10 && rg.getBoundingClientRect().width / sc > room) { f -= 0.5; h.style.fontSize = f + 'px'; }
+    h._fit = key;
   }
   const fitTitles = () => document.querySelectorAll('.overlay:not([hidden]) .card h2').forEach(fitTitle);
-  { let q = 0; const later = () => { if (q) return; q = setTimeout(() => { q = 0; fitTitles(); }, 0); };
+  { let q = 0; const later = () => { if (q) return; q = 1; Promise.resolve().then(() => { q = 0; fitTitles(); }); };   // fitted before the next frame is drawn, so the title is never seen at a wrong size first
     new MutationObserver(later).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true });
     window.addEventListener('resize', later); if (document.fonts && document.fonts.ready) document.fonts.ready.then(later); }
   /* ---------- polish: every button answers the finger; every window pops in with a sound ---------- */
@@ -276,7 +284,7 @@
       const p = g.pos(lv), tier = tierOf(lv), n = sizeFor(lv);
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tier) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
-      b.dataset.lv = lv; if (lv % 10 === 0) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting'); else if (lv >= ULTRA_FROM) b.classList.add('ultra');
+      b.dataset.lv = lv; if (isBossLv(lv)) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting'); else if (lv >= ULTRA_FROM) b.classList.add('ultra');
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
       { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); if (tier === 'normal') { b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); } }   // every button of a world wears the colour of that world's ribbon
       let html = '' + lv;
@@ -351,7 +359,7 @@
 
   /* ---------- boards ---------- */
   // every Hard / Very Hard / Extreme level (and the mixed-in hard 9x9 / 8x8 boards) takes its own board from the pool: no level repeats an earlier one
-  const POOL_KEY = (lv) => (lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : lv % 10 === 0 ? 'veryhard' : lv % 5 === 0 || varietySize(lv) ? 'hard' : null);
+  const POOL_KEY = (lv) => (lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : isBossLv(lv) ? 'veryhard' : isHardLv(lv) || varietySize(lv) ? 'hard' : null);
   const POOL_IDX = (() => { const c = {}, o = {}; for (let lv = 1; lv <= LAST_LEVEL; lv++) { const k = POOL_KEY(lv); if (!k) continue; const id = k + sizeFor(lv); o[lv] = c[id] || 0; c[id] = o[lv] + 1; } return o; })();
   function boardFor(lv) {
     const n = sizeFor(lv), key = POOL_KEY(lv);
@@ -427,13 +435,13 @@
     drawHearts(); paint(); drawFound();
     return true;
   }
-  const savedFor = (meta) => { const g = store.get('game', null); if (!g || !g.meta || g.meta.kind !== meta.kind) return null; return (meta.kind === 'level' ? g.meta.level === meta.level : g.meta.date === meta.date) ? g : null; };
+  const savedFor = (meta) => { const g = store.get('game', null); if (!g || !g.meta || g.meta.kind !== meta.kind || g.meta.test) return null; return (meta.kind === 'level' ? g.meta.level === meta.level : g.meta.date === meta.date) ? g : null; };
   /* ---------- the card shown before a level ---------- */
   let pendingBoost = null, preSpoken = false;
   function openPrelevel(lv, after) {
     const n = sizeFor(lv), tier = tierOf(lv), best = stars[lv] || 0, resume = !!savedFor({ kind: 'level', level: lv });
     $('plTitle').textContent = 'Level ' + lv;
-    const t = $('plTier'), boss = lv % 10 === 0; t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'extreme boss' : tier); t.textContent = tierLabel[tier] || '';
+    const t = $('plTier'), boss = isBossLv(lv); t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'extreme boss' : tier); t.textContent = tierLabel[tier] || '';
     $('plBoss').hidden = !boss;
     $('plStars').innerHTML = [1, 2, 3].map((i) => '<span class="slot"><img class="star ' + (i <= best ? '' : 'off') + '" src="art/star_' + (i <= best ? 'gold' : 'grey') + '.webp" alt="" draggable="false"></span>').join('');
     $('plInfo').textContent = n + '×' + n + ' board · ' + n + ' candies to find' + (best ? '' : ' · first time!');
@@ -455,7 +463,7 @@
     pendingBoost = null;
     show('game');
     preSpoken = false;
-    if (lv % 10 === 0 && !resumed) setTimeout(bossEnter, 1000);
+    if (isBossLv(lv) && !resumed) setTimeout(bossEnter, 1000);
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     if (foeKind()) blowT = setTimeout(foeBlow, 26000 + Math.random() * 14000);
     if (!resumed) {
@@ -473,7 +481,7 @@
   }
   /* ---------- Daily Challenge: today's board against the clock. Solve it before the time runs out and win 1 hint + 1 magnifier (once a day).
      The clock stops while a window is open or the game is in the background; running out of time costs no life, you may simply try again. ---------- */
-  const CHAL_PRIZE = { hints: 1, lens: 1 }, chalLimit = () => (level > 30 ? 60 : level > 20 ? 90 : level > 10 ? 120 : 180) * 1000;   // the further the player is, the less time: 3 min for beginners, 2 min after level 10, 1.5 after 20, 1 after 30
+  const CHAL_PRIZE = { hints: 1, lens: 1 }, chalLimit = (n) => ({ 5: 45, 6: 60, 7: 90 }[n] || 90) * 1000;   // the time goes with the size of the board: 45 s for 5x5, 1 min for 6x6, 1.5 min for 7x7
   const fmtMs = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   let chalT = 0, chalLast = 0, chalSaved = 0;
   function chalStop() { clearInterval(chalT); chalT = 0; }
@@ -500,12 +508,13 @@
     const h = document.querySelector('#lose h2'), p = document.querySelector('#lose .card > p:not(.small)');
     if (h) h.textContent = timeUp ? "Time's up!" : 'Out of hearts'; if (p) p.textContent = timeUp ? 'The prize is still waiting. Try the challenge again!' : 'Take a breath and try this level again.';
   }
-  function startDaily() {
-    const t = today(), n = dailySize();
+  let chalTestN = 0;   // TEMPORARY (test button): each test start is a new board, 5x5 then 6x6 then 7x7
+  function startDaily(test) {
+    const t = today(), n = test ? [5, 6, 7][chalTestN++ % 3] : dailySize();
     setScene(new Date().getDate() % ZONES.length, 'normal');
-    makeGame(E.generate(n, hash('candoku-' + t)), 'Challenge', { kind: 'daily', date: t }, 'normal');
-    const resumed = applySaved(savedFor(cur.meta)), sv = store.get('chal', {});
-    cur.timed = true; cur.left = resumed && sv.date === t && sv.left > 0 ? Math.min(sv.left, chalLimit()) : chalLimit();   // a game you left keeps the time it had; it can never be more than today's limit
+    makeGame(E.generate(n, hash(test ? 'candoku-test-' + Date.now() : 'candoku-' + t)), 'Challenge', test ? { kind: 'daily', date: t, test: true } : { kind: 'daily', date: t }, 'normal');
+    const resumed = !test && applySaved(savedFor(cur.meta)), sv = store.get('chal', {});
+    cur.timed = true; cur.left = resumed && sv.date === t && sv.left > 0 ? Math.min(sv.left, chalLimit(n)) : chalLimit(n);   // a game you left keeps the time it had; it can never be more than today's limit
     store.set('chal', { date: t, left: Math.round(cur.left) });
     chalDraw(); chalStop(); chalLast = performance.now(); chalT = setInterval(chalTick, 250);
     show('game');
@@ -629,7 +638,7 @@
   }
   function placedCount() { let c = 0; for (const r of cur.state) for (const v of r) if (v === 2) c++; return c; }
   /* ---------- Vinegar: the storm king waits on every 10th level ---------- */
-  const foeKind = () => (!(cur && cur.meta && cur.meta.kind === 'level') ? null : cur.meta.level % 10 === 0 ? 'boss' : cur.meta.level % 5 === 0 && cur.meta.level < ULTRA_FROM ? 'minion' : null);
+  const foeKind = () => (!(cur && cur.meta && cur.meta.kind === 'level') ? null : isBossLv(cur.meta.level) ? 'boss' : isHardLv(cur.meta.level) && cur.meta.level < ULTRA_FROM ? 'minion' : null);
   const isBoss = () => foeKind() === 'boss';
   const nervous = () => !!(cur && cur.meta && cur.meta.level > 300);   // near his castle the Baron is not so sure of himself any more
   const foeImg = (k) => (foeKind() === 'minion' ? 'art/minion_' + (k === 'laugh' ? 'idle' : k) + '.webp' : 'art/boss_' + (k === 'idle' && nervous() ? 'worried' : k) + '.webp');
@@ -1148,7 +1157,7 @@
     $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins';
     $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>';
     if (m.kind === 'level') {
-      if (m.level % 10 === 0) merge = [];
+      if (isBossLv(m.level)) merge = [];
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
@@ -1157,6 +1166,8 @@
         checkUnlocks(m);
         if (cleared % WAND_EVERY === 0) { give({ wands: 1 }); wandReward = true; soon(() => announce({ wands: 1 }, 'Big level reward!', true), 4200); }
       }
+    } else if (m.kind === 'daily' && m.test) {
+      give(CHAL_PRIZE); cur.chalWon = true; setTimeout(() => announce(CHAL_PRIZE, 'Challenge complete!', true), 3600);
     } else if (m.kind === 'daily' && daily.last !== m.date) {
       const y = new Date(); y.setDate(y.getDate() - 1);
       const yd = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
@@ -1172,7 +1183,7 @@
     else if (m.kind === 'level') { wr.hidden = false; wr.textContent = (cleared % HINT_EVERY) + ' / ' + HINT_EVERY + ' levels to a free hint · wand in ' + (WAND_EVERY - (cleared % WAND_EVERY)) + ' more'; }
     else wr.hidden = true;
     if (cur.chalWon) { wr.hidden = false; wr.innerHTML = '⏱ Challenge prize: <b>+1 hint and +1 magnifier</b>'; }
-    if (m.kind === 'level' && m.level % 10 === 0) {
+    if (m.kind === 'level' && isBossLv(m.level)) {
       const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
       give(bp);
       const all = merge || []; merge = null; const sum = {}; let more = '', album = false;
@@ -1541,7 +1552,7 @@
     cur.revived = true; cur.done = false; cur.hearts = 1; addLives(1); if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
     $('lose').hidden = true; drawHearts(); saveGame(); toast('❤️ One more heart. Keep going!');
   }); };
-  $('retryBtn').onclick = () => { S.tap(); if (!canPlay()) { $('lose').hidden = true; toMap(); setTimeout(openLives, 900); return; } $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily())); };
+  $('retryBtn').onclick = () => { S.tap(); if (!canPlay()) { $('lose').hidden = true; toMap(); setTimeout(openLives, 900); return; } $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily(m.test))); };
   $('nextBtn').onclick = () => { S.tap(); nextLevel(); };
   $('rateLater').onclick = () => { S.tap(); closeRate(); };
   $('rateGo').onclick = () => { S.tap(); const nat = NATIVE(); if (nat && nat.review) { try { nat.review(); } catch (e) {} } else if (DBG) toast('(test) the Google Play rating window opens here'); closeRate(); };
@@ -1785,7 +1796,7 @@
   function trackSolved() {
     freshWeek(); const flawless = cur.hearts >= MAX_HEARTS; climbWin(); stormWin();
     stats.solved++; if (flawless) { passAdvance(); stats.flawless++; stats.run++; stats.maxRun = Math.max(stats.maxRun, stats.run); } else stats.run = 0; if (!cur.hints) stats.nohint++;
-    if (cur.meta && cur.meta.kind === 'level' && cur.meta.level % 10 === 0) stats.bosses++;
+    if (cur.meta && cur.meta.kind === 'level' && isBossLv(cur.meta.level)) stats.bosses++;
     weekly.solved++; if (cur.tier !== 'normal') weekly.hard++; if (flawless) weekly.flawless++;
     store.set('stats', stats); store.set('weekly', weekly);
   }
@@ -1859,7 +1870,7 @@
     const pc = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
     set('medPassTag', pc ? 'CLAIM' : pass.step + '/' + PASS.length); $('medPass').classList.toggle('ready', pc > 0);
     updateRushTag();
-    { const n = eventsHot(); set('medEventsTag', n ? n + ' NEW' : 'EVENTS'); $('medEvents').classList.toggle('ready', n > 0); } $('medGames').classList.toggle('ready', left > 0);
+    { const n = eventsHot(), g = GAMES.filter((x) => x[0] !== 'cart' && (MAX_PLAYS - (plays[x[0]] || 0)) > 0 && gameWait(x[0]) <= 0).length; set('medEventsTag', n ? n + ' NEW' : 'EVENTS'); $('medEvents').classList.toggle('ready', n > 0); $('medEvents').classList.toggle('dot', n + g > 0); } $('medGames').classList.toggle('ready', left > 0);
     $('navQuests').classList.toggle('dot', questReady()); $('navGifts').classList.toggle('dot', dailyGiftReady() || freeGiftReady());
   }
   function rewardRow(p) { return '<div class="rwd">' + prizeHtml(p) + '</div>'; }
@@ -2396,7 +2407,7 @@
   function refreshEvents() {
     evItems.forEach((o) => {
       if (!o.el) return; const im = o.el.querySelector('img'), src = 'art/' + (typeof o.img === 'function' ? o.img() : o.img) + '.webp'; if (im.getAttribute('src') !== src) im.src = src;
-      o.el.querySelector('em').textContent = o.tag(); o.el.classList.toggle('hot', !!o.hot()); o.el.classList.toggle('dim', !!(o.dim && o.dim()));
+      o.el.querySelector('em').textContent = o.tag(); o.el.classList.toggle('hot', !!o.hot()); o.el.classList.toggle('dot', !!o.hot()); o.el.classList.toggle('dim', !!(o.dim && o.dim()));
     });
   }
   function openEvents() { setTimeout(() => { loadArc(); loadHoop(); }, 600); S.unlock(); S.tap(); closeAll(); renderEvents(); $('events').hidden = false; }
@@ -2597,9 +2608,11 @@
   /* ---------- Cart Race: a surprise BONUS STAGE that appears once in every 10 levels, right after a win.
      Drag the cart, grab the few coins, dodge the rocks: three hits and you are out with no prize. ---------- */
   let bonusPending = false, quickThen = null;
+  // TEMPORARY: a test button on the map that starts a challenge at once (to be removed before the store build)
+  setTimeout(() => { const hm = $('home'); if (!hm || $('tmpChal')) return; const b = document.createElement('button'); b.type = 'button'; b.id = 'tmpChal'; b.textContent = 'TEST CHALLENGE'; b.onclick = () => { S.unlock(); S.tap(); transition(() => startDaily(true)); }; hm.appendChild(b); }, 0);
   const bonusSeed = (() => { let s = store.get('bseed', 0); if (!s) { s = 1 + Math.floor(Math.random() * 997); store.set('bseed', s); } return s; })();
   // which level of each block of ten brings the bonus (never the Hard or the Extremely Hard one, and never the same place twice in a row)
-  const bonusLevelOf = (blk) => blk * 10 + (blk === 0 ? [6, 7, 8][bonusSeed % 3] : [2, 3, 4, 6, 7, 8][(bonusSeed + blk * 5 + blk * blk) % 6]);
+  const bonusLevelOf = (blk) => blk * 10 + (blk === 0 ? [6, 7, 8][bonusSeed % 3] : blk === 1 ? [2, 3, 4, 7, 8][bonusSeed % 5] : [2, 3, 4, 6, 7, 8][(bonusSeed + blk * 5 + blk * blk) % 6]);
   function startCart(then) {
     loadArc();
     quickOpen('Bonus: Cart Race', 'Drag the cart. Grab coins, dodge rocks: 3 hits and you are out!');
@@ -2833,7 +2846,7 @@
   else if (!store.get('seenHow', false)) $('how').hidden = false;
   else {
     const g = store.get('game', null);
-    if (g && g.meta && ((g.meta.kind === 'level' && g.meta.level <= level) || (g.meta.kind === 'daily' && g.meta.date === today()))) {
+    if (g && g.meta && ((g.meta.kind === 'level' && g.meta.level <= level) || (g.meta.kind === 'daily' && g.meta.date === today() && !g.meta.test))) {
       if (g.meta.kind === 'level') startLevel(g.meta.level); else startDaily();
     } else maybeBonus();
   }

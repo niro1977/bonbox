@@ -1783,3 +1783,12 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 .chaltimer .chal-for{display:inline-flex;align-items:center;gap:2px;padding-left:8px;border-left:2px solid rgba(20,58,107,.25)}
 .chaltimer .chal-for img{width:24px;height:24px;object-fit:contain}
 .chaltimer.low .chal-for{border-left-color:rgba(255,255,255,.5)}
+
+/* ---------- red dot: something here can be played or claimed right now ---------- */
+.evcard.dot::after,.med.dot::after{content:"";position:absolute;top:-5px;right:-4px;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a8a,#ff2020 60%,#c40000);border:2.5px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.45);z-index:5;animation:dotpulse 1.4s ease-in-out infinite}
+.med.dot::after{top:-2px;right:2px}
+.evcard{overflow:visible!important}
+@keyframes dotpulse{50%{transform:scale(1.18)}}
+@media (prefers-reduced-motion:reduce){.evcard.dot::after,.med.dot::after{animation:none}}
+
+#tmpChal{position:fixed;left:8px;top:118px;z-index:40;padding:6px 10px;border-radius:12px;border:2px solid #fff;background:#111;color:#ffe14d;font:900 12px Nunito,system-ui,sans-serif}
