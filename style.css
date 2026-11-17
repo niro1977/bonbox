@@ -1746,3 +1746,11 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 /* ---------- win and prize windows: the content sits 2 mm higher above the chocolate frame at the bottom, and the prize line keeps off the side frame ---------- */
 #win .card,#reward .card{padding-bottom:9px!important}
 #win #winReward{max-width:86%;margin-left:auto;margin-right:auto}
+
+/* bonus stage: the track sits exactly in the middle of the screen, and the button stays well above the bottom edge */
+#quick.big{padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important}
+#quick.big[hidden]{display:none!important}
+#quick.big .card{margin:0 auto!important;transform:translateY(-10px)}
+#quick.big #quickBody{margin:0!important;padding:0!important;width:100%}
+#quick.big .qcv{width:100%!important;margin:0!important}
+#quick.big #quickMsg{min-height:34px;margin:0}

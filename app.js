@@ -2526,7 +2526,7 @@
     loadArc();
     quickOpen('Bonus: Cart Race', 'Drag the cart. Grab coins, dodge rocks: 3 hits and you are out!');
     quickThen = then || null; $('quick').classList.add('big');
-    const bw = $('quickBody').clientWidth || 300, H = Math.round(Math.max(360, Math.min(660, 300 * (innerHeight - 150) / bw)));
+    const bw = Math.min(480, innerWidth - 16), H = Math.round(Math.max(340, Math.min(660, 300 * (innerHeight - 228) / bw)));   // room is kept under the track for the result line and the button
     const { cv, g, K } = quickCanvas(H, 2);
     const LANES = [66, 150, 228], CART_Y = H - 70, GOAL = 900; let tx = 150, cx = 150, dist = 0, v = 0, rival = 0, got = 0, hits = 0, safe = 0, shake = 0, items = [], nextSpawn = 40, scroll = 0, over = false, last = performance.now(), t = 0, shown = ''; const texts = [];
     const snap = (y) => Math.round(y * K) / K;   // whole device pixels: the ground does not shimmer while it scrolls
@@ -2545,9 +2545,9 @@
     };
     const spawn = () => {
       const roll = Math.random(), free = Math.floor(Math.random() * 3);
-      if (roll < 0.5) { items.push({ lane: free, y: -24, k: 'rock' }); if (Math.random() < 0.08) items.push({ lane: (free + 1 + Math.floor(Math.random() * 2)) % 3, y: -24, k: 'coin' }); }
-      else if (roll < 0.8) { for (let l = 0; l < 3; l++) if (l !== free) items.push({ lane: l, y: -24, k: 'rock' }); if (Math.random() < 0.2) items.push({ lane: free, y: -24, k: 'coin' }); }
-      else if (Math.random() < 0.5) items.push({ lane: free, y: -24, k: 'coin' });
+      if (roll < 0.5) { items.push({ lane: free, y: -24, k: 'rock' }); if (Math.random() < 0.09) items.push({ lane: (free + 1 + Math.floor(Math.random() * 2)) % 3, y: -24, k: 'coin' }); }
+      else if (roll < 0.8) { for (let l = 0; l < 3; l++) if (l !== free) items.push({ lane: l, y: -24, k: 'rock' }); if (Math.random() < 0.22) items.push({ lane: free, y: -24, k: 'coin' }); }
+      else if (Math.random() < 0.55) items.push({ lane: free, y: -24, k: 'coin' });
     };
     function draw() {
       const A = arcArt, ok = (im) => im && im.complete && im.naturalWidth;
