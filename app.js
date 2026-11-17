@@ -1936,7 +1936,7 @@
       for (let n = 5; n <= WORLD_NAMES.length; n += 5) {
         const pz = stkPrize(n), got = stickerCount() >= n, done = !!stkClaimed[n], r = document.createElement('div'); r.className = 'stkrow' + (got ? '' : ' lock');
         r.innerHTML = '<span><b>' + n + ' stickers</b> ' + prizeChipsHtml(pz) + '</span>';
-        const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn main stkbtn'; bt.textContent = done ? 'Claimed ✓' : got ? 'Claim' : stickerCount() + '/' + n; bt.disabled = done || !got;
+        const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn main stkbtn claim'; bt.textContent = done ? 'Claimed ✓' : got ? 'Claim' : stickerCount() + '/' + n; bt.disabled = done || !got;
         bt.onclick = () => { stkClaimed[n] = true; store.set('stkClaimed', stkClaimed); giveReward(pz, 'Album prize!', true); renderCollection(); };
         r.appendChild(bt); grid.appendChild(r);
       }
@@ -1993,7 +1993,7 @@
     const row = (text, v, goal, claimed, prizeHtmlStr, claim) => {
       const val = Math.min(goal, v), done = val >= goal, d = document.createElement('div'); d.className = 'shoprow quest';
       d.innerHTML = '<span><b>' + text + '</b><small>' + val + ' / ' + goal + '</small><i class="qbar"><u style="width:' + (val / goal) * 100 + '%"></u></i></span>';
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy chips'; b.disabled = !done || claimed; b.innerHTML = claimed ? '✓' : prizeHtmlStr;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy chips' + (done && !claimed ? ' claim' : ''); b.disabled = !done || claimed; b.innerHTML = claimed ? '✓' : prizeHtmlStr;
       b.onclick = () => { if (!done || claimed) return; claim(); }; d.appendChild(b); list.appendChild(d);
     };
     if (qTab === 'daily') {
@@ -2316,7 +2316,7 @@
       const reached = i < pass.step, done = !!pass.cl[i], r = document.createElement('div');
       r.className = 'stkrow passrow' + (reached ? '' : ' lock') + (i === pass.step - 1 ? ' now' : '');
       r.innerHTML = '<i class="pnum' + (reached ? ' on' : '') + '">' + (i + 1) + '</i><span>' + prizeChipsHtml(PASS[i]) + '</span>';
-      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn main stkbtn';
+      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn main stkbtn claim';
       bt.textContent = done ? '✓' : reached ? 'Claim' : '🔒'; bt.disabled = done || !reached;
       bt.onclick = () => { pass.cl[i] = true; store.set('pass', pass); giveReward(PASS[i], 'Candy Pass!', i === PASS.length - 1); renderPass(); updateSides(); };
       r.appendChild(bt); list.appendChild(r);
@@ -2448,7 +2448,7 @@
     for (let i = 0; i < n; i++) {
       const reached = i < climb.step, done = !!climb.cl[i], d = document.createElement('div'); d.className = 'cl-plat' + (reached ? ' on' : '') + (done ? ' done' : ''); d.style.left = px(i) + 'px'; d.style.top = py(i) + 'px'; d.style.setProperty('--d', (i * 0.37 % 1.6).toFixed(2) + 's');
       d.innerHTML = '<img src="art/climb_plat.webp" alt="" draggable="false"><i>' + (i + 1) + '</i><span class="cl-prize">' + (done ? '✓' : prizeChipsHtml(CLIMB[i])) + '</span>';
-      if (reached && !done) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main cl-claim'; b.textContent = 'Claim'; b.onclick = () => { climb.cl[i] = true; store.set('climb', climb); giveReward(CLIMB[i], i === n - 1 ? 'Top of the climb!' : 'Candy Climb!', i === n - 1); renderClimb(); updateSides(); }; d.appendChild(b); }
+      if (reached && !done) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main cl-claim claim'; b.textContent = 'Claim'; b.onclick = () => { climb.cl[i] = true; store.set('climb', climb); giveReward(CLIMB[i], i === n - 1 ? 'Top of the climb!' : 'Candy Climb!', i === n - 1); renderClimb(); updateSides(); }; d.appendChild(b); }
       box.appendChild(d);
     }
     // the bear stands on the platform he reached (on the ground before the first one)
@@ -2487,7 +2487,7 @@
     STORM_PRIZE.forEach((p, i) => {
       const d = document.createElement('div'), got = shown && storm.hits >= p[0], done = !!storm.cl[i]; d.className = 'stormrow' + (got ? ' got' : '');
       d.innerHTML = '<b>' + p[0] + ' hits</b><span class="rwd">' + prizeChips(p[1]) + '</span>';
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy'; b.textContent = done ? 'Claimed ✓' : 'Claim'; b.disabled = !got || done;
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy claim'; b.textContent = done ? 'Claimed ✓' : 'Claim'; b.disabled = !got || done;
       b.onclick = () => { storm.cl[i] = true; store.set('storm', storm); giveReward(p[1], i === STORM_PRIZE.length - 1 ? 'Vinegar is defeated!' : 'Sour Storm!', i === STORM_PRIZE.length - 1); renderStorm(); updateSides(); };
       d.appendChild(b); box.appendChild(d);
     });
