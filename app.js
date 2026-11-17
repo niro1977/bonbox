@@ -1618,6 +1618,8 @@
   /* The story pictures come alive: the part of the picture that holds a character is drawn a second time on its own soft-edged
      layer, exactly over the original, and that layer moves (Gumi bobs and waves, shivers, pumps his fist; Vinegar roars and
      flees; the tornado twists). Places are given in pixels of the 768 x 1376 picture: centre x, y and half-width, half-height. */
+  // the story scenes as short animated films (made from the same pictures); the picture is the fallback
+  const STORYVID = { story1: 'story1.mp4', story2p: 'story2p.mp4', story3: 'story3.mp4', story4: 'story4.mp4' };
   const LIVE = {
     story1: [{ x: 422, y: 560, rx: 215, ry: 290, a: 'bob' }],
     story2p: [{ x: 379, y: 965, rx: 135, ry: 160, a: 'shiver' }],
@@ -1633,7 +1635,7 @@
       host.appendChild(el);
     });
   }
-  function preloadStory() { STORY.map((p) => p.img + '.jpg').concat(['boss_idle_l.webp', 'boss_laugh_l.webp']).forEach((f) => { const im = new Image(); im.src = 'art/' + f; }); }
+  function preloadStory() { Object.values(STORYVID).forEach((f) => { const l = document.createElement('link'); l.rel = 'preload'; l.as = 'video'; l.href = 'video/' + f; document.head.appendChild(l); }); STORY.map((p) => p.img + '.jpg').concat(['boss_idle_l.webp', 'boss_laugh_l.webp']).forEach((f) => { const im = new Image(); im.src = 'art/' + f; }); }
   let introStep = 0, rainTimer = null, introVoiceAt = 0;
   const logoHtml = () => '<div class="logo big" aria-label="Candoku"><img src="art/logo.webp" alt="Candoku" draggable="false"></div>';
   function sceneHtml(kind) {
@@ -1688,15 +1690,16 @@
       return;
     }
     const p = PANELS[introStep - 1];
-    const pic = '<div class="st-img" style="background-image:url(art/' + p.img + '.jpg)"></div>', bolt = (c) => '<svg class="st-bolt ' + c + '" viewBox="0 0 40 70"><path d="M24 0 6 38h12L10 70 36 26H22z"/></svg>';
+    const vid = STORYVID[p.img] && !matchMedia('(prefers-reduced-motion: reduce)').matches, pic = '<div class="st-img' + (vid ? ' hasvid' : '') + '" style="background-image:url(art/' + p.img + '.jpg)">' + (vid ? '<video class="st-vid" src="video/' + STORYVID[p.img] + '" poster="art/' + p.img + '.jpg" muted playsinline loop preload="auto"' + (p.fx === 'storm' ? '' : ' autoplay') + '></video>' : '') + '</div>', bolt = (c) => '<svg class="st-bolt ' + c + '" viewBox="0 0 40 70"><path d="M24 0 6 38h12L10 70 36 26H22z"/></svg>';
     // the villain is his own layer over an empty sky, so he can drop in, float, laugh and throw lightning
     const stage = p.fx === 'dark' ? '<div class="st-stage">' + pic + bolt('b1') + bolt('b2') + bolt('b3') + '<div class="st-boss"><img class="bi" src="art/boss_idle_l.webp" alt="" draggable="false"><img class="bl" src="art/boss_laugh_l.webp" alt="" draggable="false"></div></div>' : pic;
     body.innerHTML = '<div class="st-panel st-' + p.fx + '">' + stage + storyFx(p.fx) + storyAir(p.fx) + '</div><p class="st-cap">' + p.text + '</p>';
-    liveLayers(body.querySelector('.st-panel'), p.img);
+    if (!STORYVID[p.img]) liveLayers(body.querySelector('.st-panel'), p.img);
+    { const v = body.querySelector('.st-vid'); if (v) { v.muted = true; v.addEventListener('playing', () => v.classList.add('on'), { once: true }); if (p.fx !== 'storm') v.play().catch(() => {}); } }
     if (p.fx === 'storm') {
       // the sneeze lands on the narrator's "ACHOO": until then the Baron only breathes in, then the storm breaks
       const panel = body.querySelector('.st-storm'), at = V && V.isEnabled() && S.isOn() ? (window.LANG === 'es' ? 2350 : 3050) : 1400, step = introStep;
-      setTimeout(() => { if (introStep !== step || $('intro').hidden || !panel.isConnected) return; panel.classList.add('go'); S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === step && !$('intro').hidden) S.whoosh(); }, 700); }, at);
+      setTimeout(() => { if (introStep !== step || $('intro').hidden || !panel.isConnected) return; panel.classList.add('go'); { const v = panel.querySelector('.st-vid'); if (v) v.play().catch(() => {}); } S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === step && !$('intro').hidden) S.whoosh(); }, 700); }, at);
     }
     else if (p.fx === 'dark') buzz([30, 60, 30]);
     ctl.hidden = false;

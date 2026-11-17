@@ -2092,3 +2092,9 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .st-float svg{width:100%;height:100%;filter:drop-shadow(0 2px 3px rgba(40,0,80,.4))}
 @keyframes stfloat{0%{transform:translateY(0) rotate(0);opacity:0}12%{opacity:.95}80%{opacity:.9}100%{transform:translateY(-78vh) rotate(260deg);opacity:0}}
 @media (prefers-reduced-motion:reduce){.st-live,.st-cloud,.st-float{display:none}}
+
+/* ---------- the story scenes as films ---------- */
+.st-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s;pointer-events:none}
+.st-vid.on{opacity:1}
+.st-img.hasvid{animation:none!important}
+.st-storm .st-img.hasvid,.st-dark .st-img.hasvid{animation:none!important}
