@@ -2045,3 +2045,11 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* podium names: the whole name on one line (the size is fitted by the game); the label may be a little wider than its cake */
 .pwho .pnm{max-width:122%;text-overflow:clip;font-size:12px}
 .pwho.w1 .pnm{max-width:170%}
+
+/* small screens: My Profile and the Ranking fit without scrolling */
+#profile .pf-grid{grid-template-columns:repeat(3,1fr);gap:5px}
+#profile .pf-grid>div{padding:6px 3px}
+#profile .pf-grid b{font-size:16px}
+#profile .pf-grid small{font-size:10.5px;line-height:1.15;text-align:center}
+#profile .pf-grid .pf-items{padding:6px 6px 8px}
+#ranking .rlist{max-height:calc(100svh - 500px)}
