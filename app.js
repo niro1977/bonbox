@@ -2013,15 +2013,14 @@
   // outfits that have a hand-drawn six-pose victory jump (art/jump_<id>_1..6.webp)
   // every outfit has a hand-animated victory film (video/<name>_s.mp4), in every bear colour and every browser
   const WINVID = { hero: 'gumi_win', chef: 'gumi_chef_win', fire: 'gumi_fire_win', pirate: 'gumi_pirate_win', cowboy: 'gumi_cowboy_win', wizard: 'gumi_wizard_win', king: 'gumi_king_win', ninja: 'gumi_ninja_win' };
-  /* The film is one mp4 for every browser (iPhone too): colour on top, transparency below. A tiny WebGL shader joins them and
-     recolours the pink jelly to the chosen bear colour with the same rule as recolor() (clothes, muzzle and eyes stay). */
+  /* The film is one mp4 for every browser (iPhone too), three pictures stacked: colour, transparency, and a jelly map made in advance
+     that marks the bear's jelly body. A tiny WebGL shader joins them and recolours only the jelly (clothes, muzzle, mouth and eyes stay). */
   const FILM_VS = 'attribute vec2 p;varying vec2 u;void main(){u=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}';
   const FILM_FS = 'precision mediump float;varying vec2 u;uniform sampler2D t;uniform float hs;' +
     'vec3 rgb2hsv(vec3 c){vec4 K=vec4(0.,-1./3.,2./3.,-1.);vec4 p=mix(vec4(c.bg,K.wz),vec4(c.gb,K.xy),step(c.b,c.g));vec4 q=mix(vec4(p.xyw,c.r),vec4(c.r,p.yzx),step(p.x,c.r));float d=q.x-min(q.w,q.y);float e=1.0e-10;return vec3(abs(q.z+(q.w-q.y)/(6.*d+e)),d/(q.x+e),q.x);}' +
     'vec3 hsv2rgb(vec3 c){vec4 K=vec4(1.,2./3.,1./3.,3.);vec3 p=abs(fract(c.xxx+K.xyz)*6.-K.www);return c.z*mix(K.xxx,clamp(p-K.xxx,0.,1.),c.y);}' +
-    'void main(){vec3 c=texture2D(t,vec2(u.x,u.y*.5)).rgb;float a=smoothstep(.04,.96,texture2D(t,vec2(u.x,u.y*.5+.5)).r);' +
-    'if(hs!=0.){float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b));vec3 h=rgb2hsv(c);float deg=h.x*360.;' +
-    'if(mx-mn>=.18&&mx>=.3&&deg>=312.&&deg<=349.){h.x=fract(h.x+hs/360.+1.);c=hsv2rgb(h);}}' +
+    'void main(){vec3 c=texture2D(t,vec2(u.x,u.y/3.)).rgb;float a=smoothstep(.04,.96,texture2D(t,vec2(u.x,u.y/3.+1./3.)).r);' +
+    'if(hs!=0.){float j=smoothstep(.05,.95,texture2D(t,vec2(u.x,u.y/3.+2./3.)).r);vec3 h=rgb2hsv(c);h.x=fract(h.x+hs/360.+1.);c=mix(c,hsv2rgb(h),j);}' +
     'gl_FragColor=vec4(c*a,a);}';
   function makeFilm(name, hue) {
     const cv = document.createElement('canvas'); cv.className = 'gv'; cv.width = 420; cv.height = 606;
@@ -2040,7 +2039,7 @@
       [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
     } catch (e) { return null; }
     const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
-    v.className = 'gvsrc'; v.src = 'video/' + name + '_s.mp4?2';
+    v.className = 'gvsrc'; v.src = 'video/' + name + '_s.mp4?3';
     let on = false, ok = false;
     const draw = () => {
       if (v.readyState >= 2) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); gl.viewport(0, 0, 420, 606); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); ok = true; } catch (e) {} }
@@ -2385,6 +2384,18 @@
     }, 1100);
   }
   // ?dbg=1&demo=chest : opens a chest again and again, large, medium, small (a demonstration, test mode only; the real chest is put back)
+  // dbg demo: the victory dance in every outfit and colour, one after another
+  if (location.search.includes('dbg') && location.search.includes('demo=win')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    level = Math.max(level, 100); let k = 0;
+    const next = () => {
+      const o = OUTFITS[k % OUTFITS.length], c = BEARCOLORS[Math.floor(k / OUTFITS.length + k) % BEARCOLORS.length]; k++;
+      outfit = o.id; bearColor = c.id; applyLook(); $('win').hidden = true;
+      setTimeout(() => { $('win').hidden = false; celebrate(); toast(o.name + ' · ' + c.name); }, 400);
+      setTimeout(next, 7000);
+    };
+    next();
+  }, 1500);
   if (location.search.includes('dbg') && location.search.includes('demo=chest')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
     const keep = chest.q || null; let k = 0;
