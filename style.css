@@ -1792,3 +1792,6 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 @media (prefers-reduced-motion:reduce){.evcard.dot::after,.med.dot::after{animation:none}}
 
 #tmpChal{position:fixed;left:8px;top:118px;z-index:40;padding:6px 10px;border-radius:12px;border:2px solid #fff;background:#111;color:#ffe14d;font:900 12px Nunito,system-ui,sans-serif}
+
+/* a mini-game clock that is about to run out */
+#quickInfo.low{background:linear-gradient(180deg,#ff8a8a,#e02020)!important;color:#fff!important;box-shadow:0 3px 0 #8a0f0f!important;animation:chalpulse .7s ease-in-out infinite}

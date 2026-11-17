@@ -2309,20 +2309,20 @@
   let quickT = 0, quickRaf = 0;
   function stopQuick() { clearInterval(quickT); cancelAnimationFrame(quickRaf); quickT = 0; }
   function quickOpen(title, info) {
-    closeAll(); stopQuick(); quickThen = null; $('quick').classList.remove('big'); $('quickTitle').textContent = title; $('quickInfo').textContent = info; $('quickMsg').textContent = ''; $('quickBody').innerHTML = ''; $('quickClose').textContent = 'Give up'; $('quickBar').style.width = '100%'; $('quick').hidden = false;
+    closeAll(); stopQuick(); quickThen = null; $('quick').classList.remove('big'); $('quickInfo').classList.remove('low'); $('quickTitle').textContent = title; $('quickInfo').textContent = info; $('quickMsg').textContent = ''; $('quickBody').innerHTML = ''; $('quickClose').textContent = 'Give up'; $('quickBar').style.width = '100%'; $('quick').hidden = false;
   }
   function quickEnd(msg, reward, extra) {
     // side-game prizes are half of what they were
     if (reward > 0) reward = Math.max(1, Math.floor(reward / 2)); if (extra && extra.inf) extra = Object.assign({}, extra, { inf: Math.ceil(extra.inf / 2) });
-    stopQuick(); if (reward) { coinHold += reward; } if (reward) give({ coins: reward }, true); if (extra) give(extra);
+    stopQuick(); $('quickInfo').classList.remove('low'); if (reward) { coinHold += reward; } if (reward) give({ coins: reward }, true); if (extra) give(extra);
     S.win(); buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + (reward || extra ? ' +' + reward + ' ' + coinSvg : '') + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
     if (reward) { updateHintUi(); setTimeout(() => flyCoins($('quickMsg'), reward, 0, true), 400); }
   }
   // Odd One Out: one candy is different, tap it. 6 boards, 30 seconds, a wrong tap costs 3 seconds.
   function startOdd() {
     freshDay(); if ((plays.odd || 0) >= MAX_PLAYS) return; plays.odd = (plays.odd || 0) + 1; store.set('plays', plays); updateSides();
-    quickOpen('Odd One Out', 'Tap the candy that is different. Wrong taps cost 3 seconds.');
-    const sizes = [3, 3, 4, 4, 5, 5]; let round = 0, score = 0, penalty = 0, over = false; const t0 = performance.now(), TOTAL = 30000;
+    quickOpen('Odd One Out', 'Find the different candy on 6 boards in 15 seconds!');
+    const sizes = [3, 3, 4, 4, 5, 5]; let round = 0, score = 0, penalty = 0, over = false, shownS = -1; const t0 = performance.now(), TOTAL = 15000;   // a fast game: 15 seconds for all six boards, a wrong tap costs 2 of them
     const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, Math.floor(score / 2), null); };
     const board = () => {
       const n = sizes[round], a = Math.floor(Math.random() * 10); let b = Math.floor(Math.random() * 9); if (b >= a) b++;
@@ -2332,16 +2332,17 @@
         c.onclick = () => {
           if (over) return;
           if (i === odd) { score++; S.candy(round + 2, round + 2); buzz(10); round++; if (round >= sizes.length) return fin(true); show(); }
-          else { penalty += 3000; S.wrong(); buzz(25); c.classList.add('shake'); }
+          else { penalty += 2000; S.wrong(); buzz(25); c.classList.add('shake'); }
         };
         g.appendChild(c);
       }
       return g;
     };
-    const show = () => { $('quickBody').innerHTML = ''; $('quickBody').appendChild(board()); $('quickInfo').textContent = 'Board ' + (round + 1) + ' / ' + sizes.length; };
+    const info = () => { $('quickInfo').textContent = 'Board ' + (round + 1) + ' / ' + sizes.length + ' · ⏱ ' + Math.max(0, shownS); $('quickInfo').classList.toggle('low', shownS <= 5); };
+    const show = () => { $('quickBody').innerHTML = ''; $('quickBody').appendChild(board()); info(); };
     show();
-    const tick = () => { if (over) return; const left = TOTAL - (performance.now() - t0) - penalty; $('quickBar').style.width = Math.max(0, left / TOTAL * 100) + '%'; if (left <= 0) fin(false); else quickRaf = requestAnimationFrame(tick); };
-    quickRaf = requestAnimationFrame(tick);
+    const tick = () => { if (over) return; const left = TOTAL - (performance.now() - t0) - penalty; $('quickBar').style.width = Math.max(0, left / TOTAL * 100) + '%'; const s = Math.ceil(left / 1000); if (s !== shownS) { shownS = s; info(); } if (left <= 0) fin(false); else quickRaf = requestAnimationFrame(tick); };
+    shownS = TOTAL / 1000; info(); quickRaf = requestAnimationFrame(tick);
   }
   // Sugar Jars: a gumdrop drops in, tap the jar of the same colour before the bar runs out. 14 drops, 3 mistakes allowed.
   function startJars() {
