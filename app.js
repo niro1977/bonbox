@@ -477,7 +477,11 @@
   const fmtMs = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   let chalT = 0, chalLast = 0, chalSaved = 0;
   function chalStop() { clearInterval(chalT); chalT = 0; }
-  function chalDraw() { const el = $('chalTimer'); el.hidden = false; el.textContent = '⏱ ' + fmtMs(cur.left); el.classList.toggle('low', cur.left <= 30000); }
+  function chalDraw() {   // the clock, with the prize you are playing for right next to it
+    const el = $('chalTimer'); el.hidden = false; let b = el.querySelector('b');
+    if (!b) { el.innerHTML = '<b></b><span class="chal-for">' + prizeKeys(CHAL_PRIZE).map((k) => '<img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false">').join('') + '</span>'; b = el.querySelector('b'); }
+    b.textContent = '⏱ ' + fmtMs(cur.left); el.classList.toggle('low', cur.left <= 30000);
+  }
   function chalTick() {
     if (!cur || !cur.timed || cur.done || $('game').hidden) { chalStop(); return; }
     const now = performance.now(), dt = Math.min(1000, now - chalLast); chalLast = now;
@@ -501,13 +505,14 @@
     setScene(new Date().getDate() % ZONES.length, 'normal');
     makeGame(E.generate(n, hash('candoku-' + t)), 'Challenge', { kind: 'daily', date: t }, 'normal');
     const resumed = applySaved(savedFor(cur.meta)), sv = store.get('chal', {});
-    cur.timed = true; cur.left = resumed && sv.date === t && sv.left > 0 ? sv.left : chalLimit(n);
+    cur.timed = true; cur.left = resumed && sv.date === t && sv.left > 0 ? Math.min(sv.left, chalLimit()) : chalLimit();   // a game you left keeps the time it had; it can never be more than today's limit
+    store.set('chal', { date: t, left: Math.round(cur.left) });
     chalDraw(); chalStop(); chalLast = performance.now(); chalT = setInterval(chalTick, 250);
     show('game');
   }
   function openChal() {
     S.unlock(); S.tap(); closeAll(); const done = daily.last === today(), n = dailySize();
-    $('chalText').textContent = done ? 'Done for today ✓ Come back tomorrow for a new challenge.' : 'Solve today\'s ' + n + '×' + n + ' board before the time runs out and win the prize!';
+    $('chalText').textContent = done ? 'Done for today ✓ Come back tomorrow for a new challenge.' : 'Solve today\'s ' + n + '×' + n + ' board before the time runs out.'; $('chalWin').hidden = done;
     $('chalTime').textContent = '⏱ ' + fmtMs(chalLimit(n)); $('chalTime').hidden = done;
     $('chalPrize').innerHTML = '<div class="rwd big">' + prizeHtml(CHAL_PRIZE) + '</div>'; $('chalGo').hidden = done;
     $('chal').hidden = false;

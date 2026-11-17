@@ -1774,3 +1774,12 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 .chal-time{align-self:center;padding:6px 22px;border-radius:999px;background:linear-gradient(180deg,#fff,#dff0ff);box-shadow:0 4px 0 #7fa9d6,inset 0 2px 0 #fff;color:#143a6b;font:900 30px/1.1 Nunito,system-ui,sans-serif;font-variant-numeric:tabular-nums}
 #chal .chest-prize .rwd.big .pz b{font-size:24px}
 #chal .chest-prize .rwd.big .pz .pico{width:44px;height:44px}
+
+/* the challenge always shows what you are playing for */
+.chal-win{margin:2px 0 -4px;font:900 17px/1.2 Nunito,system-ui,sans-serif;color:#c2185b}
+.chaltimer{display:inline-flex;align-items:center;gap:8px}
+.chaltimer[hidden]{display:none}
+.chaltimer b{font:inherit}
+.chaltimer .chal-for{display:inline-flex;align-items:center;gap:2px;padding-left:8px;border-left:2px solid rgba(20,58,107,.25)}
+.chaltimer .chal-for img{width:24px;height:24px;object-fit:contain}
+.chaltimer.low .chal-for{border-left-color:rgba(255,255,255,.5)}
