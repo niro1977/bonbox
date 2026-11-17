@@ -151,7 +151,9 @@
   let medals = Object.assign({ g: 0, s: 0, b: 0 }, store.get('medals', {}));
   // a podium: second, first, third. `under` gives what is written under each place
   function podiumHtml(list, under) {
-    return '<div class="podium">' + [1, 0, 2].map((i) => { const e = list[i]; return '<div class="pod p' + (i + 1) + (e && e.me ? ' me' : '') + '">' + (e ? leagueAvatar(e) + '<b class="pnm">' + esc(e.name) + '</b>' : '<i class="lav"></i><b class="pnm">-</b>') + '<i class="pstep"><u>' + (i + 1) + '</u></i><span class="punder">' + under(i, e) + '</span></div>'; }).join('') + '</div>';
+    // the three winners stand on a real gold / silver / bronze podium (one picture, all three on the same ground line)
+    const who = [1, 0, 2].map((i) => { const e = list[i]; return '<div class="pwho w' + (i + 1) + (e && e.me ? ' me' : '') + '"><b class="pnm">' + (e ? esc(e.name) : '-') + '</b>' + (e ? leagueAvatar(e) : '<i class="lav"></i>') + '</div>'; }).join('');
+    return '<div class="pstage"><img class="pimg" src="art/podium.webp" alt="" draggable="false">' + who + '</div><div class="podunder">' + [1, 0, 2].map((i) => '<span class="punder">' + under(i, list[i]) + '</span>').join('') + '</div>';
   }
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const midnightIn = () => { const d = new Date(), e = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); return fmtWait(e - d); };
@@ -189,6 +191,15 @@
     if (r.rank <= 3 && S.fanfare) setTimeout(() => S.fanfare(), 400);
     $('lgRes').hidden = false;
   }
+  // ?dbg=1&demo=podium : shows the prizes podium, then yesterday's result as 1st, 2nd and 7th, again and again (a demonstration, test mode only)
+  if (location.search.includes('dbg') && location.search.includes('demo=podium')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    const y = new Date(); y.setDate(y.getDate() - 1); const day = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
+    const end = rivalsAt(day, 24, 0, null).sort((a, b) => b.points - a.points), shows = [() => { freshScore(); score.points = 1400; openLeaguePrizes(); }];
+    [end[0].points + 150, end[1].points + 20, end[6].points + 10].forEach((pts) => shows.push(() => { store.set('lgprev', { day, pts, chase: null }); maybeLeagueResult(() => {}); }));
+    let k = 0; const next = () => { $('lgPrizes').hidden = true; $('lgRes').hidden = true; shows[k++ % shows.length](); setTimeout(next, 6500); };
+    next();
+  }, 1800);
   /* after a win: the player's points count up and his row climbs past the rivals he has just overtaken */
   let leaguePending = false, leagueThen = null, leagueT = [];
   function openLeague(then, fromPts) {
