@@ -1754,3 +1754,6 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 #quick.big #quickBody{margin:0!important;padding:0!important;width:100%}
 #quick.big .qcv{width:100%!important;margin:0!important}
 #quick.big #quickMsg{min-height:34px;margin:0}
+
+/* ---------- the helpers sit 5 mm higher, closer to the board (their explanation follows them, with a safe gap) ---------- */
+#game .tools{margin-top:-24px;position:relative;z-index:2}

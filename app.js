@@ -391,7 +391,7 @@
     bd.style.setProperty('--n', n);
     bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9); $('game').classList.toggle('full', n >= 10);
     $('maybeBtn').setAttribute('aria-pressed', 'false');
-    $('lose').hidden = true; $('win').hidden = true; $('toast').classList.remove('show');
+    $('lose').hidden = true; $('win').hidden = true; hideToast();
     buildBoard(); drawHearts(); drawFound();
   }
   const worldIdx = (lv) => Math.floor((lv - 1) / 10) % ZONES.length;
@@ -779,7 +779,7 @@
   function hideToast() { clearTimeout(toastTimer); const t = $('toast'); if (t) t.classList.remove('show', 'sticky'); }
   setTimeout(() => { const bd = $('board'); if (bd) bd.addEventListener('pointerdown', () => { if ($('toast').classList.contains('sticky')) hideToast(); }, true); }, 0);
   function toast(text, sticky) {
-    const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.toggle('sticky', !!sticky); if (sticky) { const x = document.createElement('button'); x.type = 'button'; x.className = 'tx'; x.textContent = '✕'; x.setAttribute('aria-label', 'Close'); x.onclick = (e) => { e.stopPropagation(); hideToast(); }; t.appendChild(x); } { const tl = document.querySelector('#game .tools'), r = !$('game').hidden && tl ? tl.getBoundingClientRect() : null; if (r && r.width) { t.style.bottom = 'auto'; t.style.top = Math.max(r.bottom + 8, 0) + 'px'; const hh = t.offsetHeight; if (r.bottom + 8 + hh > innerHeight - 6) t.style.top = Math.max(innerHeight - hh - 6, r.bottom + 2) + 'px'; } else { t.style.top = ''; t.style.bottom = ''; } } t.classList.add('show');
+    const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.toggle('sticky', !!sticky); if (sticky) { const x = document.createElement('button'); x.type = 'button'; x.className = 'tx'; x.textContent = '✕'; x.setAttribute('aria-label', 'Close'); x.onclick = (e) => { e.stopPropagation(); hideToast(); }; t.appendChild(x); } { const tl = document.querySelector('#game .tools'), r = !$('game').hidden && tl ? tl.getBoundingClientRect() : null; if (r && r.width) { t.style.bottom = 'auto'; t.style.top = Math.max(r.bottom + 16, 0) + 'px'; const hh = t.offsetHeight; if (r.bottom + 16 + hh > innerHeight - 6) t.style.top = Math.max(innerHeight - hh - 6, r.bottom + 2) + 'px'; } else { t.style.top = ''; t.style.bottom = ''; } } t.classList.add('show');
     clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, sticky ? 45000 : 4200);
   }
   /* ---------- wallet: coins, hints, wands, helpers ---------- */
@@ -2340,7 +2340,7 @@
 
   // artwork for the arcade mini-games (made in Overchat)
   const arcArt = {};
-  function loadArc() { if (arcArt.coin) return; [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg'], ['cart_rock', 'webp'], ['cart_bear', 'webp'], ['cart_rival', 'webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + f[0] + '.' + f[1]; arcArt[f[0]] = im; }); const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
+  function loadArc() { if (arcArt.coin) return; [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg', 'cart_bg2'], ['cart_rock', 'webp'], ['cart_bear', 'webp'], ['cart_rival', 'webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + (f[2] || f[0]) + '.' + f[1]; arcArt[f[0]] = im; }); const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
   /* ---------- Candy Shooter: a Zuma-style chain of gumdrops; shoot matching colours to pop them ---------- */
   function startShoot() {
     loadArc();
@@ -2528,7 +2528,7 @@
     quickThen = then || null; $('quick').classList.add('big');
     const bw = Math.min(480, innerWidth - 16), H = Math.round(Math.max(340, Math.min(660, 300 * (innerHeight - 228) / bw)));   // room is kept under the track for the result line and the button
     const { cv, g, K } = quickCanvas(H, 2);
-    const LANES = [66, 150, 228], CART_Y = H - 70, GOAL = 900; let tx = 150, cx = 150, dist = 0, v = 0, rival = 0, got = 0, hits = 0, safe = 0, shake = 0, items = [], nextSpawn = 40, scroll = 0, over = false, last = performance.now(), t = 0, shown = ''; const texts = [];
+    const LANES = [72, 150, 228], CART_Y = H - 70, GOAL = 900; let tx = 150, cx = 150, dist = 0, v = 0, rival = 0, got = 0, hits = 0, safe = 0, shake = 0, items = [], nextSpawn = 40, scroll = 0, over = false, last = performance.now(), t = 0, shown = ''; const texts = [];
     const snap = (y) => Math.round(y * K) / K;   // whole device pixels: the ground does not shimmer while it scrolls
     const vg = g.createLinearGradient(0, 0, 0, 70); vg.addColorStop(0, 'rgba(20,8,0,.75)'); vg.addColorStop(1, 'rgba(20,8,0,0)');
     // drag the cart with your finger: it follows left and right freely (no lanes to tap)
@@ -2545,9 +2545,9 @@
     };
     const spawn = () => {
       const roll = Math.random(), free = Math.floor(Math.random() * 3);
-      if (roll < 0.5) { items.push({ lane: free, y: -24, k: 'rock' }); if (Math.random() < 0.09) items.push({ lane: (free + 1 + Math.floor(Math.random() * 2)) % 3, y: -24, k: 'coin' }); }
-      else if (roll < 0.8) { for (let l = 0; l < 3; l++) if (l !== free) items.push({ lane: l, y: -24, k: 'rock' }); if (Math.random() < 0.22) items.push({ lane: free, y: -24, k: 'coin' }); }
-      else if (Math.random() < 0.55) items.push({ lane: free, y: -24, k: 'coin' });
+      if (roll < 0.5) { items.push({ lane: free, y: -24, k: 'rock' }); if (Math.random() < 0.1) items.push({ lane: (free + 1 + Math.floor(Math.random() * 2)) % 3, y: -24, k: 'coin' }); }
+      else if (roll < 0.8) { for (let l = 0; l < 3; l++) if (l !== free) items.push({ lane: l, y: -24, k: 'rock' }); if (Math.random() < 0.24) items.push({ lane: free, y: -24, k: 'coin' }); }
+      else if (Math.random() < 0.61) items.push({ lane: free, y: -24, k: 'coin' });
     };
     function draw() {
       const A = arcArt, ok = (im) => im && im.complete && im.naturalWidth;
