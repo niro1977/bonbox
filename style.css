@@ -1741,8 +1741,6 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 /* ---------- a helper's explanation stays on screen until it is closed ---------- */
 .toast.gtoast.sticky{pointer-events:auto;padding-right:46px}
 .toast .tx{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;border:2px solid #fff;background:linear-gradient(#ff6a6a,#d81f1f);color:#fff;font:900 14px/1 Nunito,system-ui,sans-serif;padding:0;text-shadow:none;-webkit-text-stroke:0;box-shadow:0 2px 0 rgba(0,0,0,.4);cursor:pointer}
-/* TEMPORARY test button */
-#tmpBonus{position:fixed;left:8px;top:118px;z-index:40;padding:6px 10px;border-radius:12px;border:2px solid #fff;background:#111;color:#ffe14d;font:900 12px Nunito,system-ui,sans-serif}
 /* ---------- win and prize windows: the content sits 2 mm higher above the chocolate frame at the bottom, and the prize line keeps off the side frame ---------- */
 #win .card,#reward .card{padding-bottom:9px!important}
 #win #winReward{max-width:86%;margin-left:auto;margin-right:auto}
@@ -1765,7 +1763,6 @@ html[lang="es"] #win .row .btn{padding-left:14px!important;padding-right:14px!im
 #quick.big{align-items:flex-start!important;padding-top:58px!important}
 #quick.big .card{transform:none}
 
-#tmpChest{position:fixed;left:8px;top:152px;z-index:40;padding:6px 10px;border-radius:12px;border:2px solid #fff;background:#111;color:#ffe14d;font:900 12px Nunito,system-ui,sans-serif}
 /* the chest's prize line: big clear numbers */
 #chest .chest-prize .rwd.big .pz b{font-size:24px}
 #chest .chest-prize .rwd.big .pz .pico{width:44px;height:44px}

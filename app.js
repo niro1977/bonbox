@@ -1585,13 +1585,13 @@
   /* ---------- collection: outfits, board frames, stickers ---------- */
   // two outfits at the start, then a new one every 15 levels passed; each has a standing pose (map, collection) and an arms-up pose (win screen, the in-air jump)
   const OUTFITS = [{ id: 'hero', name: 'Varsity Gumi', img: 'gumi_hero', win: 'gumi_win', air: 'gumi_jump', at: 0 },
-    { id: 'chef', name: 'Chef Gumi', img: 'gumi_chef_stand', win: 'gumi_chef_win', air: 'gumi_chef_win', at: 0 },
-    { id: 'fire', name: 'Firefighter Gumi', img: 'gumi_fire_stand', win: 'gumi_fire_win', air: 'gumi_fire_win', at: 15 },
-    { id: 'pirate', name: 'Pirate Gumi', img: 'gumi_pirate_stand', win: 'gumi_pirate_win', air: 'gumi_pirate_win', at: 30 },
-    { id: 'cowboy', name: 'Cowboy Gumi', img: 'gumi_cowboy_stand', win: 'gumi_cowboy_win', air: 'gumi_cowboy_win', at: 45 },
-    { id: 'wizard', name: 'Wizard Gumi', img: 'gumi_wizard_stand', win: 'gumi_wizard_win', air: 'gumi_wizard_win', at: 60 },
-    { id: 'king', name: 'King Gumi', img: 'gumi_king_stand', win: 'gumi_king_win', air: 'gumi_king_win', at: 75 },
-    { id: 'ninja', name: 'Ninja Gumi', img: 'gumi_ninja_stand', win: 'gumi_ninja_win', air: 'gumi_ninja_win', at: 90 }];
+    { id: 'chef', name: 'Chef Gumi', img: 'gumi_chef_stand', win: 'gumi_chef_win', air: 'air_chef', at: 0 },
+    { id: 'fire', name: 'Firefighter Gumi', img: 'gumi_fire_stand', win: 'gumi_fire_win', air: 'air_fire', at: 15 },
+    { id: 'pirate', name: 'Pirate Gumi', img: 'gumi_pirate_stand', win: 'gumi_pirate_win', air: 'air_pirate', at: 30 },
+    { id: 'cowboy', name: 'Cowboy Gumi', img: 'gumi_cowboy_stand', win: 'gumi_cowboy_win', air: 'air_cowboy', at: 45 },
+    { id: 'wizard', name: 'Wizard Gumi', img: 'gumi_wizard_stand', win: 'gumi_wizard_win', air: 'air_wizard', at: 60 },
+    { id: 'king', name: 'King Gumi', img: 'gumi_king_stand', win: 'gumi_king_win', air: 'air_king', at: 75 },
+    { id: 'ninja', name: 'Ninja Gumi', img: 'gumi_ninja_stand', win: 'gumi_ninja_win', air: 'air_ninja', at: 90 }];
   // bear colours: the pink jelly is recoloured on the fly (clothes stay as they are); a new colour at 10, 30, 50, 70 and 90 levels
   const BEARCOLORS = [{ id: 'pink', name: 'Pink', hue: 0, at: 0, css: '#ff3d9a' }, { id: 'blue', name: 'Blue', hue: -125, at: 10, css: '#3d8bff' }, { id: 'green', name: 'Green', hue: 150, at: 30, css: '#2fd16b' },
     { id: 'orange', name: 'Orange', hue: 50, at: 50, css: '#ff8a1f' }, { id: 'purple', name: 'Purple', hue: -60, at: 70, css: '#9a4dff' }, { id: 'yellow', name: 'Yellow', hue: 80, at: 90, css: '#ffcf1f' }];
@@ -1887,7 +1887,7 @@
   }
   // the chest opens: its coins jump out and land around it, the prize is shown with its numbers, and after a moment
   // every coin and every item rises by itself into its own counter at the top (no second window)
-  let chestTestKeep, chestBusy = false;   // busy = an opening is on screen: the window is not redrawn under it
+  let chestBusy = false;   // busy = an opening is on screen: the window is not redrawn under it
   function chestSpill(art, p) {
     const r = art.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.42, L = fxLayer();
     const amount = p.coins || 0, n = amount ? Math.max(6, Math.min(14, amount)) : 0, rest = [];
@@ -1931,7 +1931,7 @@
       S.tap(); buzz(14); renderChest(); updateSides(); return;
     }
     if (chestLeft() > 0) return;
-    const tier = chest.q.tier, p = chestLoot(tier); chest.q = null; if (chestTestKeep !== undefined) { chest.q = chestTestKeep; chestTestKeep = undefined; } store.set('chest', chest);
+    const tier = chest.q.tier, p = chestLoot(tier); chest.q = null; store.set('chest', chest);
     give(p);
     const art = document.querySelector('#chest .chest-art'), btn = $('chestOpen'); btn.hidden = true; $('chestMsg').textContent = 'Opening…'; chestBusy = true;
     { const pre = new Image(); pre.src = 'art/3d_chest_' + tier + '_open.webp'; }
@@ -2556,9 +2556,6 @@
   /* ---------- Cart Race: a surprise BONUS STAGE that appears once in every 10 levels, right after a win.
      Drag the cart, grab the few coins, dodge the rocks: three hits and you are out with no prize. ---------- */
   let bonusPending = false, quickThen = null;
-  // TEMPORARY: a test button on the map that starts the bonus stage at once (to be removed before the store build)
-  setTimeout(() => { const hm = $('home'); if (!hm || $('tmpBonus')) return; const b = document.createElement('button'); b.type = 'button'; b.id = 'tmpBonus'; b.textContent = 'TEST BONUS'; b.onclick = () => { S.unlock(); startCart(() => {}); }; hm.appendChild(b);
-    const c = document.createElement('button'); c.type = 'button'; c.id = 'tmpChest'; c.textContent = 'TEST CHEST'; let tn = 0; c.onclick = () => { if (chestTestKeep === undefined) chestTestKeep = chest.q || null; chest.q = { tier: ['large', 'med', 'small'][tn++ % 3], ready: Date.now() }; openChest(); }; hm.appendChild(c); }, 0);
   const bonusSeed = (() => { let s = store.get('bseed', 0); if (!s) { s = 1 + Math.floor(Math.random() * 997); store.set('bseed', s); } return s; })();
   // which level of each block of ten brings the bonus (never the Hard or the Extremely Hard one, and never the same place twice in a row)
   const bonusLevelOf = (blk) => blk * 10 + (blk === 0 ? [6, 7, 8][bonusSeed % 3] : [2, 3, 4, 6, 7, 8][(bonusSeed + blk * 5 + blk * blk) % 6]);
@@ -2585,9 +2582,9 @@
     };
     const spawn = () => {
       const roll = Math.random(), free = Math.floor(Math.random() * 3);
-      if (roll < 0.5) { items.push({ lane: free, y: -24, k: 'rock' }); if (Math.random() < 0.1) items.push({ lane: (free + 1 + Math.floor(Math.random() * 2)) % 3, y: -24, k: 'coin' }); }
-      else if (roll < 0.8) { for (let l = 0; l < 3; l++) if (l !== free) items.push({ lane: l, y: -24, k: 'rock' }); if (Math.random() < 0.24) items.push({ lane: free, y: -24, k: 'coin' }); }
-      else if (Math.random() < 0.61) items.push({ lane: free, y: -24, k: 'coin' });
+      if (roll < 0.5) { items.push({ lane: free, y: -24, k: 'rock' }); if (Math.random() < 0.11) items.push({ lane: (free + 1 + Math.floor(Math.random() * 2)) % 3, y: -24, k: 'coin' }); }
+      else if (roll < 0.8) { for (let l = 0; l < 3; l++) if (l !== free) items.push({ lane: l, y: -24, k: 'rock' }); if (Math.random() < 0.265) items.push({ lane: free, y: -24, k: 'coin' }); }
+      else if (Math.random() < 0.67) items.push({ lane: free, y: -24, k: 'coin' });
     };
     function draw() {
       const A = arcArt, ok = (im) => im && im.complete && im.naturalWidth;
