@@ -80,9 +80,24 @@
     const idx = RIVALS.map((r, i) => i).sort((a, b) => hash(day + 'o' + a) - hash(day + 'o' + b));     // a new order every day
     const vi = idx.indexOf(0); if (vi > 2) { idx.splice(vi, 1); idx.splice(hash(day + 'v') % 3, 0, 0); }   // Vinegar is always one of the three to beat
     return idx.map((ri, k) => {
-      const h = hash(day + 'r' + ri), start = (h % 80) / 10, end = 15 + ((h >>> 8) % 85) / 10, p = Math.max(0, Math.min(1, (hr - start) / (end - start))), e = p * p * (3 - 2 * p);
-      return { name: RIVALS[ri].n, rival: RIVALS[ri], points: Math.round(LEAGUE_GOALS[k] * (0.85 + ((h >>> 16) % 31) / 100) * e / 10) * 10 };
+      const h = hash(day + 'r' + ri), start = (h % 80) / 10, end = 20 + ((h >>> 8) % 40) / 10, p = Math.max(0, Math.min(1, (hr - start) / (end - start))), e = p * p * (3 - 2 * p);
+      let pts = LEAGUE_GOALS[k] * (0.85 + ((h >>> 16) % 31) / 100) * e;
+      // a rival the player has overtaken does not give up: it keeps playing and wins points every minute, so the lead is never safe
+      const c = chase.day === day ? chase.ch[RIVALS[ri].n] : null; if (c) pts = Math.max(pts, c.s + c.r * Math.max(0, Date.now() - chase.t) / 60000);
+      return { name: RIVALS[ri].n, rival: RIVALS[ri], points: Math.round(pts / 10) * 10 };
     });
+  }
+  /* The chase. Every time the player wins, the five best rivals that he has now passed stay close behind him (40 to 460 points)
+     and from that moment keep earning points every minute, the nearest one fastest. Their scores never go down.
+     So whoever takes first place has to keep playing to hold it. It all starts again at midnight. */
+  const CHASE_LEAD = [40, 110, 200, 320, 460], CHASE_RATE = [5, 4, 3, 2.5, 2];
+  let chase = Object.assign({ day: '', t: 0, ch: {} }, store.get('chase', {}));
+  function leagueBump(myPts) {
+    const day = today(); if (chase.day !== day) chase = { day, t: Date.now(), ch: {} };
+    const now = rivalsNow().sort((a, b) => b.points - a.points), ch = {};
+    now.forEach((r) => { const old = chase.ch[r.name]; if (old) ch[r.name] = { s: r.points, r: old.r }; });            // those already chasing go on from where they are
+    now.slice(0, 5).forEach((r, i) => { const want = myPts - CHASE_LEAD[i]; if (want > r.points || ch[r.name]) ch[r.name] = { s: Math.max(r.points, want), r: CHASE_RATE[i] }; });
+    chase = { day, t: Date.now(), ch }; store.set('chase', chase);
   }
   // everyone in one table: rivals, today's real players and (when he has points) the player himself
   function leagueList(myPts) {
@@ -160,7 +175,7 @@
   if (location.search.includes('dbg') && location.search.includes('demo=league')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
     const steps = [[0, 60], [60, 190], [190, 420], [420, 760], [760, 1150], [1150, 1700], [1700, 2300], [2300, 2900]]; let k = 0;
-    const next = () => { const s = steps[k % steps.length]; k++; freshScore(); score.points = s[1]; openLeague(() => setTimeout(next, 700), s[0]); setTimeout(() => { if (!$('league').hidden) closeLeague(); }, 4300); };
+    const next = () => { const s = steps[k % steps.length]; k++; freshScore(); score.points = s[1]; leagueBump(s[1]); openLeague(() => setTimeout(next, 700), s[0]); setTimeout(() => { if (!$('league').hidden) closeLeague(); }, 4300); };
     next();
   }, 1800);
   function closeLeague() { leagueT.forEach(clearTimeout); leagueT = []; $('league').hidden = true; const t = leagueThen; leagueThen = null; if (t) t(); }
@@ -870,8 +885,8 @@
     setTimeout(() => { if (cur && !cur.done && !$('game').hidden) { bossCard('laugh', "Vinegar stole this world's sticker! Beat him on level " + (lv + 9) + ' to win it back!', 'in steal'); S.whoosh(); buzz([30, 40, 30]); } }, 900);
   }
 
-  // the "maybe" mark: a big yellow question mark with a dark outline (no background), so it can never be mistaken for the white X
-  const QMARK = '<svg class="q" viewBox="0 0 24 24"><text x="12" y="20.6" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="25" fill="#ffdc1f" stroke="#2a1040" stroke-width="2.6" stroke-linejoin="round" paint-order="stroke">?</text><text x="12" y="20.6" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="25" fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".5" clip-path="inset(0 0 55% 0)">?</text></svg>';
+  // the "maybe" mark: a white question mark in the game's own letters, with a fine black outline
+  const QMARK = '<svg class="q" viewBox="0 0 24 24"><text x="12" y="20.6" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="25" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" paint-order="stroke">?</text></svg>';
   function paint() {
     const n = cur.n; setTimeout(saveGame, 0); bossUpdate();
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
@@ -1073,7 +1088,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1309,7 +1324,7 @@
     score.run++;
     const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; }
     score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
-    store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true;
+    store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true; leagueBump(score.points);
     const earnedCoins = (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1);   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();

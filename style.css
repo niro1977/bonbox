@@ -1980,5 +1980,5 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .btn.claim:disabled,.btn.main.claim:disabled{filter:grayscale(.75) brightness(.9)!important;opacity:.75}
 
 /* ---------- the "maybe" mark on the board: big, in its own purple bubble ---------- */
-.cell svg.q{position:absolute;inset:3%;width:94%;height:94%;display:block;overflow:visible;pointer-events:none;filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 2px 2px rgba(0,0,0,.45));animation:qpop .28s cubic-bezier(.3,1.6,.5,1) both}
+.cell svg.q{position:absolute;inset:14%;width:72%;height:72%;display:block;overflow:visible;pointer-events:none;filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.4));animation:qpop .28s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes qpop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
