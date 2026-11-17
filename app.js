@@ -126,13 +126,13 @@
   }
   /* after a win: the player's points count up and his row climbs past the rivals he has just overtaken */
   let leaguePending = false, leagueThen = null, leagueT = [];
-  function openLeague(then) {
+  function openLeague(then, fromPts) {
     leagueThen = then || null; leagueT.forEach(clearTimeout); leagueT = [];
-    const from = Math.max(0, cur && cur.leagueFrom != null ? cur.leagueFrom : score.points), to = score.points;
+    const from = Math.max(0, fromPts != null ? fromPts : cur && cur.leagueFrom != null ? cur.leagueFrom : score.points), to = score.points;
     const oldL = leagueList(from), newL = leagueList(to), key = (e) => (e.me ? '@me' : (e.rival ? 'r:' : 'p:') + e.name);
     const oi = {}; oldL.forEach((e, i) => { oi[key(e)] = i; });
-    const ni = newL.findIndex((e) => e.me), oldI = oi['@me'] != null ? oi['@me'] : newL.length, SHOW = Math.min(7, newL.length), H = 52;
-    const top = Math.max(0, Math.min(ni - 2, newL.length - SHOW)), box = $('leagueList'); box.innerHTML = ''; box.style.height = SHOW * H + 'px';
+    const ni = newL.findIndex((e) => e.me), oldI = oi['@me'] != null ? oi['@me'] : newL.length, H = 58, SHOW = Math.min(newL.length, Math.max(5, Math.min(9, Math.floor((innerHeight - 352) / H))));
+    const top = Math.max(0, Math.min(ni - (SHOW > 7 ? 3 : 2), newL.length - SHOW)), box = $('leagueList'); box.innerHTML = ''; box.style.height = SHOW * H + 'px';
     const rows = newL.slice(top, top + SHOW).map((e, k) => {
       const o = oi[key(e)] != null ? oi[key(e)] : newL.length, row = leagueRow(e, (e.me ? oldI : o) + 1);
       row._new = top + k; row._e = e; if (e.me) row.querySelector('.lpt').textContent = from;
@@ -156,6 +156,13 @@
       if (ni === 0) { S.fanfare && S.fanfare(); } else if (up) S.praise && S.praise(1);
     }, 550 + 1000));
   }
+  // ?dbg=1&demo=league : shows the climb again and again with growing points (a demonstration, test mode only)
+  if (location.search.includes('dbg') && location.search.includes('demo=league')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    const steps = [[0, 60], [60, 190], [190, 420], [420, 760], [760, 1150], [1150, 1700], [1700, 2300], [2300, 2900]]; let k = 0;
+    const next = () => { const s = steps[k % steps.length]; k++; freshScore(); score.points = s[1]; openLeague(() => setTimeout(next, 700), s[0]); setTimeout(() => { if (!$('league').hidden) closeLeague(); }, 4300); };
+    next();
+  }, 1800);
   function closeLeague() { leagueT.forEach(clearTimeout); leagueT = []; $('league').hidden = true; const t = leagueThen; leagueThen = null; if (t) t(); }
   async function openRanking() {
     S.unlock(); S.tap();
@@ -2099,7 +2106,7 @@
     else { $('chestMsg').textContent = 'Solve ' + (CHEST_AT - chest.n) + ' more level' + (CHEST_AT - chest.n > 1 ? 's' : '') + ' · ' + CHEST_NAME[chestTier()] + ' so far (keep your hearts for a bigger one)'; b.disabled = true; b.textContent = 'Start opening'; }
   }
   function openChest() {
-    S.unlock(); S.tap(); closeAll(); chestBusy = false; renderChest(); $('chest').hidden = false;
+    S.unlock(); S.tap(); closeAll(); chestBusy = false; { const st = document.querySelector('#chest .chest-stage'); if (st) st.classList.remove('open', 'charge'); } $('chestOdds').hidden = false; $('chestClose').hidden = false; renderChest(); $('chest').hidden = false;
   }
   function coinBurst(el) {
     const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.35, L = fxLayer();
@@ -2161,14 +2168,41 @@
     give(p);
     const art = document.querySelector('#chest .chest-art'), btn = $('chestOpen'); btn.hidden = true; $('chestMsg').textContent = 'Opening…'; chestBusy = true;
     { const pre = new Image(); pre.src = 'art/3d_chest_' + tier + '_open.webp'; }
-    art.classList.remove('opened'); void art.offsetWidth; art.classList.add('opening'); S.tap();
-    [0, 220, 440, 660].forEach((t) => setTimeout(() => { S.tap(); buzz(14); }, t));
+    /* the opening scene: the chest trembles harder and harder while light builds up behind it, bursts open in a flash with a ring of light
+       and a spray of stars, the coins fountain out, the prizes pop up one by one with their numbers, everything flies to its counter,
+       and the window closes by itself. Nothing to press. */
+    const stage = document.querySelector('#chest .chest-stage'), card = document.querySelector('#chest .card');
+    stage.classList.remove('open'); art.classList.remove('opened'); void art.offsetWidth; stage.classList.add('charge'); art.classList.add('opening'); S.tap();
+    [0, 200, 380, 540, 680, 800, 900, 980].forEach((t, k) => setTimeout(() => { S.candy ? S.candy(k, k + 2) : S.tap(); buzz(8 + k * 2); }, t));
     setTimeout(() => {
-      art.src = 'art/3d_chest_' + tier + '_open.webp'; art.classList.remove('opening'); art.classList.add('opened'); chestSpill(art, p); S.win(); buzz([30, 40, 60]);   // the lid is open now and the chest is full of coins
-      $('chestPrize').innerHTML = '<div class="rwd big">' + prizeHtml(p) + '</div>';
-      $('chestMsg').textContent = CHEST_NAME[tier] + ': ' + prizeText(p);
-      $('chestBar').style.width = (chest.n / CHEST_AT) * 100 + '%'; updateSides();
-    }, 950);
+      art.src = 'art/3d_chest_' + tier + '_open.webp'; art.classList.remove('opening'); art.classList.add('opened'); stage.classList.remove('charge'); stage.classList.add('open');
+      card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+      chestStars(art); chestSpill(art, p); S.win(); if (S.fanfare) setTimeout(() => S.fanfare(), 250); buzz([40, 40, 80]);
+      $('chestPrize').innerHTML = '<div class="rwd big pop">' + prizeHtml(p) + '</div>';
+      $('chestPrize').querySelectorAll('.pz').forEach((e, i) => { e.style.setProperty('--i', i); setTimeout(() => { S.ui && S.ui('item'); buzz(8); }, 450 + i * 240); });
+      $('chestMsg').textContent = CHEST_NAME[tier] + '!';
+      $('chestBar').style.width = (chest.n / CHEST_AT) * 100 + '%'; updateSides(); $('chestOdds').hidden = true; $('chestClose').hidden = true;
+      // when the prizes have flown to their counters the window closes by itself
+      setTimeout(() => { if (chestBusy && !$('chest').hidden) { $('chest').hidden = true; chestBusy = false; updateSides(); } }, 4300);
+    }, 1100);
+  }
+  // ?dbg=1&demo=chest : opens a chest again and again, large, medium, small (a demonstration, test mode only; the real chest is put back)
+  if (location.search.includes('dbg') && location.search.includes('demo=chest')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    const keep = chest.q || null; let k = 0;
+    const next = () => { chest.q = { tier: ['large', 'med', 'small'][k++ % 3], ready: Date.now() }; openChest(); setTimeout(() => { openChestNow(); chest.q = keep; }, 1300); setTimeout(next, 8200); };
+    next();
+  }, 1800);
+  // a spray of little stars from the chest at the moment it opens
+  function chestStars(el) {
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height * 0.4, L = fxLayer();
+    for (let k = 0; k < 16; k++) {
+      const s = document.createElement('i'); s.className = 'fx-star'; s.style.left = cx + 'px'; s.style.top = cy + 'px'; L.appendChild(s);
+      const a = (k / 16) * Math.PI * 2 + Math.random() * 0.3, d = 90 + Math.random() * 90, sz = 0.6 + Math.random() * 0.9;
+      const an = s.animate([{ transform: 'translate(-50%,-50%) scale(.2) rotate(0)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + (Math.cos(a) * d * 0.7).toFixed(0) + 'px),calc(-50% + ' + (Math.sin(a) * d * 0.7).toFixed(0) + 'px)) scale(' + sz.toFixed(2) + ') rotate(120deg)', opacity: 1, offset: 0.55 },
+        { transform: 'translate(calc(-50% + ' + (Math.cos(a) * d).toFixed(0) + 'px),calc(-50% + ' + (Math.sin(a) * d + 26).toFixed(0) + 'px)) scale(.1) rotate(260deg)', opacity: 0 }], { duration: 800 + Math.random() * 400, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
+      an.onfinish = () => s.remove();
+    }
   }
   // the chance of every prize is worked out from the same table the chest really draws from
   function openOdds() {
