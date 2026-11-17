@@ -2040,7 +2040,7 @@
       [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
     } catch (e) { return null; }
     const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
-    v.className = 'gvsrc'; v.src = 'video/' + name + '_s.mp4?1';
+    v.className = 'gvsrc'; v.src = 'video/' + name + '_s.mp4?2';
     let on = false, ok = false;
     const draw = () => {
       if (v.readyState >= 2) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); gl.viewport(0, 0, 420, 606); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); ok = true; } catch (e) {} }
