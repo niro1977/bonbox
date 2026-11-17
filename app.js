@@ -155,6 +155,8 @@
     const who = [1, 0, 2].map((i) => { const e = list[i]; return '<div class="pwho w' + (i + 1) + (e && e.me ? ' me' : '') + '"><b class="pnm">' + (e ? esc(e.name) : '-') + '</b>' + (e ? leagueAvatar(e) : '<i class="lav"></i>') + '</div>'; }).join('');
     return '<div class="pstage"><img class="pimg" src="art/podium2.webp" alt="" draggable="false">' + who + '</div><div class="podunder">' + [1, 0, 2].map((i) => '<span class="punder">' + under(i, list[i]) + '</span>').join('') + '</div>';
   }
+  // a name on the podium is never cut: the letters get smaller until the whole name fits on one line
+  function fitPodNames(box) { box.querySelectorAll('.pnm').forEach((el) => { let f = 12; el.style.fontSize = f + 'px'; while (el.scrollWidth > el.clientWidth + 1 && f > 7.5) { f -= 0.5; el.style.fontSize = f + 'px'; } }); }
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const midnightIn = () => { const d = new Date(), e = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1); return fmtWait(e - d); };
   // today's prizes, on a live podium
@@ -162,7 +164,7 @@
     S.tap(); freshScore(); const list = leagueList(score.points);
     $('lgpPodium').innerHTML = podiumHtml(list, (i) => '<span class="rwd">' + prizeHtml(LEAGUE_PRIZES[i]) + '</span>');
     $('lgpTop10').innerHTML = '<b>4 - 10</b><span class="rwd">' + prizeHtml(LEAGUE_TOP10) + '</span>';
-    $('lgpEnds').textContent = 'The league ends in ' + midnightIn(); $('lgPrizes').hidden = false;
+    $('lgpEnds').textContent = 'The league ends in ' + midnightIn(); $('lgPrizes').hidden = false; fitPodNames($('lgpPodium'));
   }
   // close yesterday's league (once): where the player finished and what he won
   function leagueSettle() {
@@ -189,7 +191,7 @@
       setTimeout(() => { $('lgRes').hidden = true; const t = lgResThen; lgResThen = null; if (t) t(); }, prize ? 1500 : 0);
     };
     if (r.rank <= 3 && S.fanfare) setTimeout(() => S.fanfare(), 400);
-    $('lgRes').hidden = false;
+    $('lgRes').hidden = false; fitPodNames($('lgrPodium'));
   }
   // ?dbg=1&demo=podium : shows the prizes podium, then yesterday's result as 1st, 2nd and 7th, again and again (a demonstration, test mode only)
   if (location.search.includes('dbg') && location.search.includes('demo=podium')) setTimeout(() => {
