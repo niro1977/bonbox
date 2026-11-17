@@ -1596,6 +1596,12 @@
   ];
   let PANELS = STORY;
   // what moves on top of each story picture
+  // moving air in every picture: drifting clouds, and candies or sparks floating up
+  function storyAir(kind) {
+    let h = '<i class="st-cloud c1"></i><i class="st-cloud c2"></i>';
+    if (kind === 'calm' || kind === 'hero') for (let i = 0; i < 7; i++) h += '<span class="st-float" style="left:' + (6 + Math.random() * 86).toFixed(0) + '%;--s:' + (22 + Math.random() * 16).toFixed(0) + 'px;animation-duration:' + (6 + Math.random() * 5).toFixed(1) + 's;animation-delay:-' + (Math.random() * 9).toFixed(1) + 's"><svg><use href="#c' + (i % 10) + '"/></svg></span>';
+    return h;
+  }
   function storyFx(kind) {
     let h = '';
     if (kind === 'calm') for (let i = 0; i < 12; i++) h += '<i class="st-spk" style="left:' + (6 + Math.random() * 88) + '%;top:' + (8 + Math.random() * 60) + '%;animation-delay:-' + (Math.random() * 3).toFixed(2) + 's"></i>';
@@ -1608,6 +1614,24 @@
     }
     if (kind === 'hero') h += '<i class="st-rays"></i>';
     return h;
+  }
+  /* The story pictures come alive: the part of the picture that holds a character is drawn a second time on its own soft-edged
+     layer, exactly over the original, and that layer moves (Gumi bobs and waves, shivers, pumps his fist; Vinegar roars and
+     flees; the tornado twists). Places are given in pixels of the 768 x 1376 picture: centre x, y and half-width, half-height. */
+  const LIVE = {
+    story1: [{ x: 422, y: 560, rx: 215, ry: 290, a: 'bob' }],
+    story2p: [{ x: 379, y: 965, rx: 135, ry: 160, a: 'shiver' }],
+    story3: [{ x: 371, y: 262, rx: 290, ry: 240, a: 'scream' }, { x: 392, y: 640, rx: 250, ry: 300, a: 'swirl' }, { x: 455, y: 925, rx: 130, ry: 140, a: 'flutter' }],
+    story4: [{ x: 371, y: 770, rx: 215, ry: 290, a: 'pump' }, { x: 563, y: 190, rx: 135, ry: 105, a: 'flee' }]
+  };
+  function liveLayers(panel, img) {
+    const host = panel && panel.querySelector('.st-img'); if (!host || !LIVE[img] || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const W = host.offsetWidth, H = host.offsetHeight, s = Math.max(W / 768, H / 1376), ox = (W - 768 * s) / 2, oy = (H - 1376 * s) / 2;
+    LIVE[img].forEach((r) => {
+      const el = document.createElement('i'), l = ox + (r.x - r.rx) * s, t = oy + (r.y - r.ry) * s; el.className = 'st-live lv-' + r.a;
+      el.style.cssText = 'left:' + l.toFixed(1) + 'px;top:' + t.toFixed(1) + 'px;width:' + (r.rx * 2 * s).toFixed(1) + 'px;height:' + (r.ry * 2 * s).toFixed(1) + 'px;background-image:url(art/' + img + '.jpg);background-size:' + (768 * s).toFixed(1) + 'px ' + (1376 * s).toFixed(1) + 'px;background-position:' + (ox - l).toFixed(1) + 'px ' + (oy - t).toFixed(1) + 'px';
+      host.appendChild(el);
+    });
   }
   function preloadStory() { STORY.map((p) => p.img + '.jpg').concat(['boss_idle_l.webp', 'boss_laugh_l.webp']).forEach((f) => { const im = new Image(); im.src = 'art/' + f; }); }
   let introStep = 0, rainTimer = null, introVoiceAt = 0;
@@ -1667,7 +1691,8 @@
     const pic = '<div class="st-img" style="background-image:url(art/' + p.img + '.jpg)"></div>', bolt = (c) => '<svg class="st-bolt ' + c + '" viewBox="0 0 40 70"><path d="M24 0 6 38h12L10 70 36 26H22z"/></svg>';
     // the villain is his own layer over an empty sky, so he can drop in, float, laugh and throw lightning
     const stage = p.fx === 'dark' ? '<div class="st-stage">' + pic + bolt('b1') + bolt('b2') + bolt('b3') + '<div class="st-boss"><img class="bi" src="art/boss_idle_l.webp" alt="" draggable="false"><img class="bl" src="art/boss_laugh_l.webp" alt="" draggable="false"></div></div>' : pic;
-    body.innerHTML = '<div class="st-panel st-' + p.fx + '">' + stage + storyFx(p.fx) + '</div><p class="st-cap">' + p.text + '</p>';
+    body.innerHTML = '<div class="st-panel st-' + p.fx + '">' + stage + storyFx(p.fx) + storyAir(p.fx) + '</div><p class="st-cap">' + p.text + '</p>';
+    liveLayers(body.querySelector('.st-panel'), p.img);
     if (p.fx === 'storm') {
       // the sneeze lands on the narrator's "ACHOO": until then the Baron only breathes in, then the storm breaks
       const panel = body.querySelector('.st-storm'), at = V && V.isEnabled() && S.isOn() ? (window.LANG === 'es' ? 2350 : 3050) : 1400, step = introStep;
