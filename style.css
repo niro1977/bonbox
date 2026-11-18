@@ -2200,3 +2200,8 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 @media (prefers-reduced-motion:reduce){.bosshud.fume>img{animation:none}}
 /* on regular levels the candy bar above the board sits about 2 mm lower */
 #game:not(.hardtier) #found{position:relative;top:8px}
+/* buy one more try with coins: green like every "keep going" button; greyed when the coins are not enough */
+#reviveCoins{background:url(art/btn_green.webp) center/100% 100% no-repeat!important;filter:drop-shadow(0 5px 3px rgba(0,40,0,.5))!important;display:flex;align-items:center;justify-content:center;gap:6px}
+#reviveCoins[hidden]{display:none!important}
+#reviveCoins svg,#reviveCoins img{width:22px;height:22px}
+#reviveCoins.short{filter:grayscale(.7) brightness(.9)!important;opacity:.8}

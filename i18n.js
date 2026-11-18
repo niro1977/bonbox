@@ -231,7 +231,7 @@
   const P = [
     [/^Level (\d+)$/, 'Nivel $1'], [/^Top players today\. Resets every day at midnight \((GMT[+-]\d+)\)\.$/, 'Los mejores jugadores de hoy. Se reinicia cada día a la medianoche ($1).'], [/^(\d+) hits$/, '$1 golpes'], [/^Vinegar stole this world's sticker! Beat him on level (\d+) to win it back!$/, '¡Vinagre robó la calcomanía de este mundo! ¡Véncelo en el nivel $1 para recuperarla!'], [/^WORLD (\d+)$/, 'MUNDO $1'], [/^(\d+) NEW$/, (m) => m[1] + (+m[1] === 1 ? ' NUEVO' : ' NUEVOS')],
     [/^You are #(\d+) of (\d+) today with (\d+) pts$/, 'Eres el #$1 de $2 hoy con $3 pts'], [/^(\d+) pts to (.+)$/, (m) => 'Faltan ' + m[1] + ' pts para ' + tr(m[2])],
-    [/^next board ×(\d+)$/, 'próximo tablero ×$1'], [/^Cake ×(\d)$/, 'Pastel ×$1'],
+    [/^next board ×(\d+)$/, 'próximo tablero ×$1'], [/^❤️ \+1 heart · (\d+)$/, '❤️ +1 corazón · $1'], [/^Cake ×(\d)$/, 'Pastel ×$1'],
     [/^🎂 Cake gift: (\d) candy in place · points ×(\d)$/, '🎂 Regalo del pastel: $1 dulce colocado · puntos ×$2'], [/^🎂 Cake gift: (\d) candies in place · points ×(\d)$/, '🎂 Regalo del pastel: $1 dulces colocados · puntos ×$2'],
     [/^🎂 Cake gift: (\d) candies in place \+ a heart shield · points ×(\d)$/, '🎂 Regalo del pastel: $1 dulces colocados + un escudo · puntos ×$2'], [/^best day (\d+)$/, 'mejor día $1'], [/^(\d+) pts$/, '$1 pts'], [/^(\d+×\d+)$/, '$1'],
     [/^🔥 (\d+) day streak$/, '🔥 Racha de $1 días'], [/^(\d+)×(\d+) board$/, 'Tablero $1×$2'], [/^(\d+) candies to find$/, '$1 dulces por encontrar'],

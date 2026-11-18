@@ -859,7 +859,7 @@
   }
   function chalTimeUp() {
     chalStop(); cur.done = true; saveGame(); store.set('chal', { date: '', left: 0 }); hideToast();
-    setTimeout(() => { S.lose(); loseText(true); $('lose').classList.remove('bossw'); $('loseLives').textContent = ''; $('reviveBtn').hidden = true; $('lose').hidden = false; }, 300);
+    setTimeout(() => { S.lose(); loseText(true); $('lose').classList.remove('bossw'); $('loseLives').textContent = ''; $('reviveBtn').hidden = true; $('reviveCoins').hidden = true; $('lose').hidden = false; }, 300);
   }
   // the "out of hearts" window is also used when the challenge clock runs out
   function loseText(timeUp) {
@@ -1183,7 +1183,7 @@
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); cur.cakeDrop = false; if (cur.meta && cur.meta.kind === 'level' && cur.meta.level >= CAKE_FROM && cake.n > 0) { setCake(cake.n - 1); cur.cakeDrop = true; } $('loseCake').hidden = !cur.cakeDrop; freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); cur.cakeDrop = false; if (cur.meta && cur.meta.kind === 'level' && cur.meta.level >= CAKE_FROM && cake.n > 0) { setCake(cake.n - 1); cur.cakeDrop = true; } $('loseCake').hidden = !cur.cakeDrop; freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; drawCoinRevive(); $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -2046,10 +2046,23 @@
   $('sndHome').onclick = toggleMusic; $('sndGame').onclick = toggleMusic;
   $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(maybeEnding); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
-  $('reviveBtn').onclick = () => { S.tap(); watchAd(() => {
-    cur.revived = true; cur.done = false; cur.hearts = 1; addLives(1); if (cur.cakeDrop) { setCake(cake.n + 1); cur.cakeDrop = false; } if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
+  function reviveNow() {
+    cur.done = false; cur.hearts = 1; addLives(1); if (cur.cakeDrop) { setCake(cake.n + 1); cur.cakeDrop = false; } if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
     $('lose').hidden = true; drawHearts(); saveGame(); toast('❤️ One more heart. Keep going!');
-  }); };
+  }
+  $('reviveBtn').onclick = () => { S.tap(); watchAd(() => { cur.revived = true; reviveNow(); }); };
+  // or buy one more try with coins: 25 the first time on a level, 50 the second time, then no more
+  const COIN_REVIVE = [25, 50];
+  const coinRevivePrice = () => (cur && cur.meta && cur.meta.kind === 'level' ? COIN_REVIVE[cur.coinRevives || 0] : undefined);
+  function drawCoinRevive() {
+    const b = $('reviveCoins'), p = coinRevivePrice(); b.hidden = !p; if (!p) return;
+    b.innerHTML = '❤️ +1 heart · ' + p + ' ' + coinSvg; b.classList.toggle('short', coins < p);
+  }
+  $('reviveCoins').onclick = () => {
+    const p = coinRevivePrice(); if (!p) return;
+    if (coins < p) { S.tap(); toast('Not enough coins'); return; }
+    coins -= p; saveWallet(); updateHintUi(); S.ui('buy', 1, 1); S.ui('coin', 1, 0.9); cur.coinRevives = (cur.coinRevives || 0) + 1; reviveNow();
+  };
   $('retryBtn').onclick = () => { S.tap(); if (!canPlay()) { $('lose').hidden = true; toMap(); setTimeout(openLives, 900); return; } $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily(m.test))); };
   $('nextBtn').onclick = () => { S.tap(); nextLevel(); };
   $('rateLater').onclick = () => { S.tap(); closeRate(); };
