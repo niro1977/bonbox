@@ -109,7 +109,7 @@
     'In Bonbox Land, every sweet lived in the great Bonbox, each one in its own perfect spot.': 'En el País de los Dulces, cada dulce vivía en la gran Bonbox, cada uno en su lugar perfecto.',
     'But up in the clouds lived Vinegar, the grumpy storm king. He could not stand all that sweetness!': 'Pero en las nubes vivía Vinagre, el gruñón rey de la tormenta. ¡No soportaba tanta dulzura!',
     'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!': 'Tomó aire y... ¡ACHÚ! ¡Una tormenta salvaje sacó a todos los dulces de la Bonbox!',
-    'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!': '¡Solo Gumi puede arreglarlo! Ayúdalo a guardar los dulces en la caja: ¡uno en cada color, y que nunca se toquen!',
+    'Only Gumi can fix it! Help him find the perfect spot for every candy: one in every color, and no two candies touching!': '¡Solo Gumi puede arreglarlo! Ayúdalo a encontrar el lugar perfecto para cada dulce: ¡uno en cada color, y que nunca se toquen!',
     'Vinegar': 'Vinagre', '👑 Vinegar': '👑 Vinagre', 'Vinegar blocks the way!': '¡Vinagre bloquea el camino!', 'Vinegar is defeated!': '¡Vinagre fue derrotado!', '👑 Vinegar defeated!': '👑 ¡Vinagre cayó!',
     'Vinegar blocks the way! You can beat him!': '¡Vinagre bloquea el camino! ¡Tú puedes vencerlo!', 'You defeated Vinegar! Amazing!': '¡Venciste a Vinagre! ¡Increíble!',
     'Full Lives': 'Vidas completas', 'Unlimited Lives': 'Vidas ilimitadas', '2 HOURS': '2 HORAS', 'Refill all 5 lives': 'Rellena tus 5 vidas', '❤️ Lives refilled!': '❤️ ¡Vidas completas!', 'Refill all lives · $0.99': 'Rellenar vidas · $0.99', 'Refill all lives': 'Rellenar vidas',

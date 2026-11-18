@@ -13,7 +13,7 @@
     story1: 'In Bonbox Land, every sweet lived in the great Bonbox, each one in its own perfect spot.',
     story2: 'But up in the clouds lived Vinegar, the grumpy storm king. He could not stand all that sweetness!',
     story3: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!',
-    story4: 'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!',
+    story4: 'Only Gumi can fix it! Help him find the perfect spot for every candy: one in every color, and no two candies touching!',
     boss1: 'Vinegar blocks the way! You can beat him!', boss2: 'You defeated Vinegar! Amazing!',
     end1: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.',
     end2: 'Vinegar took one tiny taste... and his sour face melted into the biggest smile Bonbox Land had ever seen!',

@@ -1903,7 +1903,7 @@
     { text: 'In Bonbox Land, every sweet lived in the great Bonbox, each one in its own perfect spot.', img: 'story1', fx: 'calm' },
     { text: 'But up in the clouds lived Vinegar, the grumpy storm king. He could not stand all that sweetness!', img: 'story2p', fx: 'dark' },
     { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!', img: 'story3', fx: 'storm' },
-    { text: 'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
+    { text: 'Only Gumi can fix it! Help him find the perfect spot for every candy: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
   ];
   const ENDING = [
     { text: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.', img: 'end1', fx: 'flash' },
