@@ -258,6 +258,14 @@
     store.set('seenIntro', true); store.set('seenCoach', true); store.set('seenHow', true); if (store.get('age', null) == null) store.set('age', { y: 1990, kid: false, at: Date.now() }); bonus = { last: today(), streak: 1 }; store.set('bonus', bonus); const LV = +((location.search.match(/[?&]lv=(\d+)/) || [])[1] || 24); if (level < LV) { level = LV; store.set('level', LV); }
     items.car = 5; items.rocket = 5; saveWallet(); updateHintUi(); setCake(0); store.set('game', null); transition(() => startLevel(LV));
   }, 2500);
+  // ?dbg=1&demo=cakeanim : on the map, the cake gets layer 1, then 2, then 3 (each lands and flies into its button), again and again (test mode only)
+  if (location.search.includes('dbg') && location.search.includes('demo=cakeanim')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    store.set('seenIntro', true); store.set('seenCoach', true); store.set('seenHow', true); if (store.get('age', null) == null) store.set('age', { y: 1990, kid: false, at: Date.now() }); bonus = { last: today(), streak: 1 }; store.set('bonus', bonus); if (level < 12) { level = 12; store.set('level', 12); }
+    renderHome(); show('home'); scrollToLevel(level); let k = 0;
+    const step = () => { k = k % 3 + 1; cake.n = k; store.set('cake', cake); cakeAnim = 'up'; updateCakeMeds(); setTimeout(step, 4200); };
+    setTimeout(step, 1500);
+  }, 2500);
   // ?dbg=1&demo=bombs : straight into level 12 with a three-layer cake, so the three candy bombs can be tried (test mode only)
   if (location.search.includes('dbg') && location.search.includes('demo=bombs')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
@@ -764,6 +772,7 @@
       setTimeout(() => {   // into its button
         const br = box.getBoundingClientRect(), dx = tr.left + tr.width / 2 - (br.left + br.width / 2), dy = tr.top + tr.height / 2 - (br.top + br.height / 2), sc = tr.width / br.width * 0.9;
         cap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }); glow.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
+        if (S.cakeFly) S.cakeFly();
         const fly = box.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(' + dx * 0.45 + 'px,' + (dy * 0.45 - 60) + 'px) scale(' + (0.5 + sc / 2) + ')', offset: 0.5 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ')' }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
         fly.onfinish = () => { st.remove(); done(); };
       }, 1900);
