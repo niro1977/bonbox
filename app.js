@@ -707,7 +707,8 @@
     if (cakeRun) return cakeRun;
     const m = $('medCake'), how = cakeAnim; if (!m || !how) return Promise.resolve();
     cakeAnim = '';
-    const bump = () => { m.classList.remove('grow', 'drop'); void m.offsetWidth; m.classList.add(how === 'up' ? 'grow' : 'drop'); setTimeout(() => m.classList.remove('grow', 'drop'), 1700);
+    // (class names cake-up / cake-down: plain 'drop' is the story's falling-candy class and would throw the button 70 px up)
+    const bump = () => { m.classList.remove('cake-up', 'cake-down'); void m.offsetWidth; m.classList.add(how === 'up' ? 'cake-up' : 'cake-down'); setTimeout(() => m.classList.remove('cake-up', 'cake-down'), 1700);
       if (how === 'up') { const f = document.createElement('b'); f.className = 'cake-plus'; f.textContent = cake.n >= CAKE_MAX ? 'MAX!' : '+1'; m.appendChild(f); setTimeout(() => f.remove(), 1600); } };
     cakeRun = (how === 'up' ? cakeBuild(cake.n, m) : Promise.resolve()).then(() => { bump(); return sleep(how === 'up' ? 650 : 900); }).finally(() => { cakeRun = null; });
     return cakeRun;

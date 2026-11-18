@@ -2138,9 +2138,9 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .lose-cake{color:#c2185b;font-weight:800}
 #winGain .wcake.new{background:linear-gradient(90deg,#20c997,#ff4f9a,#a35cff);animation:wcakeIn .7s cubic-bezier(.34,1.56,.64,1) both .9s}
 @keyframes wcakeIn{0%{transform:scale(0) rotate(-12deg);opacity:0}100%{transform:none;opacity:1}}
-.med.grow .disc{animation:cakeGrow 1.5s cubic-bezier(.34,1.56,.64,1)}
+.med.cake-up .disc{animation:cakeGrow 1.5s cubic-bezier(.34,1.56,.64,1)}
 @keyframes cakeGrow{0%{transform:scale(1)}20%{transform:scale(1.45) rotate(-8deg);box-shadow:0 0 0 2px #fff,0 0 26px 10px #ffe14d}45%{transform:scale(1.15) rotate(6deg)}70%{transform:scale(1.3);box-shadow:0 0 0 2px #fff,0 0 22px 8px #ff8fd0}100%{transform:scale(1)}}
-.med.drop .disc{animation:cakeDrop .9s ease}
+.med.cake-down .disc{animation:cakeDrop .9s ease}
 @keyframes cakeDrop{0%,100%{transform:none}20%{transform:translateX(-6px) rotate(-8deg)}40%{transform:translateX(6px) rotate(8deg)}60%{transform:translateX(-4px) scale(.9)}80%{transform:translateX(3px)}}
 .cake-plus{position:absolute;left:50%;top:-6px;z-index:5;transform:translateX(-50%);font:900 20px var(--display);color:#fff;-webkit-text-stroke:3px #c2185b;paint-order:stroke fill;animation:cakePlus 1.6s ease-out forwards;pointer-events:none}
 @keyframes cakePlus{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}20%{opacity:1;transform:translate(-50%,-14px) scale(1.2)}80%{opacity:1;transform:translate(-50%,-30px) scale(1)}100%{opacity:0;transform:translate(-50%,-44px)}}
