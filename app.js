@@ -652,13 +652,13 @@
   function saveGame() {
     try {
       if (!cur || cur.done || !cur.meta) { store.set('game', null); return; }
-      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints,
+      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints, cake: cur.cake || 0,
         wrong: [...cur.wrongMarks], pen: [...cur.penalized], saved: Date.now() });
     } catch (e) {}
   }
   function applySaved(g) {
     if (!g || g.n !== cur.n || !Array.isArray(g.state) || g.state.length !== cur.n) return false;
-    cur.shield = !!g.shield; cur.double = !!g.double;
+    cur.shield = !!g.shield; cur.double = !!g.double; cur.cake = g.cake || 0;
     cur.state = g.state.map((r) => r.slice()); cur.hearts = g.hearts; cur.hints = g.hints || 0;
     cur.wrongMarks = new Set(g.wrong || []); cur.penalized = new Set(g.pen || []);
     cur.foundPrev = new Set(); for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 2) cur.foundPrev.add(cur.regions[y][x]);
@@ -666,6 +666,49 @@
     return true;
   }
   const savedFor = (meta) => { const g = store.get('game', null); if (!g || !g.meta || g.meta.kind !== meta.kind || g.meta.test) return null; return (meta.kind === 'level' ? g.meta.level === meta.level : g.meta.date === meta.date) ? g : null; };
+  /* ---------- Gumi's Cake: every NEW level won in a row stacks one layer (up to 3); a lost level takes the top layer away.
+     At the start of the next level the layers turn into candies already in place (3 layers also give a heart shield),
+     and that level's points are multiplied (1 layer x2, 2 layers x3, 3 layers x4).
+     Sugar Stars: a new level won without losing a heart gives a star; 10 stars open a surprise prize.
+     First win of the day: the first level won each day pays double coins. ---------- */
+  let cake = store.get('cake', { n: 0 }), sugar = store.get('sugar', { n: 0 });
+  const CAKE_MAX = 3, SUGAR_AT = 10;
+  const cakeReveal = (k, size) => Math.min(k, Math.max(1, Math.floor(size / 3)));   // a small board never gets more than a third of its candies
+  function setCake(n) { cake.n = Math.max(0, Math.min(CAKE_MAX, n)); store.set('cake', cake); updateCakeMeds(); }
+  function updateCakeMeds() {
+    const ci = document.querySelector('#medCake .disc img'); if (ci) { ci.src = 'art/3d_cake_' + Math.max(1, cake.n) + '.webp'; ci.classList.toggle('off', cake.n === 0); }
+    const t = $('medCakeTag'); if (t) t.textContent = cake.n ? cake.n + '/' + CAKE_MAX + ' · ×' + (cake.n + 1) : '0/' + CAKE_MAX;
+    const s = $('medStarTag'); if (s) s.textContent = sugar.n + '/' + SUGAR_AT;
+  }
+  function cakeGift() {
+    const k = cur.cake; if (!k || cur.done) return;
+    const free = [];
+    for (let y = 0; y < cur.n; y++) { if (cur.state[y].includes(2)) continue; const v = cur.solution[y], x = Array.isArray(v) ? v.findIndex(Boolean) : v; if (x >= 0 && x < cur.n) free.push([y, x]); }
+    for (let i = free.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [free[i], free[r]] = [free[r], free[i]]; }
+    const got = free.slice(0, cakeReveal(k, cur.n));
+    got.forEach(([y, x], i) => { cur.state[y][x] = 2; cur.wrongMarks.delete(y + ',' + x); setTimeout(() => { if (cur && !cur.done) burstAt(cellEl(y, x), false); }, 120 + i * 220); });
+    if (k >= CAKE_MAX) cur.shield = true;
+    paint(); drawFound(); S.prize(); buzz([20, 30, 20]);
+    toast('🎂 Cake gift: ' + got.length + (got.length === 1 ? ' candy' : ' candies') + ' in place' + (k >= CAKE_MAX ? ' + a heart shield' : '') + ' · points ×' + (k + 1));
+    saveGame();
+  }
+  function openCakeInfo(kind) {
+    S.unlock(); S.tap();
+    const b = $('ciBody');
+    if (kind === 'cake') {
+      $('ciTitle').textContent = "Gumi's Cake";
+      b.innerHTML = '<p>Win new levels in a row to stack layers. Losing a level takes one layer away.</p><p class="ci-sub">At the start of every level your cake gives you:</p>'
+        + [1, 2, 3].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
+          + ['1 candy already in place', '2 candies already in place', '3 candies in place + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')
+        + '<p class="ci-tip">☀️ <span>Your first win of each day pays double coins!</span></p>';
+    } else {
+      $('ciTitle').textContent = 'Sugar Stars';
+      b.innerHTML = '<div class="ci-star"><img src="art/ic_sugarstar.webp" alt="" draggable="false"><b>' + sugar.n + ' / ' + SUGAR_AT + '</b></div>'
+        + '<div class="ci-bar"><i style="width:' + Math.round(100 * sugar.n / SUGAR_AT) + '%"></i></div>'
+        + '<p>Win a level without losing a heart to earn a sugar star. Collect 10 for a surprise prize!</p>';
+    }
+    $('cakeInfo').hidden = false;
+  }
   /* ---------- the card shown before a level ---------- */
   let pendingBoost = null, preSpoken = false;
   function openPrelevel(lv, after) {
@@ -693,6 +736,7 @@
     const resumed = applySaved(savedFor(cur.meta));
     if (!resumed && pendingBoost) { if (pendingBoost.shield) { items.shield--; cur.shield = true; } if (pendingBoost.double) { items.double--; cur.double = true; } saveWallet(); updateHintUi(); }
     pendingBoost = null;
+    if (!resumed) { cur.cake = cake.n; if (cake.n) setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) cakeGift(); }, 1500); }
     show('game');
     preSpoken = false;
     // the narrator names a Hard / Very Hard / Extremely Hard level as it opens (not when a saved game is resumed)
@@ -1047,7 +1091,7 @@
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); cur.cakeDrop = false; if (cur.meta && cur.meta.kind === 'level' && cake.n > 0) { setCake(cake.n - 1); cur.cakeDrop = true; } $('loseCake').hidden = !cur.cakeDrop; freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -1397,20 +1441,27 @@
     let reward = false, wandReward = false;
     freshScore();
     score.run++;
-    const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; }
+    const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; } if (cur.cake) pt.gain *= cur.cake + 1;   // the cake multiplies this level's points
     score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
     store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true; leagueBump(score.points);
-    const earnedCoins = (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1);   // coins are scarce: 1 per win, 2 without losing a heart
+    const firstWin = !!(cur.meta && cur.meta.kind === 'level') && store.get('fwin', '') !== today(); if (firstWin) store.set('fwin', today());
+    const earnedCoins = (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
     setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
-    $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins';
-    $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>';
+    $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins' + (firstWin ? '<small class="fwin">☀️ First win today ×2</small>' : '');
+    $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
     if (m.kind === 'level') {
       if (isBossLv(m.level)) merge = [];
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
+        setCake(cake.n + 1);
+        if (cur.hearts >= MAX_HEARTS) {
+          sugar.n++; if (sugar.n >= SUGAR_AT) { sugar.n = 0; const sp = chestLoot('med'); give(sp); soon(() => announce(sp, 'Sugar Stars complete!', true), 4800); }
+          store.set('sugar', sugar); updateCakeMeds();
+          $('winGain').insertAdjacentHTML('beforeend', '<small class="wstar"><img src="art/ic_sugarstar.webp" alt="" draggable="false">' + (sugar.n || SUGAR_AT) + ' / ' + SUGAR_AT + '</small>');
+        }
         cleared++; store.set('cleared', cleared); prepBoard(level).then(() => prepBoard(level + 1));   // always two boards ahead: a few big boards take a long time to make
         if (m.level === bonusLevelOf(Math.floor(m.level / 10))) bonusPending = true;                       // only a first-time pass counts toward the reward
         if (cleared % HINT_EVERY === 0) { give({ hints: 1 }); reward = true; soon(() => announce({ hints: 1 }, 'Level reward!'), 3600); }
@@ -1871,7 +1922,7 @@
   $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(maybeEnding); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
   $('reviveBtn').onclick = () => { S.tap(); watchAd(() => {
-    cur.revived = true; cur.done = false; cur.hearts = 1; addLives(1); if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
+    cur.revived = true; cur.done = false; cur.hearts = 1; addLives(1); if (cur.cakeDrop) { setCake(cake.n + 1); cur.cakeDrop = false; } if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
     $('lose').hidden = true; drawHearts(); saveGame(); toast('❤️ One more heart. Keep going!');
   }); };
   $('retryBtn').onclick = () => { S.tap(); if (!canPlay()) { $('lose').hidden = true; toMap(); setTimeout(openLives, 900); return; } $('lose').hidden = true; const m = cur.meta; transition(() => (m.kind === 'level' ? startLevel(m.level) : startDaily(m.test))); };
@@ -3249,6 +3300,7 @@
     $('medDaily').onclick = () => openChal();
     $('chalGo').onclick = () => { S.tap(); $('chal').hidden = true; if (!canPlay()) { openLives(); return; } transition(() => startDaily()); };
     $('chalClose').onclick = () => { S.tap(); $('chal').hidden = true; };
+    $('medCake').onclick = () => openCakeInfo('cake'); $('medStar').onclick = () => openCakeInfo('star'); $('ciOk').onclick = () => { S.tap(); $('cakeInfo').hidden = true; }; updateCakeMeds();
     $('medWheel').onclick = openWheel; $('medChest').onclick = openChest; $('medGames').onclick = openGames;
     $('navGifts').onclick = openGifts; $('navQuests').onclick = openQuests;
     $('navHome').onclick = () => { S.tap(); closeAll(); scrollToLevel(level); }; $('navShop').onclick = openShop; $('navRank').onclick = openRanking;

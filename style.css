@@ -2111,3 +2111,32 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .node.bossn.beaten::before{top:2px}
 /* in a boss level Vinegar's crown cleared the level title by a hair: a little lower and above it */
 .bosshud>img{margin-top:-31px;z-index:2}
+
+/* ---------- Gumi's Cake and Sugar Stars ---------- */
+.med.fancy .disc{border:4px solid transparent;background:radial-gradient(circle at 35% 28%,#fff,#ffe3f4 45%,#d6b8ff 100%) padding-box,conic-gradient(#ff4f9a,#ffb13b,#ffe14d,#46d17f,#38b8ff,#9a62ff,#ff4f9a) border-box}
+.med.fancy.star .disc{background:radial-gradient(circle at 35% 28%,#fff,#fff3c2 45%,#9ff0d6 100%) padding-box,conic-gradient(#ffb13b,#ffe14d,#46d17f,#38b8ff,#9a62ff,#ff4f9a,#ffb13b) border-box}
+.med.fancy .tag{background:linear-gradient(90deg,#ff4f9a,#a35cff)!important;border:2px solid #fff!important;border-radius:999px!important;padding:2px 8px 3px!important;max-width:none}
+.med.fancy.star .tag{background:linear-gradient(90deg,#ff9d1c,#ff5fa2)!important}
+.med.fancy .disc img{width:46px;height:46px}
+.med.fancy .disc img.off{filter:grayscale(1) opacity(.55)}
+.cakecard #ciBody{display:flex;flex-direction:column;gap:8px;text-align:center}
+.cakecard #ciBody p{margin:0}
+.cakecard .ci-sub{font-weight:900;color:#7a2bd0}
+.ci-row{display:flex;align-items:center;gap:10px;padding:6px 10px;border-radius:16px;background:linear-gradient(90deg,#fff,#fff0f8);border:2px solid #ffd0ea;text-align:left}
+.ci-row.on{border-color:#ff4f9a;box-shadow:0 0 0 3px rgba(255,79,154,.25);background:linear-gradient(90deg,#fff6fb,#ffe0f1)}
+.ci-row img{width:54px;height:54px;object-fit:contain;flex:none}
+.ci-row span{display:flex;flex-direction:column;flex:1;min-width:0}
+.ci-row b{font:900 16px/1.1 var(--display);color:#c2185b}
+.ci-row small{font-size:12.5px;color:#5a3a66}
+.ci-row i{font-style:normal;font:900 14px var(--display);color:#fff;background:linear-gradient(90deg,#ff4f9a,#a35cff);padding:3px 8px;border-radius:10px;white-space:nowrap}
+.ci-tip{font-weight:800;color:#b35d00}
+.ci-star{display:flex;align-items:center;justify-content:center;gap:10px}
+.ci-star img{width:84px;height:84px;object-fit:contain}
+.ci-star b{font:900 30px var(--display);color:#e07b00}
+.ci-bar{height:14px;border-radius:999px;background:#ffe9c7;overflow:hidden;border:2px solid #fff;box-shadow:0 0 0 2px #ffcf7a}
+.ci-bar i{display:block;height:100%;background:linear-gradient(90deg,#ff9d1c,#ff5fa2,#a35cff)}
+#winGain .wcake,#winGain .wstar,#winCoins .fwin{display:inline-flex;align-items:center;gap:4px;margin:4px 4px 0;padding:2px 9px;border-radius:999px;background:linear-gradient(90deg,#ff4f9a,#a35cff);color:#fff;font-weight:900}
+#winGain .wstar{background:linear-gradient(90deg,#ff9d1c,#ff5fa2)}
+#winCoins .fwin{background:linear-gradient(90deg,#ffb13b,#ff7a1c);font-size:12px}
+#winGain .wcake img,#winGain .wstar img{width:20px;height:20px;object-fit:contain}
+.lose-cake{color:#c2185b;font-weight:800}
