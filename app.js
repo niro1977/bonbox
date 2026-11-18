@@ -702,7 +702,7 @@
      Sugar Stars: a new level won without losing a heart gives a star; 10 stars open a surprise prize.
      First win of the day: the first level won each day pays double coins. ---------- */
   let cake = store.get('cake', { n: 0 }), sugar = store.get('sugar', { n: 0 });
-  { const pre = new Image(); pre.src = 'art/ic_bomb.webp'; }   // the cake's bomb picture is ready before the first bomb lands
+  { const pre = new Image(); pre.src = 'art/ic_bomb.webp?3'; }   // the cake's bomb picture is ready before the first bomb lands
   const CAKE_MAX = 3, SUGAR_AT = 10, CAKE_FROM = 10;   // Gumi's Cake opens at level 10: wins before it build nothing
   const cakeOpen = () => level >= CAKE_FROM;
   const cakeReveal = (k, size) => Math.min(k, Math.max(1, size - 3));   // at least three candies are always left to find
@@ -1137,7 +1137,7 @@
       if (s === 2) el.innerHTML = '<svg class="candy" style="--idur:' + (3 + Math.random() * 2.5).toFixed(1) + 's;--idelay:' + (0.4 + Math.random() * 1.6).toFixed(1) + 's"><use href="#c' + cur.cmap[cur.regions[y][x]] + '"/></svg>';
       else if (s === 1) el.innerHTML = '<span class="x' + (wrongX ? ' bad' : '') + '"></span>';
       else if (s === 3) el.innerHTML = QMARK;
-      else if (bomb) el.innerHTML = '<img class="cbomb" src="art/ic_bomb.webp" alt="" draggable="false">';
+      else if (bomb) el.innerHTML = '<img class="cbomb" src="art/ic_bomb.webp?3" alt="" draggable="false">';
       else el.innerHTML = '';
     }
     drawFound();
@@ -1329,7 +1329,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { cakeBuild: (n) => cakeBuild(n, $('medCake')), bonus9: () => openBonus(), plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { cur: () => cur, items: (o) => { Object.assign(items, o); saveWallet(); updateHintUi(); return items; }, cakeBuild: (n) => cakeBuild(n, $('medCake')), bonus9: () => openBonus(), plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1371,7 +1371,7 @@
     if (!cur || cur.done) return;
     S.unlock(); S.tap(); itemKind = kind;
     const it = ITEMS[kind], n = it.count();
-    $('itemIcon').src = 'art/ic_' + it.icon + '.webp';
+    $('itemIcon').src = 'art/ic_' + it.icon + '.webp?3';
     $('hintLeft').textContent = n; $('itemTitle').textContent = it.name; $('itemDesc').textContent = it.desc; $('hintEarn').textContent = it.earn();
     const b = $('hintUse');
     if (n > 0) { b.textContent = 'Use 1 ' + it.name.toLowerCase(); b.disabled = false; }
@@ -1431,12 +1431,30 @@
     cur.vehicleArmed = null; $('board').classList.remove('lens'); hideToast();
     items[kind]--; saveWallet(); updateHintUi(); snapshot();
     const n = cur.n, line = []; for (let i = 0; i < n; i++) line.push(kind === 'car' ? [y, i] : [n - 1 - i, x]);   // the car drives left to right, the rocket flies from the bottom up
+    // the car / rocket is big and slow enough to be seen crossing the whole line, the line lights up first, and it leaves a sparkly trail
     const first = cellEl(line[0][0], line[0][1]).getBoundingClientRect(), last = cellEl(line[n - 1][0], line[n - 1][1]).getBoundingClientRect();
-    const v = document.createElement('img'); v.src = 'art/ic_' + kind + '.webp'; v.className = 'vehicle ' + kind; v.alt = ''; v.draggable = false;
-    const cw = cellEl(line[0][0], line[0][1]).offsetWidth || first.width, sz = cw * (kind === 'car' ? 1.5 : 1.7);   // the square's real size, even while the board is still popping in if (kind === 'car') v.style.width = sz + 'px'; else v.style.height = sz + 'px'; fxLayer().appendChild(v);
-    const cx = (r) => r.left + r.width / 2 - sz / 2, cy = (r) => r.top + r.height / 2 - sz / 2, D = 260 + n * 85;
-    const from = kind === 'car' ? [first.left - sz, cy(first)] : [cx(first), first.bottom], to = kind === 'car' ? [last.right, cy(last)] : [cx(last), last.top - sz];
-    v.animate([{ transform: 'translate(' + from[0] + 'px,' + from[1] + 'px)' }, { transform: 'translate(' + to[0] + 'px,' + to[1] + 'px)' }], { duration: D, easing: 'linear', fill: 'forwards' }).onfinish = () => v.remove();
+    const cw = cellEl(line[0][0], line[0][1]).offsetWidth || first.width;
+    const v = document.createElement('img'); v.src = 'art/ic_' + kind + '.webp?3'; v.className = 'vehicle ' + kind; v.alt = ''; v.draggable = false;
+    const W = kind === 'car' ? cw * 1.6 : cw * 1.05, Hh = kind === 'car' ? cw * 0.85 : cw * 1.7;
+    v.style.width = W + 'px'; v.style.height = Hh + 'px'; fxLayer().appendChild(v);
+    const D = 450 + n * 110;
+    const from = kind === 'car' ? [first.left - W, first.top + first.height / 2 - Hh / 2] : [first.left + first.width / 2 - W / 2, first.bottom];
+    const to = kind === 'car' ? [last.right, last.top + last.height / 2 - Hh / 2] : [last.left + last.width / 2 - W / 2, last.top - Hh];
+    const fr = (p, bob) => ({ transform: 'translate(' + (from[0] + (to[0] - from[0]) * p) + 'px,' + (from[1] + (to[1] - from[1]) * p + bob) + 'px)' + (kind === 'rocket' ? ' rotate(' + (bob / 2) + 'deg)' : '') });
+    const keys = []; for (let i = 0; i <= 12; i++) keys.push(Object.assign(fr(i / 12, i % 2 ? -cw * 0.08 : 0), { offset: i / 12 }));
+    line.forEach(([yy, xx]) => { const el = cellEl(yy, xx); if (el) el.classList.add('lane'); });
+    const anim = v.animate(keys, { duration: D, easing: 'linear', fill: 'forwards' });
+    const cols = ['#ff5fa2', '#ffd21f', '#46d17f', '#38b8ff', '#a35cff', '#ffffff'];
+    const trail = setInterval(() => {
+      const r = v.getBoundingClientRect(); if (!r.width) return;
+      for (let k = 0; k < 2; k++) {
+        const p = document.createElement('i'); p.className = 'v-spark';
+        p.style.left = (kind === 'car' ? r.left + r.width * 0.12 : r.left + r.width / 2 + (Math.random() - 0.5) * r.width * 0.4) + 'px';
+        p.style.top = (kind === 'car' ? r.top + r.height * (0.45 + Math.random() * 0.35) : r.bottom - r.height * 0.08) + 'px';
+        p.style.background = cols[Math.floor(Math.random() * cols.length)]; fxLayer().appendChild(p); setTimeout(() => p.remove(), 650);
+      }
+    }, 45);
+    anim.onfinish = () => { clearInterval(trail); v.remove(); line.forEach(([yy, xx]) => { const el = cellEl(yy, xx); if (el) el.classList.remove('lane'); }); };
     S.whoosh(); buzz([15, 20, 15]);
     let placed = false;
     line.forEach(([yy, xx], i) => setTimeout(() => {
@@ -1447,7 +1465,7 @@
       else { if (s !== 1) cur.state[yy][xx] = 1; S.x(); }
       paint();
       if (i === n - 1) { spotlight(line, 2500); saveGame(); if (placed && V) V.candy(); if (solved()) win(); }
-    }, (D * (i + 1)) / (n + 1)));
+    }, D * (kind === 'car' ? (i + 1.2) / (n + 2.1) : (i + 1) / (n + 2.2))));
   }
   function armLens() {
     if (!cur || cur.done || items.lens <= 0) return;
@@ -2921,7 +2939,7 @@
 
   /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
      platform, every level you lose drops him one. Each platform holds a bigger prize; a golden chest waits on top. Once a day. ---------- */
-  const CLIMB = [{ coins: 2 }, { inf: 15 }, { coins: 4, sweeper: 1 }, { hints: 1 }, { coins: 6 }, { inf: 30 }, { coins: 15, wands: 1 }], CLIMB_MS = 24 * 3600e3;
+  const CLIMB = [{ coins: 3, hints: 1 }, { coins: 4, lens: 1 }, { coins: 5, sweeper: 1 }, { coins: 6, double: 1 }, { coins: 8, shield: 1 }, { coins: 10, rocket: 1 }, { coins: 15, car: 1, wands: 1 }], CLIMB_MS = 24 * 3600e3;
   let climb = Object.assign({ start: 0, step: 0, cl: [], day: '' }, store.get('climb', {}));
   const climbOn = () => climb.start > 0 && Date.now() < climb.start + CLIMB_MS;
   const climbLeft = () => Math.max(0, climb.start + CLIMB_MS - Date.now());
@@ -3360,7 +3378,7 @@
     };
     function draw() {
       const A = arcArt, ok = (im) => im && im.complete && im.naturalWidth;
-      if (ok(A.cart_bg)) { const off = snap(scroll % 300), n0 = Math.floor(scroll / 300); for (let y = -300 + off, i = 0; y < H; y += 300, i++) { if ((n0 - i) & 1) { g.save(); g.translate(0, y + 300.5); g.scale(1, -1); g.drawImage(A.cart_bg, 0, 0, 300, 301); g.restore(); } else g.drawImage(A.cart_bg, 0, y, 300, 301); } }   // every second tile is mirrored, so the joins between tiles cannot be seen else { g.fillStyle = '#5a3a1e'; g.fillRect(0, 0, 300, H); }
+      if (ok(A.cart_bg)) { const off = snap(scroll % 300), n0 = Math.floor(scroll / 300); for (let y = -300 + off, i = 0; y < H; y += 300, i++) { if ((n0 - i) & 1) { g.save(); g.translate(0, y + 300.5); g.scale(1, -1); g.drawImage(A.cart_bg, 0, 0, 300, 301); g.restore(); } else g.drawImage(A.cart_bg, 0, y, 300, 301); } } else { g.fillStyle = '#5a3a1e'; g.fillRect(0, 0, 300, H); }   // every second tile is mirrored, so the joins between tiles cannot be seen
       g.fillStyle = vg; g.fillRect(0, 0, 300, 70);
       items.forEach((it) => {
         const x = LANES[it.lane], y = snap(it.y);
