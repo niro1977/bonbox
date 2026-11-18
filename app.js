@@ -751,30 +751,35 @@
       const st = document.createElement('div'); st.className = 'cake-stage';
       const glow = document.createElement('i'); glow.className = 'cake-glow'; st.appendChild(glow);
       const box = document.createElement('div'); box.className = 'cake-box'; st.appendChild(box);
-      // cake_stage_1..3 are the same cake at the same scale, bottom layers exactly on top of each other: only the new top layer moves
+      // the upgrade: the cake there was charges up, a white flash bursts on the 808 hit, and the bigger cake pops out of it
       const img = (k) => { const e = document.createElement('img'); e.src = 'art/cake_stage_' + k + '.webp?2'; e.alt = ''; e.draggable = false; box.appendChild(e); return e; };
-      const HIGH = { 1: 0.485, 2: 0.655 };   // how much of the picture the cake below takes, from the bottom
       const old = n > 1 ? img(n - 1) : null, nu = img(n);
-      if (old) nu.style.clipPath = 'inset(0 0 ' + (HIGH[n - 1] * 92).toFixed(1) + '% 0)';   // while it falls, the new picture shows only its top layer
+      const flash = document.createElement('i'); flash.className = 'cake-flash'; box.appendChild(flash);
       const cap = document.createElement('b'); cap.className = 'cake-cap'; cap.textContent = n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!'; st.appendChild(cap);
+      nu.style.opacity = 0; cap.style.opacity = 0;
       document.body.appendChild(st);
       st.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, fill: 'forwards' });
       box.animate([{ transform: 'scale(.4)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)', fill: 'forwards' });
-      nu.style.opacity = 0;
-      setTimeout(() => {   // the new layer lands on top (the lower layers are the same in both pictures, so only the top one seems to arrive)
-        nu.style.opacity = '';
-        // the new layer comes straight down and settles; the cake below never changes (no picture swap, no squash), so nothing jumps
-        nu.animate([{ transform: 'translateY(-130px)', opacity: 0 }, { transform: 'translateY(-110px)', opacity: 1, offset: 0.15 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 560, easing: 'cubic-bezier(.33,0,.2,1)', fill: 'forwards' });
-        if (S.cakeHit) S.cakeHit(n >= CAKE_MAX);   // riser + deep 808 hit, timed so the hit lands with the layer
-        setTimeout(() => { buzz([25, 30, 40]); cakeSparkle(box); }, 380);
+      setTimeout(() => {   // charging: the old cake swells and shakes a little while the riser plays
+        if (S.cakeHit) S.cakeHit(n >= CAKE_MAX);
+        if (old) old.animate([{ transform: 'scale(1)', filter: 'brightness(1)' }, { transform: 'scale(1.05) rotate(-1.5deg)', offset: 0.35 }, { transform: 'scale(1.09) rotate(1.5deg)', offset: 0.7 }, { transform: 'scale(1.14)', filter: 'brightness(1.6)' }], { duration: 340, easing: 'ease-in', fill: 'forwards' });
       }, 450);
+      setTimeout(() => {   // the hit: flash, the new cake pops out, sparkles burst
+        flash.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1.1)', offset: 0.25 }, { opacity: 0, transform: 'scale(1.6)' }], { duration: 520, easing: 'ease-out', fill: 'forwards' });
+        setTimeout(() => {
+          if (old) old.style.opacity = 0; nu.style.opacity = '';
+          nu.animate([{ transform: 'scale(1.22)' }, { transform: 'scale(.96)', offset: 0.55 }, { transform: 'scale(1)' }], { duration: 380, easing: 'ease-out', fill: 'forwards' });
+          cap.style.opacity = ''; cap.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 260, easing: 'cubic-bezier(.34,1.56,.64,1)', fill: 'forwards' });
+          cakeSparkle(box); cakeSparkle(box); buzz([25, 30, 40]);
+        }, 70);
+      }, 790);
       setTimeout(() => {   // into its button
         const br = box.getBoundingClientRect(), dx = tr.left + tr.width / 2 - (br.left + br.width / 2), dy = tr.top + tr.height / 2 - (br.top + br.height / 2), sc = tr.width / br.width * 0.9;
         cap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }); glow.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
         if (S.cakeFly) S.cakeFly();
         const fly = box.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(' + dx * 0.45 + 'px,' + (dy * 0.45 - 60) + 'px) scale(' + (0.5 + sc / 2) + ')', offset: 0.5 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ')' }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
         fly.onfinish = () => { st.remove(); done(); };
-      }, 1350);   // straight on to its button right after the landing
+      }, 1750);   // on to its button right after the new cake has popped out
     });
   }
   function cakeSparkle(el) {
