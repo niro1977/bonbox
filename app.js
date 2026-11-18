@@ -15,6 +15,13 @@
     get(k, d) { try { const v = localStorage.getItem('candoku.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('candoku.' + k, JSON.stringify(v)); } catch (e) {} }
   };
+  // ?dbg=1&demo=cake: a ready game for showing Gumi's Cake (level 176, a 2-layer cake, 9 sugar stars). Seeded once per profile.
+  // ?dbg=1&demo=cake1: the same from level 1 with an empty cake
+  if (/[?&]dbg=1/.test(location.search) && /[?&]demo=cake/.test(location.search) && !store.get('demoSeeded', false)) {
+    const one = /[?&]demo=cake1/.test(location.search);
+    store.set('demoSeeded', true); store.set('seenIntro', true); store.set('seenHow', true); store.set('seenCoach', true); store.set('age', { y: 1990, kid: false, at: Date.now() });
+    store.set('level', one ? 1 : 176); store.set('cleared', one ? 0 : 175); store.set('cake', { n: one ? 0 : 2 }); store.set('sugar', { n: one ? 0 : 9 }); store.set('lives', { n: 5, t: Date.now() });
+  }
 
   let level = store.get('level', 1);
   let stars = store.get('stars', {});
@@ -217,7 +224,12 @@
       row.style.transform = 'translateY(' + Math.max(-1, Math.min(SHOW, o - top)) * H + 'px)'; box.appendChild(row); return row;
     });
     const gain = to - from, up = Math.max(0, oldI - ni);
-    $('leagueGain').textContent = '+' + gain + ' pts'; $('leagueMsg').textContent = ''; $('leagueZone').textContent = ''; $('leagueZone').className = 'lzone'; $('league').hidden = false;
+    $('leagueGain').textContent = '+' + gain + ' pts';
+    // the two lines under the list are written right away but stay invisible until the climb ends: their room is kept, so nothing jumps
+    $('leagueMsg').textContent = (ni === 0 ? 'You are #1 today!' : (up > 1 ? 'You climbed ' + up + ' places!' : up === 1 ? 'You climbed 1 place!' : '') + (ni > 0 ? ' Only ' + (newL[ni - 1].points - to + 10) + ' pts behind ' + newL[ni - 1].name : '')).trim();
+    $('leagueZone').textContent = ni < 3 ? 'On the podium! Hold your place until midnight' : ni < 10 ? 'Top 10: a prize is waiting at midnight' : ni === 10 ? '1 place to the prize zone' : (ni + 1 - 10) + ' places to the prize zone';
+    $('leagueZone').className = 'lzone' + (ni < 3 ? ' gold' : ni < 10 ? ' in' : ''); $('leagueMsg').classList.add('lwait'); $('leagueZone').classList.add('lwait');
+    $('league').hidden = false;
     leagueT.push(setTimeout(() => {
       rows.forEach((row) => { row.classList.add('go'); row.style.transform = 'translateY(' + (row._new - top) * H + 'px)'; });
       const me = rows.find((r) => r._e.me), ptEl = me && me.querySelector('.lpt'), t0 = performance.now(), D = 900;
@@ -229,12 +241,16 @@
     leagueT.push(setTimeout(() => {
       rows.forEach((row) => { const b = row.querySelector('.lrk'); if (b) b.outerHTML = rankBadge(row._new + 1); });
       const me = rows.find((r) => r._e.me); if (me) { me.classList.remove('climb'); me.classList.add('landed'); }
-      $('leagueMsg').textContent = ni === 0 ? 'You are #1 today!' : (up > 1 ? 'You climbed ' + up + ' places!' : up === 1 ? 'You climbed 1 place!' : '') + (ni > 0 ? ' Only ' + (newL[ni - 1].points - to + 10) + ' pts behind ' + newL[ni - 1].name : '');
-      $('leagueMsg').textContent = $('leagueMsg').textContent.trim();
-      $('leagueZone').textContent = ni < 3 ? 'On the podium! Hold your place until midnight' : ni < 10 ? 'Top 10: a prize is waiting at midnight' : ni === 10 ? '1 place to the prize zone' : (ni + 1 - 10) + ' places to the prize zone'; $('leagueZone').className = 'lzone' + (ni < 3 ? ' gold' : ni < 10 ? ' in' : '');
+      $('leagueMsg').classList.remove('lwait'); $('leagueZone').classList.remove('lwait');
       if (ni === 0) { S.fanfare && S.fanfare(); } else if (up) S.praise && S.praise(1);
     }, 550 + 1000));
   }
+  // ?dbg=1&demo=bonus : the nine-card daily bonus again and again (a demonstration, test mode only)
+  if (location.search.includes('dbg') && location.search.includes('demo=bonus')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    const again = () => { if ($('bonus').hidden) { bonus = { last: '', streak: 0 }; openBonus(); } setTimeout(again, 1500); };
+    again();
+  }, 1800);
   // ?dbg=1&demo=league : shows the climb again and again with growing points (a demonstration, test mode only)
   if (location.search.includes('dbg') && location.search.includes('demo=league')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
@@ -329,7 +345,7 @@
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchOverlays); else setTimeout(watchOverlays, 0);
-  function show(id) { ['home', 'game'].forEach((s) => { $(s).hidden = s !== id; }); document.body.classList.toggle('in-game', id === 'game'); if (M) M.mood(id === 'game' ? 'game' : 'menu'); window.scrollTo(0, 0); }
+  function show(id) { if (id === 'home') { let k = 0; const t = setInterval(() => { updateCakeMeds(); if (!cakeAnim || ++k > 40) clearInterval(t); }, 600); } /* the cake button plays its new-layer animation as soon as the map is clear */ ['home', 'game'].forEach((s) => { $(s).hidden = s !== id; }); document.body.classList.toggle('in-game', id === 'game'); if (M) M.mood(id === 'game' ? 'game' : 'menu'); window.scrollTo(0, 0); }
 
   /* ---------- screen transition: a rainbow wipe with a spinning candy ---------- */
   function transition(mid) {
@@ -673,12 +689,68 @@
      First win of the day: the first level won each day pays double coins. ---------- */
   let cake = store.get('cake', { n: 0 }), sugar = store.get('sugar', { n: 0 });
   const CAKE_MAX = 3, SUGAR_AT = 10;
-  const cakeReveal = (k, size) => Math.min(k, Math.max(1, Math.floor(size / 3)));   // a small board never gets more than a third of its candies
-  function setCake(n) { cake.n = Math.max(0, Math.min(CAKE_MAX, n)); store.set('cake', cake); updateCakeMeds(); }
+  const cakeReveal = (k, size) => Math.min(k, Math.max(1, size - 3));   // at least three candies are always left to find
+  let cakeAnim = '';   // 'up' or 'down': played on the map button the next time the map is on the screen
+  function setCake(n) { const was = cake.n; cake.n = Math.max(0, Math.min(CAKE_MAX, n)); if (cake.n !== was) cakeAnim = cake.n > was ? 'up' : 'down'; store.set('cake', cake); updateCakeMeds(); }
   function updateCakeMeds() {
     const ci = document.querySelector('#medCake .disc img'); if (ci) { ci.src = 'art/3d_cake_' + Math.max(1, cake.n) + '.webp'; ci.classList.toggle('off', cake.n === 0); }
     const t = $('medCakeTag'); if (t) t.textContent = cake.n ? cake.n + '/' + CAKE_MAX + ' · ×' + (cake.n + 1) : '0/' + CAKE_MAX;
     const s = $('medStarTag'); if (s) s.textContent = sugar.n + '/' + SUGAR_AT;
+    if (!cakeHold && cakeAnim && !$('home').hidden && !document.querySelector('.overlay:not([hidden])')) playCakeAnim();
+  }
+  // plays the pending cake animation once; every caller gets the same promise, so "Next level" can wait for the cake to reach its button
+  let cakeHold = false, cakeRun = null;
+  function playCakeAnim() {
+    if (cakeRun) return cakeRun;
+    const m = $('medCake'), how = cakeAnim; if (!m || !how) return Promise.resolve();
+    cakeAnim = '';
+    const bump = () => { m.classList.remove('grow', 'drop'); void m.offsetWidth; m.classList.add(how === 'up' ? 'grow' : 'drop'); setTimeout(() => m.classList.remove('grow', 'drop'), 1700);
+      if (how === 'up') { const f = document.createElement('b'); f.className = 'cake-plus'; f.textContent = cake.n >= CAKE_MAX ? 'MAX!' : '+1'; m.appendChild(f); setTimeout(() => f.remove(), 1600); } };
+    cakeRun = (how === 'up' ? cakeBuild(cake.n, m) : Promise.resolve()).then(() => { bump(); return sleep(how === 'up' ? 650 : 900); }).finally(() => { cakeRun = null; });
+    return cakeRun;
+  }
+  // the new layer is built in front of the player: the cake he had stands in the middle of the screen, the new layer drops onto it,
+  // and the whole cake flies into its button on the map
+  function cakeBuild(n, med) {
+    return new Promise((done) => {
+      const disc = med.querySelector('.disc'), tr = disc.getBoundingClientRect();
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || !document.body.animate || !tr.width) { done(); return; }
+      const st = document.createElement('div'); st.className = 'cake-stage';
+      const glow = document.createElement('i'); glow.className = 'cake-glow'; st.appendChild(glow);
+      const box = document.createElement('div'); box.className = 'cake-box'; st.appendChild(box);
+      // cake_stage_1..3 are the same cake at the same scale, bottom layers exactly on top of each other: only the new top layer moves
+      const img = (k) => { const e = document.createElement('img'); e.src = 'art/cake_stage_' + k + '.webp'; e.alt = ''; e.draggable = false; box.appendChild(e); return e; };
+      const HIGH = { 1: 0.485, 2: 0.655 };   // how much of the picture the cake below takes, from the bottom
+      const old = n > 1 ? img(n - 1) : null, nu = img(n);
+      if (old) nu.style.clipPath = 'inset(0 0 ' + (HIGH[n - 1] * 92).toFixed(1) + '% 0)';   // while it falls, the new picture shows only its top layer
+      const cap = document.createElement('b'); cap.className = 'cake-cap'; cap.textContent = n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!'; st.appendChild(cap);
+      document.body.appendChild(st);
+      st.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, fill: 'forwards' });
+      box.animate([{ transform: 'scale(.4)' }, { transform: 'scale(1)' }], { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)', fill: 'forwards' });
+      nu.style.opacity = 0;
+      setTimeout(() => {   // the new layer lands on top (the lower layers are the same in both pictures, so only the top one seems to arrive)
+        nu.style.opacity = '';
+        const land = nu.animate([{ transform: 'translateY(-130px)', opacity: 0 }, { transform: 'translateY(-115px)', opacity: 1, offset: 0.12 }, { transform: 'translateY(0)', opacity: 1, offset: 0.6 }, { transform: 'translateY(-10px)', offset: 0.78 }, { transform: 'none', opacity: 1 }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
+        if (old) land.onfinish = () => { nu.style.clipPath = ''; old.remove(); };
+        if (old) setTimeout(() => old.animate([{ transform: 'none' }, { transform: 'scale(1.04,.95)' }, { transform: 'none' }], { duration: 260 }), 420);   // the cake below gives a little under the weight
+        setTimeout(() => { S.prize(); buzz([15, 25, 15]); cakeSparkle(box); }, 380);
+      }, 450);
+      setTimeout(() => {   // into its button
+        const br = box.getBoundingClientRect(), dx = tr.left + tr.width / 2 - (br.left + br.width / 2), dy = tr.top + tr.height / 2 - (br.top + br.height / 2), sc = tr.width / br.width * 0.9;
+        cap.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' }); glow.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
+        const fly = box.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(' + dx * 0.45 + 'px,' + (dy * 0.45 - 60) + 'px) scale(' + (0.5 + sc / 2) + ')', offset: 0.5 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ')' }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
+        fly.onfinish = () => { st.remove(); done(); };
+      }, 1900);
+    });
+  }
+  function cakeSparkle(el) {
+    const r = el.getBoundingClientRect(), cols = ['#ffe14d', '#ff8fd0', '#7fe3ff', '#8cf5a8', '#ffffff'];
+    for (let k = 0; k < 16; k++) {
+      const p = document.createElement('i'), a = Math.random() * 6.283, d = 60 + Math.random() * 70;
+      p.className = 'cake-spark'; p.style.left = (r.left + r.width / 2) + 'px'; p.style.top = (r.top + r.height * 0.3) + 'px'; p.style.background = cols[k % 5];
+      document.body.appendChild(p);
+      p.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: 'translate(' + Math.cos(a) * d + 'px,' + Math.sin(a) * d + 'px) scale(.3)', opacity: 0 }], { duration: 800, easing: 'ease-out' }).onfinish = () => p.remove();
+    }
   }
   function cakeGift() {
     const k = cur.cake; if (!k || cur.done) return;
@@ -697,8 +769,11 @@
     const b = $('ciBody');
     if (kind === 'cake') {
       $('ciTitle').textContent = "Gumi's Cake";
-      b.innerHTML = '<p>Win new levels in a row to stack layers. Losing a level takes one layer away.</p><p class="ci-sub">At the start of every level your cake gives you:</p>'
-        + [1, 2, 3].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
+      // the full cake on top, then two layers, then one: the player sees what he is building toward
+      b.innerHTML = '<p>Every new level you win in a row adds a layer to your cake (up to 3).</p>'
+        + '<p>Each layer helps you on the next level: candies already in the right place on the board, and more points. Lose a level and the top layer falls off.</p>'
+        + '<p class="ci-sub">What your cake gives you at the start of a level:</p>'
+        + [3, 2, 1].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
           + ['1 candy already in place', '2 candies already in place', '3 candies in place + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')
         + '<p class="ci-tip">☀️ <span>Your first win of each day pays double coins!</span></p>';
     } else {
@@ -1077,7 +1152,7 @@
     cur.state[y][x] = ns;
     if (ns === 2) {
       buzz(14); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc);
-      if (V) { if (pc === 1) V.first(); else if (Math.random() < 0.22) V.praise(); }
+      if (V) V.candy();   // the narrator says a word for every candy found
     }
     else if (ns === 1) { buzz(5); S.x(); }
     else S.tap();
@@ -1126,7 +1201,7 @@
     const g = $('infTag'); if (g) { g.hidden = !on; if (on) g.textContent = '∞ ' + fmtMS(infUntil - Date.now()); }
   }
   setInterval(infTick, 1000);
-  function give(p, noHold) { if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens'].forEach((k) => { items[k] += p[k] || 0; }); saveWallet(); updateHintUi(); }
+  function give(p, noHold) { if (p.life) addLives(p.life); if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens'].forEach((k) => { items[k] += p[k] || 0; }); saveWallet(); updateHintUi(); }
   const coinSvg = '<img class="ico" src="art/ic_coin.webp" alt="" draggable="false">';
   /* coins you win fly into the main wallet (the top chip, or a floating bank on the game screen) and the counter ticks up as each lands */
   let coinHold = 0, bankT = 0;
@@ -1199,7 +1274,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { cakeBuild: (n) => cakeBuild(n, $('medCake')), bonus9: () => openBonus(), plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1323,8 +1398,8 @@
     for (let i = 0; i < list.length; i++) { r -= wt[i]; if (r <= 0) return list[i]; }
     return list[0];
   }
-  const PICO = { inf: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens' };
-  const PNAME = { inf: 'min of unlimited hearts', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier' };
+  const PICO = { inf: 'heart', life: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens' };
+  const PNAME = { inf: 'min of unlimited hearts', life: 'life', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier' };
   const prizeKeys = (p) => Object.keys(PICO).filter((k) => p[k]);
   function prizeHtml(p) {
     return prizeKeys(p).map((k) => '<span class="pz"><img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + p[k] + 'm' : '+' + p[k]) + '</b></span>').join('');
@@ -1356,25 +1431,40 @@
     const ci = $('rwItems').querySelector('img[src*="ic_coin"]'); flyCoins(ci || $('rwItems'), r.p.coins, 0, true);
   }
   function giveReward(p, title, big) { give(p); announce(p, title, big); }
+  // a card's prize, big: the helper's own icon in large, with the number only where it says something (10 coins, 15 min, x2)
+  function bigPrize(p) {
+    return prizeKeys(p).map((k) => { const v = p[k];
+      return '<span class="pz bp k-' + k + '"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false">' + (k === 'coins' ? '<b>' + v + '</b>' : k === 'inf' ? '<b>' + v + ' min</b>' : v > 1 ? '<b>×' + v + '</b>' : '') + '</span>'; }).join('');
+  }
+  // the daily bonus: apart from coins (and the minutes of unlimited hearts) every prize is exactly ONE item
+  const oneEach = (p) => { const o = {}; Object.keys(p).forEach((k) => { o[k] = k === 'coins' || k === 'inf' || typeof p[k] !== 'number' ? p[k] : 1; }); return o; };
   function openBonus() {
     const grid = $('bonusGrid'); grid.innerHTML = ''; $('bonusClaim').hidden = true; $('bonusStreak').textContent = '';
     $('bonusMsg').textContent = 'Pick a card to get your reward!';
-    let picked = false;
+    let picked = true;   // the cards can be picked once they have all been dealt
+    // the nine cards always hold the same prizes: every helper once (one of each) and two cards of coins; only the coins change
+    // (their amount, bigger on every 7th day in a row) and the order of the cards
+    const yd0 = (() => { const y = new Date(); y.setDate(y.getDate() - 1); return y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0'); })();
+    const big = ((bonus.last === yd0 ? bonus.streak + 1 : 1) % 7) === 0, coinAmt = () => (big ? 2 : 1) * [2, 3, 4, 5, 6, 8, 10][Math.floor(Math.random() * 7)];
+    const deck = [{ hints: 1 }, { wands: 1 }, { shield: 1 }, { sweeper: 1 }, { lens: 1 }, { double: 1 }, { life: 1 }, { coins: coinAmt() }, { coins: coinAmt() }];
+    for (let i = deck.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [deck[i], deck[r]] = [deck[r], deck[i]]; }
+    const backOf = (c, p) => { const bk = c.querySelector('.back'); bk.className = 'back k-' + prizeKeys(p)[0]; bk.innerHTML = bigPrize(p); };
     for (let i = 0; i < 9; i++) {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'bcard'; b.innerHTML = '<span class="front">?</span><span class="back"></span>';
+      const mine = deck[i];
       b.onclick = () => {
         if (picked) return; picked = true; S.unlock();
         const t = today(), y = new Date(); y.setDate(y.getDate() - 1);
         const yd = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
         const streak = bonus.last === yd ? bonus.streak + 1 : 1;
-        const prize = rollPrize(streak, streak % 7 === 0);
+        const prize = mine;
         bonus = { last: t, streak }; store.set('bonus', bonus);
         give(prize);
-        b.querySelector('.back').innerHTML = prizeHtml(prize); b.classList.add('open', 'mine'); S.ui('flip', 1, 1); S.prize(); buzz([20, 30, 40]);
+        backOf(b, prize); b.classList.add('open', 'mine'); S.ui('flip', 1, 1); S.prize(); buzz([20, 30, 40]);
         $('bonusMsg').textContent = 'You won ' + prizeText(prize) + '!';
         $('bonusStreak').textContent = '🔥 Day ' + streak + (streak % 7 === 0 ? ' · big prize day!' : ' · come back tomorrow for more');
         // the other cards show what they hid
-        [...grid.children].forEach((c, k) => { if (c === b) return; setTimeout(() => { c.querySelector('.back').innerHTML = prizeHtml(rollPrize(streak, false)); c.classList.add('open', 'dim'); S.ui('flip', 0.9 + (k % 4) * 0.08, 0.7); }, 450 + k * 90); });
+        [...grid.children].forEach((c, k) => { if (c === b) return; setTimeout(() => { backOf(c, deck[k]); c.classList.add('open', 'dim'); S.ui('flip', 0.9 + (k % 4) * 0.08, 0.7); }, 450 + k * 90); });
         // no second "Claim" card: the prize flies straight from the picked card to its counters, then the window closes by itself
         setTimeout(() => {
           if ($('bonus').hidden) { coinHold = 0; updateHintUi(); return; }
@@ -1386,6 +1476,18 @@
       grid.appendChild(b);
     }
     S.tap(); $('bonus').hidden = false;
+    // the nine cards are dealt onto the table one after another, quickly: tak tak tak ...
+    const cards = [...grid.children], STEP = 85;
+    if (!document.body.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { picked = false; return; }
+    cards.forEach((c, i) => {
+      c.style.opacity = 0;
+      setTimeout(() => {
+        c.style.opacity = '';
+        c.animate([{ transform: 'translate(0,-70px) scale(.35) rotate(' + (i % 2 ? 18 : -18) + 'deg)', opacity: 0 }, { transform: 'translate(0,6px) scale(1.08) rotate(0)', opacity: 1, offset: 0.7 }, { transform: 'none', opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.2,.8,.3,1.2)' });
+        S.ui('flip', 1.15 + i * 0.05, 0.75);
+      }, 250 + i * STEP);
+    });
+    setTimeout(() => { picked = false; }, 250 + cards.length * STEP + 220);
   }
   function maybeBonus() { if (bonus.last !== today() && $('intro').hidden && $('bonus').hidden) setTimeout(openBonus, 600); }
   /* ---------- profile ---------- */
@@ -1456,7 +1558,7 @@
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
-        setCake(cake.n + 1);
+        setCake(cake.n + 1); $('winGain').insertAdjacentHTML('beforeend', '<small class="wcake new"><img src="art/3d_cake_' + cake.n + '.webp" alt="" draggable="false">' + (cake.n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!') + '</small>');
         if (cur.hearts >= MAX_HEARTS) {
           sugar.n++; if (sugar.n >= SUGAR_AT) { sugar.n = 0; const sp = chestLoot('med'); give(sp); soon(() => announce(sp, 'Sugar Stars complete!', true), 4800); }
           store.set('sugar', sugar); updateCakeMeds();
@@ -1848,13 +1950,14 @@
     if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL) { await toMap(); maybeEnding(); return; }
     const from = cur.meta.level, to = level; pendingHop = null;
     try {
-      mascotAt = from;
+      mascotAt = from; cakeHold = true;   // order on the map: the cake gets its layer and flies into its button, then Gumi hops, then the Play card
       await transition(() => { renderHome(); show('home'); scrollToLevel(from); });
+      cakeHold = false; await playCakeAnim();
       await Promise.race([hopTo(from, to), sleep(2200)]); mascotAt = 0;
       if (V && to > 1 && (to - 1) % 10 === 0) V.say('Welcome to ' + zoneOf(to).name + '!', true);
       await new Promise((res) => openPrelevel(to, () => transition(() => startLevel(to)).then(res)));
     } catch (e) {
-      console.error(e);
+      console.error(e); cakeHold = false;
       try { $('wipe').hidden = true; startLevelNow(to); } catch (e2) { renderHome(); show('home'); }
     }
   }
@@ -2313,7 +2416,9 @@
     const pc = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
     set('medPassTag', pc ? 'CLAIM' : pass.step + '/' + PASS.length); $('medPass').classList.toggle('ready', pc > 0);
     updateRushTag();
-    { const n = eventsHot(), g = GAMES.filter((x) => x[0] !== 'cart' && (MAX_PLAYS - (plays[x[0]] || 0)) > 0 && gameWait(x[0]) <= 0).length; set('medEventsTag', n ? n + ' NEW' : 'EVENTS'); $('medEvents').classList.toggle('ready', n > 0); $('medEvents').classList.toggle('dot', n + g > 0); } $('medGames').classList.toggle('ready', left > 0);
+    { const n = eventsHot(), g = GAMES.filter((x) => x[0] !== 'cart' && (MAX_PLAYS - (plays[x[0]] || 0)) > 0 && gameWait(x[0]) <= 0).length; set('medEventsTag', n ? n + ' NEW' : 'EVENTS'); $('medEvents').classList.toggle('ready', n > 0); $('medEvents').classList.toggle('dot', n + g > 0); }
+    { const cc = climbClaim(), on = climbOn(); set('medClimbTag', on ? (cc ? 'CLAIM' : '⏱ ' + fmtClock(climbLeft())) : climb.day === today() ? 'Tomorrow' : 'START');
+      $('medClimb').classList.toggle('dot', cc > 0); $('medClimb').classList.toggle('ready', cc > 0 || (!on && climb.day !== today())); } $('medGames').classList.toggle('ready', left > 0);
     $('navQuests').classList.toggle('dot', questReady()); $('navGifts').classList.toggle('dot', dailyGiftReady() || freeGiftReady());
   }
   function rewardRow(p) { return '<div class="rwd">' + prizeHtml(p) + '</div>'; }
@@ -2791,7 +2896,7 @@
   function flyItems(r, src) {
     if (!r || !r.p) return;
     const all = prizeKeys(r.p), pz = src ? [...src.querySelectorAll('.pz')] : null;   // src: fly from a card's own prize icons
-    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
+    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', life: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
     keys.forEach((k, n) => {
       const from = pz ? pz[all.indexOf(k)] : [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
       const a = img.getBoundingClientRect(); if (!a.width) return;
@@ -2887,7 +2992,6 @@
       { name: 'Candy Pass', img: 'ev_pass', a: '#ff6fb4', b: '#a02a8c', tag: () => passClaim() ? 'CLAIM ' + passClaim() : pass.step + ' / ' + PASS.length + ' steps', hot: () => passClaim() > 0, go: openPass },
       { name: 'Candy Chest', img: () => chestImg(chest.q ? chest.q.tier : chestTier()).replace('art/', '').replace('.webp', ''), a: '#c98a4d', b: '#6b3e17', tag: () => chest.q ? (chestLeft() <= 0 ? 'OPEN!' : '⏳ ' + fmtWait(chestLeft())) : chest.n >= CHEST_AT ? 'START' : chest.n + ' / ' + CHEST_AT, hot: () => chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT, go: openChest },
       { name: 'Lucky Wheel', img: 'ic_wheel', a: '#b58aff', b: '#5a2fb8', tag: () => (wheel.date !== today() || wheel.extra > 0) ? 'FREE SPIN' : 'Soon', hot: () => wheel.date !== today() || wheel.extra > 0, go: openWheel },
-      { name: 'Candy Climb', img: 'ev_climb', a: '#ff7ac4', b: '#7a2bd0', tag: () => climbOn() ? (climbClaim() ? 'CLAIM ' + climbClaim() : '⏱ ' + fmtClock(climbLeft())) : climb.day === today() ? 'Back tomorrow' : 'START', hot: () => (climbOn() && climbClaim() > 0) || (!climbOn() && climb.day !== today()), go: openClimb },
       { name: 'Sour Storm', img: 'boss_idle', a: '#8a6cff', b: '#2a1458', tag: () => stormOn() ? (stormClaim() ? 'CLAIM ' + stormClaim() : '⏱ ' + fmtClock(STORM_MS - (Date.now() - storm.start))) : stormClaim() ? 'CLAIM ' + stormClaim() : stormFree() ? 'START' : 'Soon', hot: () => stormClaim() > 0 || stormFree(), go: openStorm },
       { name: 'Coin Rush', img: 'ev_rush', a: '#ffd23a', b: '#d9780a', tag: () => rushActive() ? '⚡ ' + Math.ceil((rush.until - Date.now()) / 60000) + ' min left' : rush.day === today() ? 'Back tomorrow' : 'START', hot: () => rushActive() || rush.day !== today(), go: () => { startRush(); refreshEvents(); } }
     ].concat(GAMES.filter((g) => g[0] !== 'cart').map((g) => ({ name: g[1], img: g[2], a: g[3], b: g[4], key: g[0],
@@ -2896,7 +3000,7 @@
   }
   function eventsHot() {
     const passClaim = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
-    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + ((climbOn() && climbClaim() > 0) || (!climbOn() && climb.day !== today()) ? 1 : 0) + (stormClaim() > 0 || stormFree() ? 1 : 0);
+    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + (stormClaim() > 0 || stormFree() ? 1 : 0);
   }
   function renderEvents() {
     freshDay(); buildEventItems(); const grid = $('evGrid'); grid.innerHTML = '';
@@ -3301,6 +3405,7 @@
     $('chalGo').onclick = () => { S.tap(); $('chal').hidden = true; if (!canPlay()) { openLives(); return; } transition(() => startDaily()); };
     $('chalClose').onclick = () => { S.tap(); $('chal').hidden = true; };
     $('medCake').onclick = () => openCakeInfo('cake'); $('medStar').onclick = () => openCakeInfo('star'); $('ciOk').onclick = () => { S.tap(); $('cakeInfo').hidden = true; }; updateCakeMeds();
+    $('medClimb').onclick = openClimb;
     $('medWheel').onclick = openWheel; $('medChest').onclick = openChest; $('medGames').onclick = openGames;
     $('navGifts').onclick = openGifts; $('navQuests').onclick = openQuests;
     $('navHome').onclick = () => { S.tap(); closeAll(); scrollToLevel(level); }; $('navShop').onclick = openShop; $('navRank').onclick = openRanking;

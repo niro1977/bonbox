@@ -22,6 +22,7 @@
     two1: 'Nicely done!', two2: 'Great job!', two3: 'Well played!', two4: 'So close to perfect!',
     one1: 'Phew! That was close!', one2: 'Wow, you just made it!', one3: 'By a whisker!', one4: 'What a narrow escape!',
     letsplay: "Let's play!",
+    mmmsweet: 'Mmm, sweet!', sugarrush: 'Sugar rush!', candylicious: 'Candy-licious!', sosweet: 'So sweet!', gumtastic: 'Gum-tastic!', bontastic: 'Bon-tastic!', treattastic: 'Treat-tastic! What a treat!',
     first: 'Sweet!', yummy: 'Yummy!', tasty: 'Tasty!', nice: 'Nice one!', delicious: 'Delicious!',
     perfect: 'Delicious! Perfect!', divine: 'Divine! Perfect!', sugartastic: 'Sugar-tastic! Perfect!',
     verytasty: 'Very tasty!', close: 'Sweet! That was close!', lose: 'Oh no! Try again!',
@@ -47,7 +48,7 @@
       .catch(() => (buffers[id] = null));
     return loading[id];
   }
-  function preload() { Object.keys(CLIPS).forEach(load); }
+  function preload() { Object.keys(CLIPS).forEach(load); if (!ES) PRAISE.forEach((k) => load('f/' + k)); }
 
   function stop() {
     if (current) { try { current.onended = null; current.stop(); } catch (e) {} current = null; }
@@ -95,7 +96,8 @@
     if (!b || !b.length) { b = bags[key] = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } if (b.length > 1 && b[b.length - 1] === lastOf[key]) b.unshift(b.pop()); }
     return (lastOf[key] = b.pop());
   };
-  const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty'];
+  // the new words are recorded in English only: in Spanish the six old ones are used (they have Spanish recordings)
+  const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty'].concat(ES ? [] : ['mmmsweet', 'sugarrush', 'candylicious', 'sosweet', 'bontastic', 'treattastic']);
   const V = {
     available() { return true; },
     isEnabled() { return enabled; },
@@ -114,6 +116,13 @@
     praise() { V.say(any('praise', PRAISE)); },
     pick(key, list) { return any(key, list); },
     first() { V.say(any('praise', PRAISE)); },
+    // a word for every candy found; a word still being spoken is never cut off (that candy just stays quiet)
+    // English only: about 2 times in 10 the word comes from the female narrator (audio/voice/f/, same words, a little faster)
+    candy() {
+      if (current || (synth && synth.speaking) || !enabled || !S.isOn()) return;
+      const id = any('praise', PRAISE);
+      if (!ES && Math.random() < 0.2) { last = performance.now(); playClip('f/' + id, CLIPS[id]); } else V.say(id, true);
+    },
     // three hearts: Perfect. Two hearts: a warm well-done. One heart left: a close call.
     win(hearts) { V.say(hearts >= 3 ? 'perfectword' : hearts === 2 ? any('two', ['two1', 'two2', 'two3', 'two4']) : any('one', ['close', 'one1', 'one2', 'one3', 'one4']), true); },   // a finished level is always "Perfect!"
     lose() { V.say('lose', true); },
