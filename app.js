@@ -792,7 +792,7 @@
     const el = cellEl(y, x), bd = $('board');
     if (el) { const f = document.createElement('i'); f.className = 'bomb-blast'; el.appendChild(f); setTimeout(() => f.remove(), 700); burstAt(el, true); }
     if (bd && bd.animate) bd.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-4px,2px)' }, { transform: 'translate(4px,-2px)' }, { transform: 'translate(-2px,1px)' }, { transform: 'translate(0,0)' }], { duration: 300 });
-    S.whoosh(); buzz([30, 20, 50]);
+    if (S.boom) S.boom(); else S.whoosh(); buzz([30, 20, 50]);
     if (placed) { const pc = placedCount(); S.candy(cur.regions[y][x], pc); if (V) V.candy(); }
     saveGame();
     if (solved()) win();

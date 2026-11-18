@@ -161,6 +161,16 @@
       reverb(); up.forEach((x, k) => bell(hz(x + 24), t + k * 0.06, 0.7, 0.14)); sparkle(t + 0.05, 0.07);
     },
     ui(name) { if (!ready()) return; const m = { open: 'tap', close: 'tap', back: 'tap', flip: 'tap', buy: 'coin', coin: 'coin', heart: 'heart', item: 'item' }[name]; if (m && S[m]) S[m](); },
+    // the cake's candy bomb going off: a deep thump, a rumble that closes down, and a short crackle on top
+    boom() {
+      if (!ready()) return; const t = ctx.currentTime;
+      osc('sine', 150, t, 0.6, 0.75, 36); osc('triangle', 95, t, 0.38, 0.35, 28);
+      const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = noiseBuf; f.type = 'lowpass'; f.frequency.setValueAtTime(3200, t); f.frequency.exponentialRampToValueAtTime(160, t + 0.48);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.8, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + 0.55);
+      noise(t + 0.02, 0.12, 0.25, 6000, 0.7); noise(t + 0.09, 0.08, 0.15, 4200, 0.9);
+    },
     starIn() { if (!ready()) return; const t = ctx.currentTime; noise(t, 0.4, 0.18, 2400, 0.8); osc('sine', 280, t, 0.42, 0.1, 1600); },
     star(i, earned) {
       if (!ready()) return;
