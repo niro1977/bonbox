@@ -2174,9 +2174,12 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
   box-shadow:0 0 0 1px rgba(120,0,0,.5),0 0 8px 2px rgba(255,60,30,.75),0 2px 3px rgba(0,0,0,.45)!important}
 .bcard .back.k-life{background:radial-gradient(circle at 50% 30%,#ffe3e6,#ff8a99 55%,#e2344f)!important}
 /* Gumi's Cake button: the full three-layer cake is always there; the layers not won yet are grey, the won ones in colour */
-#medCake .cakeico{position:relative;width:42px;height:56px;margin-top:-8px;display:block}
+#medCake .cakeico{position:relative;width:33px;height:44px;margin-top:-3px;display:block}
 #medCake .cakeico img{position:absolute;left:0;bottom:0;width:100%!important;height:auto!important;object-fit:contain}
 #medCake .cakeico .cghost{filter:grayscale(1) brightness(.95) contrast(1.1) opacity(.75)}
 #medCake .cakeico .cfill{filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
 #medCake.locked .cakeico .cghost{filter:grayscale(1) brightness(.9) opacity(.6)}
 #medCake .disc{position:relative}
+/* the cake button has its own candy-pink inside (the ring stays like every other button) */
+#medCake .disc{background:radial-gradient(circle at 35% 28%,#ffffff,#ffe1f1 45%,#ffb3d9 75%,#f58cc4)!important}
+.cakecard .ci-from{align-self:center;padding:3px 14px;border-radius:999px;background:linear-gradient(90deg,#ff4f9a,#a35cff);color:#fff;font-weight:900}

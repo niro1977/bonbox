@@ -773,7 +773,7 @@
     if (kind === 'cake') {
       $('ciTitle').textContent = "Gumi's Cake";
       // the full cake on top, then two layers, then one: the player sees what he is building toward
-      b.innerHTML = '<p>Every new level you win in a row adds a layer to your cake (up to 3).</p>'
+      b.innerHTML = '<p class="ci-from">Opens at level ' + CAKE_FROM + '</p><p>From level ' + CAKE_FROM + ' on, every new level you win in a row adds a layer to your cake (up to 3).</p>'
         + '<p>Each layer helps you on the next level: candies already in the right place on the board, and more points. Lose a level and the top layer falls off.</p>'
         + '<p class="ci-sub">What your cake gives you at the start of a level:</p>'
         + [3, 2, 1].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
