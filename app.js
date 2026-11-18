@@ -245,6 +245,13 @@
       if (ni === 0) { S.fanfare && S.fanfare(); } else if (up) S.praise && S.praise(1);
     }, 550 + 1000));
   }
+  // ?dbg=1&demo=lose : level 12 with a two-layer cake and 100 coins, lost on purpose, so the out-of-hearts screen can be seen (test mode only)
+  if (location.search.includes('dbg') && location.search.includes('demo=lose')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    store.set('seenIntro', true); store.set('seenCoach', true); store.set('seenHow', true); if (store.get('age', null) == null) store.set('age', { y: 1990, kid: false, at: Date.now() }); bonus = { last: today(), streak: 1 }; store.set('bonus', bonus); if (level < 12) { level = 12; store.set('level', 12); }
+    setCake(2); coins = Math.max(coins, 100); saveWallet(); updateHintUi(); store.set('game', null);
+    transition(() => startLevel(12)).then(() => setTimeout(() => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, 2500));
+  }, 2500);
   // ?dbg=1&demo=bonus : the nine-card daily bonus again and again (a demonstration, test mode only)
   if (location.search.includes('dbg') && location.search.includes('demo=bonus')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
@@ -695,7 +702,7 @@
   let cakeAnim = '';   // 'up' or 'down': played on the map button the next time the map is on the screen
   function setCake(n) { const was = cake.n; cake.n = Math.max(0, Math.min(CAKE_MAX, n)); if (cake.n !== was) cakeAnim = cake.n > was ? 'up' : 'down'; store.set('cake', cake); updateCakeMeds(); }
   function updateCakeMeds() {
-    const fill = document.querySelector('#medCake .cfill'); if (fill) { fill.hidden = !cake.n || !cakeOpen(); if (cake.n) fill.src = 'art/cake_stage_' + cake.n + '.webp'; }
+    const fill = document.querySelector('#medCake .cfill'); if (fill) { fill.hidden = !cake.n || !cakeOpen(); if (cake.n) fill.src = 'art/cake_stage_' + cake.n + '.webp?2'; }
     const mc = $('medCake'); if (mc) mc.classList.toggle('locked', !cakeOpen());
     const t = $('medCakeTag'); if (t) t.textContent = !cakeOpen() ? '🔒 Lv ' + CAKE_FROM : cake.n ? cake.n + '/' + CAKE_MAX + ' · ×' + (cake.n + 1) : '0/' + CAKE_MAX;
     const s = $('medStarTag'); if (s) s.textContent = sugar.n + '/' + SUGAR_AT;
@@ -723,7 +730,7 @@
       const glow = document.createElement('i'); glow.className = 'cake-glow'; st.appendChild(glow);
       const box = document.createElement('div'); box.className = 'cake-box'; st.appendChild(box);
       // cake_stage_1..3 are the same cake at the same scale, bottom layers exactly on top of each other: only the new top layer moves
-      const img = (k) => { const e = document.createElement('img'); e.src = 'art/cake_stage_' + k + '.webp'; e.alt = ''; e.draggable = false; box.appendChild(e); return e; };
+      const img = (k) => { const e = document.createElement('img'); e.src = 'art/cake_stage_' + k + '.webp?2'; e.alt = ''; e.draggable = false; box.appendChild(e); return e; };
       const HIGH = { 1: 0.485, 2: 0.655 };   // how much of the picture the cake below takes, from the bottom
       const old = n > 1 ? img(n - 1) : null, nu = img(n);
       if (old) nu.style.clipPath = 'inset(0 0 ' + (HIGH[n - 1] * 92).toFixed(1) + '% 0)';   // while it falls, the new picture shows only its top layer
@@ -778,7 +785,7 @@
       b.innerHTML = '<p class="ci-from">Opens at level ' + CAKE_FROM + '</p><p>From level ' + CAKE_FROM + ' on, every new level you win in a row adds a layer to your cake (up to 3).</p>'
         + '<p>Each layer helps you on the next level: candies already in the right place on the board, and more points. Lose a level and the top layer falls off.</p>'
         + '<p class="ci-sub">What your cake gives you at the start of a level:</p>'
-        + [3, 2, 1].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
+        + [3, 2, 1].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp?2" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
           + ['1 candy already in place', '2 candies already in place', '3 candies in place + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')
         + '<p class="ci-tip">☀️ <span>Your first win of each day pays double coins!</span></p>';
     } else {
@@ -1573,14 +1580,14 @@
     if (earnedCoins) setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), fumed ? 3250 : 1400);
     $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins' + (firstWin ? '<small class="fwin">☀️ First win today ×2</small>' : '');
     if (!earnedCoins) $('winCoins').hidden = true;
-    $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
+    $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp?2" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
     $('winGain').hidden = chal;   // no points line for the Daily Challenge
     if (m.kind === 'level') {
       if (isBossLv(m.level)) merge = [];
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
-        if (m.level >= CAKE_FROM) setCake(cake.n + 1); if (m.level >= CAKE_FROM) $('winGain').insertAdjacentHTML('beforeend', '<small class="wcake new"><img src="art/3d_cake_' + cake.n + '.webp" alt="" draggable="false">' + (cake.n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!') + '</small>');
+        if (m.level >= CAKE_FROM) setCake(cake.n + 1); if (m.level >= CAKE_FROM) $('winGain').insertAdjacentHTML('beforeend', '<small class="wcake new"><img src="art/3d_cake_' + cake.n + '.webp?2" alt="" draggable="false">' + (cake.n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!') + '</small>');
         if (cur.hearts >= MAX_HEARTS) {
           sugar.n++; if (sugar.n >= SUGAR_AT) { sugar.n = 0; const sp = chestLoot('med'); give(sp); soon(() => announce(sp, 'Sugar Stars complete!', true), 4800); }
           store.set('sugar', sugar); updateCakeMeds();
