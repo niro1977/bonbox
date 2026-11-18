@@ -2218,3 +2218,11 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .bomb-blast{position:absolute;left:50%;top:50%;width:180%;height:180%;margin:-90% 0 0 -90%;border-radius:50%;pointer-events:none;z-index:6;background:radial-gradient(circle,#fff 0,#ffe14d 22%,#ff8a3d 45%,rgba(255,80,160,.5) 62%,rgba(255,80,160,0) 72%);animation:blast .65s ease-out forwards}
 @keyframes blast{0%{transform:scale(.2);opacity:1}100%{transform:scale(1.15);opacity:0}}
 @media (prefers-reduced-motion:reduce){.cell .cbomb{animation:none}}
+/* the gummy car / candy rocket crossing the board */
+.vehicle{position:fixed;left:0;top:0;z-index:46;pointer-events:none;height:auto;filter:drop-shadow(0 3px 3px rgba(60,0,40,.45))}
+/* nine helpers in the toolbar: the buttons share the room */
+#game .tools{gap:3px}
+#game .tools .btn{flex:1 1 0;min-width:0}
+#maybeBtn[hidden],#clearBtn[hidden]{display:none!important}
+#qaQuit{background:url(art/btn_orange.webp) center/100% 100% no-repeat!important}
+#qaReplay{background:url(art/btn_green.webp) center/100% 100% no-repeat!important}

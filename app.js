@@ -28,8 +28,8 @@
   let daily = store.get('daily', { last: '', streak: 0 });
   let cur = null;
   let score = store.get('score', { date: '', points: 0, run: 0, best: 0 });
-  const START_HINTS = 3, HINT_EVERY = 10, WAND_EVERY = 15;
-  let items = Object.assign({ shield: 1, double: 0, sweeper: 1, lens: 1 }, store.get('items', {}));
+  const START_HINTS = 3, HINT_EVERY = 10, WAND_EVERY = 30;   // the wand is rare: one free wand every 30 levels
+  let items = Object.assign({ shield: 1, double: 0, sweeper: 1, lens: 1, car: 1, rocket: 1 }, store.get('items', {}));
   let coins = store.get('coins', 30), wands = store.get('wands', 1), bonus = store.get('bonus', { last: '', streak: 0 });
   let hintsLeft = store.get('hints', START_HINTS), cleared = store.get('cleared', 0);   // hints in the bag, levels passed for the first time
   const RANKS = [[0, 'Rookie'], [200, 'Candy Fan'], [500, 'Sweet Tooth'], [1000, 'Sugar Pro'], [2000, 'Candy Master'], [4000, 'Candy Legend']];
@@ -980,7 +980,7 @@
       // a double tap: the second touch starts within DBL_MS of the first one lifting. Times are the touch times themselves (e.timeStamp),
       // so a slow phone that is still drawing the first tap does not turn the second one into a single tap
       { const st = cur.state[y][x], dbl = !!(lastTap && lastTap.y === y && lastTap.x === x && e.timeStamp - lastTap.t < DBL_MS); drag.dbl = dbl;   // a second quick tap places a candy: that has its own sound
-        if (!cur.lensArmed && !dbl) { if (cur.maybeMode) { if (st !== 2) S.pre('tap'); } else S.pre(st === 0 || st === 3 ? 'x' : 'tap'); } }
+        if (!cur.lensArmed && !cur.vehicleArmed && !dbl) { if (cur.maybeMode) { if (st !== 2) S.pre('tap'); } else S.pre(st === 0 || st === 3 ? 'x' : 'tap'); } }
       try { board.setPointerCapture(e.pointerId); } catch (_) {}
       if (!cur.maybeMode) drag.timer = setTimeout(() => { if (drag && !drag.moved) { drag.long = true; buzz(10); tap(y, x, true); } }, 420);
       e.preventDefault();
@@ -1179,6 +1179,7 @@
   function tap(y, x, maybe, candy) {
     if (cur.done) return;
     if (cur.lensArmed) { lensPeek(y, x); return; }
+    if (cur.vehicleArmed) { useVehicle(cur.vehicleArmed, y, x); return; }
     S.unlock();
     if (cur.bombs && cur.bombs.has(y + ',' + x) && cur.state[y][x] === 0) { explodeBomb(y, x); return; }
     const s = cur.state[y][x];
@@ -1255,7 +1256,7 @@
     const g = $('infTag'); if (g) { g.hidden = !on; if (on) g.textContent = '∞ ' + fmtMS(infUntil - Date.now()); }
   }
   setInterval(infTick, 1000);
-  function give(p, noHold) { if (p.life) addLives(p.life); if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens'].forEach((k) => { items[k] += p[k] || 0; }); saveWallet(); updateHintUi(); }
+  function give(p, noHold) { if (p.life) addLives(p.life); if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens', 'car', 'rocket'].forEach((k) => { items[k] = (items[k] || 0) + (p[k] || 0); }); saveWallet(); updateHintUi(); }
   const coinSvg = '<img class="ico" src="art/ic_coin.webp" alt="" draggable="false">';
   /* coins you win fly into the main wallet (the top chip, or a floating bank on the game screen) and the counter ticks up as each lands */
   let coinHold = 0, bankT = 0;
@@ -1335,13 +1336,14 @@
     set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : 5)); set('hintBadge', hintsLeft); set('shieldN', items.shield || 0); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
     $('hintBtn').classList.toggle('empty', hintsLeft <= 0); $('wandBtn').classList.toggle('empty', wands <= 0);
     set('sweepBtnBadge', items.sweeper); set('lensBtnBadge', items.lens); $('sweepBtn').classList.toggle('empty', items.sweeper <= 0); $('lensBtn').classList.toggle('empty', items.lens <= 0);
+    set('carBtnBadge', items.car || 0); set('rocketBtnBadge', items.rocket || 0); $('carBtn').classList.toggle('empty', !(items.car > 0)); $('rocketBtn').classList.toggle('empty', !(items.rocket > 0));
   }
   const ITEMS = {
     hint: { name: 'Hint', icon: 'hint', price: 30,
       desc: 'A hint finds a square where an X surely belongs and marks it for you, and tells you why. It places a candy only when that is the last choice left.',
       count: () => hintsLeft, add: (n) => { hintsLeft += n; }, run: () => hint(),
       earn: () => { const t = HINT_EVERY - (cleared % HINT_EVERY); return 'You win 1 free hint for every ' + HINT_EVERY + ' levels you pass (' + t + ' more to go), and in the Daily Bonus.'; } },
-    wand: { name: 'Magic Wand', icon: 'wand', price: 60,
+    wand: { name: 'Magic Wand', icon: 'wand', price: 100,
       desc: 'The wand puts one correct candy on the board for you, with no risk. Use it when you are really stuck.',
       count: () => wands, add: (n) => { wands += n; }, run: () => useWand(),
       earn: () => { const t = WAND_EVERY - (cleared % WAND_EVERY); return 'You win a free wand every ' + WAND_EVERY + ' levels you pass (' + t + ' more to go), in the Daily Bonus, or buy one with coins.'; } }
@@ -1358,6 +1360,12 @@
   ITEMS.lens = { name: 'Magnifier', icon: 'lens', price: 35, count: () => items.lens, add: (n) => { items.lens += n; }, run: () => armLens(),
     desc: 'Tap the magnifier, then tap any square. It tells you the truth: a candy goes there, or it gets an X.',
     earn: () => 'Won in the Daily Bonus, the lucky wheel and boss levels, or buy one with coins.' };
+  ITEMS.car = { name: 'Gummy Car', icon: 'car', price: 120, count: () => items.car || 0, add: (n) => { items.car = (items.car || 0) + n; }, run: () => armVehicle('car'),
+    desc: 'Tap the gummy car, then tap any square: it drives along that whole row and uncovers all of it, the candy too.',
+    earn: () => 'Very rare: won in big chests and boss levels, or buy one with coins.' };
+  ITEMS.rocket = { name: 'Candy Rocket', icon: 'rocket', price: 120, count: () => items.rocket || 0, add: (n) => { items.rocket = (items.rocket || 0) + n; }, run: () => armVehicle('rocket'),
+    desc: 'Tap the candy rocket, then tap any square: it flies up that whole column and uncovers all of it, the candy too.',
+    earn: () => 'Very rare: won in big chests and boss levels, or buy one with coins.' };
   let itemKind = 'hint';
   function openItemInfo(kind) {
     if (!cur || cur.done) return;
@@ -1415,6 +1423,32 @@
     mark.forEach(([yy, xx], k) => { cur.state[yy][xx] = 1; cur.wrongMarks.delete(yy + ',' + xx); setTimeout(() => { const el = cellEl(yy, xx); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted'); }, Math.min(k * 14, 500)); });
     paint(); spotlight(mark, 3000); buzz(18); S.hint(); S.praise(1);
   }
+  function armVehicle(kind) {
+    if (!cur || cur.done || !(items[kind] > 0)) return;
+    cur.vehicleArmed = kind; $('board').classList.add('lens'); toast(kind === 'car' ? '🚗 Tap a square: the car uncovers its whole row' : '🚀 Tap a square: the rocket uncovers its whole column', true);
+  }
+  function useVehicle(kind, y, x) {
+    cur.vehicleArmed = null; $('board').classList.remove('lens'); hideToast();
+    items[kind]--; saveWallet(); updateHintUi(); snapshot();
+    const n = cur.n, line = []; for (let i = 0; i < n; i++) line.push(kind === 'car' ? [y, i] : [n - 1 - i, x]);   // the car drives left to right, the rocket flies from the bottom up
+    const first = cellEl(line[0][0], line[0][1]).getBoundingClientRect(), last = cellEl(line[n - 1][0], line[n - 1][1]).getBoundingClientRect();
+    const v = document.createElement('img'); v.src = 'art/ic_' + kind + '.webp'; v.className = 'vehicle ' + kind; v.alt = ''; v.draggable = false;
+    const cw = cellEl(line[0][0], line[0][1]).offsetWidth || first.width, sz = cw * (kind === 'car' ? 1.5 : 1.7);   // the square's real size, even while the board is still popping in if (kind === 'car') v.style.width = sz + 'px'; else v.style.height = sz + 'px'; fxLayer().appendChild(v);
+    const cx = (r) => r.left + r.width / 2 - sz / 2, cy = (r) => r.top + r.height / 2 - sz / 2, D = 260 + n * 85;
+    const from = kind === 'car' ? [first.left - sz, cy(first)] : [cx(first), first.bottom], to = kind === 'car' ? [last.right, cy(last)] : [cx(last), last.top - sz];
+    v.animate([{ transform: 'translate(' + from[0] + 'px,' + from[1] + 'px)' }, { transform: 'translate(' + to[0] + 'px,' + to[1] + 'px)' }], { duration: D, easing: 'linear', fill: 'forwards' }).onfinish = () => v.remove();
+    S.whoosh(); buzz([15, 20, 15]);
+    let placed = false;
+    line.forEach(([yy, xx], i) => setTimeout(() => {
+      if (!cur || cur.done) return;
+      const s = cur.state[yy][xx], k = yy + ',' + xx;
+      if (cur.bombs) cur.bombs.delete(k);
+      if (isSolution(yy, xx)) { if (s !== 2) { cur.state[yy][xx] = 2; cur.wrongMarks.delete(k); placed = true; const pc = placedCount(); S.candy(cur.regions[yy][xx], pc); placedFx(yy, xx, pc); } }
+      else { if (s !== 1) cur.state[yy][xx] = 1; S.x(); }
+      paint();
+      if (i === n - 1) { spotlight(line, 2500); saveGame(); if (placed && V) V.candy(); if (solved()) win(); }
+    }, (D * (i + 1)) / (n + 1)));
+  }
   function armLens() {
     if (!cur || cur.done || items.lens <= 0) return;
     cur.lensArmed = true; $('board').classList.add('lens'); toast('🔍 Tap a square to peek at the truth', true);
@@ -1443,7 +1477,7 @@
   const PRIZES = [
     { id: 'c10', w: 34, coins: 2 }, { id: 'c25', w: 24, coins: 4 }, { id: 'c50', w: 8, coins: 8, rare: 1 }, { id: 'c100', w: 2, coins: 15, rare: 1 },
     { id: 'h1', w: 9, hints: 1 }, { id: 'i1', w: 5, inf: 15, rare: 1 }, { id: 'w1', w: 2, wands: 1, rare: 1 },
-    { id: 's1', w: 1, shield: 1, rare: 1 }, { id: 'k1', w: 6, sweeper: 1 }, { id: 'l1', w: 6, lens: 1 }, { id: 'd1', w: 3, double: 1, rare: 1 }
+    { id: 's1', w: 1, shield: 1, rare: 1 }, { id: 'k1', w: 6, sweeper: 1 }, { id: 'l1', w: 6, lens: 1 }, { id: 'd1', w: 3, double: 1, rare: 1 }, { id: 'v1', w: 1, car: 1, rare: 1 }, { id: 'v2', w: 1, rocket: 1, rare: 1 }
   ];
   function rollPrize(streak, onlyRare) {
     const list = PRIZES.filter((p) => !onlyRare || p.rare);
@@ -1452,8 +1486,8 @@
     for (let i = 0; i < list.length; i++) { r -= wt[i]; if (r <= 0) return list[i]; }
     return list[0];
   }
-  const PICO = { inf: 'heart', life: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens' };
-  const PNAME = { inf: 'min of unlimited hearts', life: 'life', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier' };
+  const PICO = { inf: 'heart', life: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens', car: 'car', rocket: 'rocket' };
+  const PNAME = { inf: 'min of unlimited hearts', life: 'life', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier', car: 'gummy car', rocket: 'candy rocket' };
   const prizeKeys = (p) => Object.keys(PICO).filter((k) => p[k]);
   function prizeHtml(p) {
     return prizeKeys(p).map((k) => '<span class="pz"><img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + p[k] + 'm' : '+' + p[k]) + '</b></span>').join('');
@@ -1500,7 +1534,7 @@
     // (their amount, bigger on every 7th day in a row) and the order of the cards
     const yd0 = (() => { const y = new Date(); y.setDate(y.getDate() - 1); return y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0'); })();
     const big = ((bonus.last === yd0 ? bonus.streak + 1 : 1) % 7) === 0, coinAmt = () => (big ? 2 : 1) * [2, 3, 4, 5, 6, 8, 10][Math.floor(Math.random() * 7)];
-    const deck = [{ hints: 1 }, { wands: 1 }, Math.random() < 0.15 ? { shield: 1 } : { coins: coinAmt() }, { sweeper: 1 }, { lens: 1 }, { double: 1 }, { life: 1 }, { coins: coinAmt() }, { coins: coinAmt() }];   // the heart shield is rare: it is among the cards on about 1 day in 7
+    const deck = [{ hints: 1 }, Math.random() < 0.15 ? { wands: 1 } : { coins: coinAmt() }, Math.random() < 0.15 ? { shield: 1 } : { coins: coinAmt() }, { sweeper: 1 }, { lens: 1 }, { double: 1 }, { life: 1 }, { coins: coinAmt() }, { coins: coinAmt() }];   // the heart shield is rare: it is among the cards on about 1 day in 7
     for (let i = deck.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [deck[i], deck[r]] = [deck[r], deck[i]]; }
     const backOf = (c, p) => { const bk = c.querySelector('.back'); bk.className = 'back k-' + prizeKeys(p)[0]; bk.innerHTML = bigPrize(p); };
     for (let i = 0; i < 9; i++) {
@@ -1561,7 +1595,7 @@
     $('pfGrid').innerHTML = rows.map((r) => '<div><b>' + r[1] + '</b><small>' + r[0] + '</small></div>').join('')
       + '<div><b>' + coinSvg + ' ' + coins + '</b><small>Coins</small></div>'
       + '<div><b class="pfmed"><i class="lrk top r1">' + medals.g + '</i><i class="lrk top r2">' + medals.s + '</i><i class="lrk top r3">' + medals.b + '</i></b><small>League medals</small></div>'
-      + '<div class="pf-items"><small>My helpers</small><span>' + [['hint', hintsLeft, 'Hints'], ['wand', wands, 'Magic wands'], ['shield', items.shield || 0, 'Heart shields'], ['sweeper', items.sweeper || 0, 'Sweepers'], ['lens', items.lens || 0, 'Magnifiers'], ['double', items.double || 0, 'x2 Points']]
+      + '<div class="pf-items"><small>My helpers</small><span>' + [['hint', hintsLeft, 'Hints'], ['wand', wands, 'Magic wands'], ['shield', items.shield || 0, 'Heart shields'], ['sweeper', items.sweeper || 0, 'Sweepers'], ['lens', items.lens || 0, 'Magnifiers'], ['car', items.car || 0, 'Gummy cars'], ['rocket', items.rocket || 0, 'Candy rockets'], ['double', items.double || 0, 'x2 Points']]
         .map((x) => '<i title="' + x[2] + '"><img src="art/ic_' + x[0] + '.webp" alt="' + x[2] + '" draggable="false"><b>' + x[1] + '</b></i>').join('') + '</span></div>';
     $('profile').hidden = false;
   }
@@ -1574,7 +1608,7 @@
     S.unlock(); S.tap();
     $('shopCoins').textContent = coins; renderPacks();
     const list = $('shopList'); list.innerHTML = '';
-    for (const k of ['hint', 'wand', 'shield', 'double', 'sweeper', 'lens']) {
+    for (const k of ['hint', 'wand', 'shield', 'double', 'sweeper', 'lens', 'car', 'rocket']) {
       const it = ITEMS[k], row = document.createElement('div'); row.className = 'shoprow';
       row.innerHTML = '<img class="pico" src="art/ic_' + it.icon + '.webp" alt="" draggable="false"><span><b>' + it.name + '</b><small>you have ' + it.count() + '</small></span>';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main buy'; b.innerHTML = it.price + ' ' + coinSvg; b.disabled = coins < it.price;
@@ -2023,7 +2057,11 @@
 
   /* ---------- wiring ---------- */
   $('daily').onclick = () => openChal();
-  $('backBtn').onclick = () => { S.ui('back', 1, 1); toMap(); };
+  // the back arrow asks before it leaves a level that is being played: Quit (to the map, the board is kept) or Replay (the same level from the start)
+  $('backBtn').onclick = () => { S.ui('back', 1, 1); if (!cur || cur.done || !cur.state.some((r) => r.some((v) => v))) { toMap(); return; } $('quitAsk').hidden = false; };
+  $('qaQuit').onclick = () => { S.tap(); $('quitAsk').hidden = true; toMap(); };
+  $('qaReplay').onclick = () => { $('quitAsk').hidden = true; S.tap(); restart(); };
+  $('qaStay').onclick = () => { S.tap(); $('quitAsk').hidden = true; };
   $('undoBtn').onclick = undo;
   document.querySelectorAll('.card').forEach((card) => {
     if (card.closest('#age')) return;   // the age question has to be answered: no close button
@@ -2050,7 +2088,7 @@
   $('hintBtn').onclick = () => openItemInfo('hint');
   $('wandBtn').onclick = () => openItemInfo('wand');
   $('sweepBtn').onclick = () => openItemInfo('sweeper');
-  $('lensBtn').onclick = () => openItemInfo('lens');
+  $('lensBtn').onclick = () => openItemInfo('lens'); $('carBtn').onclick = () => openItemInfo('car'); $('rocketBtn').onclick = () => openItemInfo('rocket');
   $('rwOk').onclick = () => { S.tap(); flyReward(curReward); $('reward').hidden = true; setTimeout(nextReward, 220); };
   $('hintUse').onclick = onItemButton;
   $('walletCoins').onclick = openShop;
@@ -2529,7 +2567,7 @@
   let chestForce = null;   // test mode only: the next small chest holds the wand (true) or not (false)
   function chestLoot(tier) {
     const common = () => { let p; do { p = rollPrize(0, false); } while (p.rare); return p; };
-    if (tier === 'small') { const f = chestForce; chestForce = null; return (f !== null ? f : Math.random() < 0.25) ? { wands: 1 } : common(); }   // the small chest can hold a magic wand too (1 in 4)
+    if (tier === 'small') { const f = chestForce; chestForce = null; return (f !== null ? f : Math.random() < 0.08) ? { wands: 1 } : common(); }   // the small chest can hold a magic wand, rarely (about 1 in 12)
     if (tier === 'med') return mergePrize({ coins: 4 }, common());
     return mergePrize(mergePrize({ coins: 8, inf: 15 }, common()), rollPrize(6, true));
   }
@@ -2587,7 +2625,7 @@
         });
       });
       // the other prizes leave their picture in the chest window and fly to their own counters
-      const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' };
+      const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe', car: 'walletMe', rocket: 'walletMe' };
       prizeKeys(p).filter((x) => x !== 'coins').forEach((k, i) => {
         const img = $('chestPrize').querySelector('img[src*="ic_' + PICO[k] + '."]'), a = img && img.getBoundingClientRect(); if (!a || !a.width) return;
         const chip = $(tgt[k] || 'coinN'), tb = chip && chip.getBoundingClientRect(), ok = tb && tb.width > 0;
@@ -2972,7 +3010,7 @@
   function flyItems(r, src) {
     if (!r || !r.p) return;
     const all = prizeKeys(r.p), pz = src ? [...src.querySelectorAll('.pz')] : null;   // src: fly from a card's own prize icons
-    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', life: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
+    const tgt = { hints: 'hintN', wands: 'wandN', inf: 'heartN', life: 'heartN', shield: 'walletMe', sweeper: 'walletMe', lens: 'walletMe', double: 'walletMe', car: 'walletMe', rocket: 'walletMe' }, keys = prizeKeys(r.p).filter((x) => x !== 'coins');
     keys.forEach((k, n) => {
       const from = pz ? pz[all.indexOf(k)] : [...$('rwItems').querySelectorAll('.rw-it')].filter((e) => e.querySelector('img[src*="ic_"]') && !e.querySelector('img[src*="ic_coin"]'))[n], img = from && from.querySelector('img'); if (!img) return;
       const a = img.getBoundingClientRect(); if (!a.width) return;
