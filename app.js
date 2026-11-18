@@ -2457,7 +2457,7 @@
   function mergePrize(a, b) { const o = Object.assign({}, a); Object.keys(b).forEach((k) => { o[k] = (o[k] || 0) + b[k]; }); return o; }
   function chestLoot(tier) {
     const common = () => { let p; do { p = rollPrize(0, false); } while (p.rare); return p; };
-    if (tier === 'small') return common();
+    if (tier === 'small') return Math.random() < 0.25 ? { wands: 1 } : common();   // the small chest can hold a magic wand too (1 in 4)
     if (tier === 'med') return mergePrize({ coins: 4 }, common());
     return mergePrize(mergePrize({ coins: 8, inf: 15 }, common()), rollPrize(6, true));
   }
