@@ -830,7 +830,16 @@
   }
   /* ---------- the card shown before a level ---------- */
   let pendingBoost = null, preSpoken = false;
+  // Web taste: only on the site (bonbox.pages.dev and its previews) or with ?web=1, never inside the Android app.
+  // Levels 1-10 and the Daily Challenge can be played; any later level shows the "get the app" card.
+  const WEB_FREE = 10, PLAY_URL = 'https://play.google.com/store/apps/details?id=com.bonbox.game';
+  const webGate = () => !window.CandokuNative && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+    && (/(^|\.)bonbox\.pages\.dev$/.test(location.hostname) || /[?&]web=1/.test(location.search));
+  function openWebGate() {
+    S.unlock(); S.tap(); closeAll(); $('webGate').hidden = false; buzz([15, 25, 15]);
+  }
   function openPrelevel(lv, after) {
+    if (webGate() && lv > WEB_FREE) { openWebGate(); return; }
     const n = sizeFor(lv), tier = tierOf(lv), best = stars[lv] || 0, resume = !!savedFor({ kind: 'level', level: lv });
     $('plTitle').textContent = 'Level ' + lv;
     const t = $('plTier'), boss = isBossLv(lv); t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'extreme boss' : tier); t.textContent = tierLabel[tier] || '';
@@ -2064,6 +2073,7 @@
     if (leaguePending) { leaguePending = false; openLeague(() => nextLevel()); return; }
     if (bonusPending) { bonusPending = false; startCart(() => nextLevel()); return; }
     $('win').hidden = true;
+    if (webGate() && cur.meta.kind === 'level' && cur.meta.level >= WEB_FREE) { await toMap(); openWebGate(); return; }   // the last free level on the web
     if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL) { await toMap(); maybeEnding(); return; }
     const from = cur.meta.level, to = level; pendingHop = null;
     try {
@@ -2143,7 +2153,7 @@
   const musicAfterSplash = () => { if (!M || !$('intro').hidden) return; const sp = $('splash'); if (sp && sp.isConnected) { setTimeout(musicAfterSplash, 300); return; } M.sync(); };
   document.addEventListener('pointerdown', () => { S.unlock(); musicAfterSplash(); }, { once: true });
   $('sndHome').onclick = toggleMusic; $('sndGame').onclick = toggleMusic;
-  $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(maybeEnding); };
+  $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(() => { if (webGate() && cur && cur.done && cur.meta.kind === 'level' && cur.meta.level >= WEB_FREE && cur.hearts > 0) openWebGate(); else maybeEnding(); }); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
   function reviveNow() {
     cur.done = false; cur.hearts = 1; addLives(1); if (cur.cakeDrop) { setCake(cake.n + 1); cur.cakeDrop = false; } if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
@@ -3542,6 +3552,7 @@
     $('medDaily').onclick = () => openChal();
     $('chalGo').onclick = () => { S.tap(); $('chal').hidden = true; if (!canPlay()) { openLives(); return; } transition(() => startDaily()); };
     $('chalClose').onclick = () => { S.tap(); $('chal').hidden = true; };
+    $('wgPlay').href = PLAY_URL; $('wgClose').onclick = () => { S.tap(); $('webGate').hidden = true; };
     $('medCake').onclick = () => openCakeInfo('cake'); $('medStar').onclick = () => openCakeInfo('star'); $('ciOk').onclick = () => { S.tap(); $('cakeInfo').hidden = true; }; updateCakeMeds();
     $('medClimb').onclick = openClimb;
     $('medWheel').onclick = openWheel; $('medChest').onclick = openChest; $('medGames').onclick = openGames;
