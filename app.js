@@ -763,9 +763,8 @@
       nu.style.opacity = 0;
       setTimeout(() => {   // the new layer lands on top (the lower layers are the same in both pictures, so only the top one seems to arrive)
         nu.style.opacity = '';
-        const land = nu.animate([{ transform: 'translateY(-130px)', opacity: 0 }, { transform: 'translateY(-115px)', opacity: 1, offset: 0.12 }, { transform: 'translateY(0)', opacity: 1, offset: 0.6 }, { transform: 'translateY(-10px)', offset: 0.78 }, { transform: 'none', opacity: 1 }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
-        if (old) land.onfinish = () => { nu.style.clipPath = ''; old.remove(); };
-        if (old) setTimeout(() => old.animate([{ transform: 'none' }, { transform: 'scale(1.04,.95)' }, { transform: 'none' }], { duration: 260 }), 420);   // the cake below gives a little under the weight
+        // the new layer comes straight down and settles; the cake below never changes (no picture swap, no squash), so nothing jumps
+        nu.animate([{ transform: 'translateY(-130px)', opacity: 0 }, { transform: 'translateY(-110px)', opacity: 1, offset: 0.15 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 560, easing: 'cubic-bezier(.33,0,.2,1)', fill: 'forwards' });
         if (S.cakeHit) S.cakeHit(n >= CAKE_MAX);   // riser + deep 808 hit, timed so the hit lands with the layer
         setTimeout(() => { buzz([25, 30, 40]); cakeSparkle(box); }, 380);
       }, 450);
