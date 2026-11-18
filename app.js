@@ -1874,15 +1874,15 @@
 
   /* ---------- opening story ---------- */
   const STORY = [
-    { text: 'In Candy Land, every sweet lived in the great Bonbox, each one in its own perfect spot.', img: 'story1', fx: 'calm' },
+    { text: 'In Bonbox Land, every sweet lived in the great Bonbox, each one in its own perfect spot.', img: 'story1', fx: 'calm' },
     { text: 'But up in the clouds lived Vinegar, the grumpy storm king. He could not stand all that sweetness!', img: 'story2p', fx: 'dark' },
     { text: 'He took a giant breath and... ACHOO! A wild candy storm blew every candy out of the Bonbox!', img: 'story3', fx: 'storm' },
     { text: 'Only Gumi can fix it! Help him put the candies back in the box: one in every color, and no two candies touching!', img: 'story4', fx: 'hero' }
   ];
   const ENDING = [
     { text: 'At the top of the storm, Gumi did not fight. He held out one sweet lollipop and said: try it, just once.', img: 'end1', fx: 'flash' },
-    { text: 'Vinegar took one tiny taste... and his sour face melted into the biggest smile Candy Land had ever seen!', img: 'end2', fx: 'calm' },
-    { text: 'From that day on, Vinegar was the sweetest cloud in Candy Land, and the Bonbox was full again. Thank you for playing!', img: 'end3', fx: 'hero' }
+    { text: 'Vinegar took one tiny taste... and his sour face melted into the biggest smile Bonbox Land had ever seen!', img: 'end2', fx: 'calm' },
+    { text: 'From that day on, Vinegar was the sweetest cloud in Bonbox Land, and the Bonbox was full again. Thank you for playing!', img: 'end3', fx: 'hero' }
   ];
   let PANELS = STORY;
   // what moves on top of each story picture
@@ -2998,7 +2998,7 @@
     const on = stormOn(), free = stormFree(), hp = STORM_GOAL - storm.hits, shown = on || stormClaim() > 0;
     $('stormBoss').src = 'art/boss_' + (!shown ? 'idle' : hp <= 0 ? 'lose' : hp <= 4 ? 'worried' : hp <= 8 ? 'hit' : 'idle') + '.webp';
     $('stormHp').style.width = (shown ? hp / STORM_GOAL * 100 : 100) + '%'; $('stormHpN').textContent = (shown ? hp : STORM_GOAL) + ' / ' + STORM_GOAL;
-    $('stormInfo').textContent = shown && hp <= 0 ? 'You knocked him out! Claim your prizes.' : on ? 'Vinegar is storming Candy Land! Every level you win on the map is one hit. Knock him out before the time ends!'
+    $('stormInfo').textContent = shown && hp <= 0 ? 'You knocked him out! Claim your prizes.' : on ? 'Vinegar is storming Bonbox Land! Every level you win on the map is one hit. Knock him out before the time ends!'
       : free ? 'A 24-hour battle. Press Start, then win levels on the map: every win is one hit on Vinegar!' : 'Vinegar is hiding. He will be back in a few days.';
     const box = $('stormRows'); box.innerHTML = '';
     STORM_PRIZE.forEach((p, i) => {
