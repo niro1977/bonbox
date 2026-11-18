@@ -2207,3 +2207,6 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #reviveCoins.short{filter:grayscale(.7) brightness(.9)!important;opacity:.8}
 /* the cake button has no glass shine over the top, so the top layer and the cherry stay clear */
 #medCake .disc::after{display:none}
+/* every round button on the map gets the white frame (the ready ones keep their yellow glow on top of it) */
+.sides .med .disc{box-shadow:inset 0 -4px 0 rgba(0,0,0,.14),0 0 0 3px #fff,0 0 9px 3px rgba(255,255,255,.8)!important}
+.sides .med.ready .disc{box-shadow:inset 0 -4px 0 rgba(0,0,0,.14),0 0 0 3px #fff,0 0 16px 5px #ffe14d!important}
