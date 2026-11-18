@@ -66,7 +66,7 @@
     pending[name] = fetch('audio/sfx/' + name + '.mp3').then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('missing'))))
       .then((ab) => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej))).then((b) => { bufs[name] = b; }).catch(() => { bufs[name] = null; });
   }
-  function preloadSamples() { ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'fanfare', 'stars'].forEach(loadSample); }
+  function preloadSamples() { ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'fanfare', 'stars', 'cake_layer', 'cake_top'].forEach(loadSample); }
   // plays a recorded sample; returns false (so the caller can use the synth) when it is not loaded yet
   function sample(name, rate, gain, when) {
     const b = bufs[name]; if (!b || !ctx) return false;
@@ -161,6 +161,8 @@
       reverb(); up.forEach((x, k) => bell(hz(x + 24), t + k * 0.06, 0.7, 0.14)); sparkle(t + 0.05, 0.07);
     },
     ui(name) { if (!ready()) return; const m = { open: 'tap', close: 'tap', back: 'tap', flip: 'tap', buy: 'coin', coin: 'coin', heart: 'heart', item: 'item' }[name]; if (m && S[m]) S[m](); },
+    // a cake layer: a short riser while it falls and a deep 808 hit as it lands (the third layer gets a bigger one with a sparkle)
+    cakeHit(top) { if (!ready()) return; if (sample(top ? 'cake_top' : 'cake_layer', 1, 1)) return; S.cakeDrop(); setTimeout(() => S.cakeLand(top), 380); },
     // a cake layer falling: a rising whoosh while it drops
     cakeDrop() {
       if (!ready()) return; const t = ctx.currentTime;
