@@ -97,7 +97,11 @@
     return (lastOf[key] = b.pop());
   };
   // every word is recorded in English (audio/voice/) and Spanish (audio/voice/es/), by both narrators (the female one in f/)
-  const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty', 'mmmsweet', 'sugarrush', 'candylicious', 'sosweet', 'bontastic', 'treattastic', 'whatatreat'];
+  // one 'sweet' word only ("Mmm, sweet!" and "So sweet!" are left out so the word does not repeat)
+  const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty', 'sugarrush', 'candylicious', 'bontastic', 'treattastic', 'whatatreat'];
+  // the words already said on this board: none of them comes back until the next board
+  let boardUsed = new Set();
+  const boardWord = () => { let left = PRAISE.filter((k) => !boardUsed.has(k)); if (!left.length) { boardUsed = new Set(); left = PRAISE.slice(); } const k = left[Math.floor(Math.random() * left.length)]; boardUsed.add(k); return k; };
   const V = {
     available() { return true; },
     isEnabled() { return enabled; },
@@ -113,14 +117,15 @@
       const id = CLIPS[textOrId] ? textOrId : ID_OF[textOrId];
       if (id) playClip(id, CLIPS[id]); else { stop(); speakFallback(textOrId); }
     },
-    praise() { V.say(any('praise', PRAISE)); },
+    praise() { V.say(boardWord()); },
+    newBoard() { boardUsed = new Set(); },
     pick(key, list) { return any(key, list); },
-    first() { V.say(any('praise', PRAISE)); },
+    first() { V.say(boardWord()); },
     // a word for every candy found; a word still being spoken is never cut off (that candy just stays quiet)
     // about 2 times in 10 the word comes from the female narrator (audio/voice/f/, same words, a little faster)
     candy() {
       if (current || (synth && synth.speaking) || !enabled || !S.isOn()) return;
-      const id = any('praise', PRAISE);
+      const id = boardWord();
       if (Math.random() < 0.2) { last = performance.now(); playClip('f/' + id, CLIPS[id]); } else V.say(id, true);
     },
     // three hearts: Perfect. Two hearts: a warm well-done. One heart left: a close call.

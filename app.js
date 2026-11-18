@@ -647,6 +647,7 @@
     const n = board.n;
     cur = { n, regions: board.regions, solution: board.solution, state: [], history: [], hearts: MAX_HEARTS, done: false, hints: 0, label, meta, tier, maybeMode: false, foundPrev: new Set(), wrongMarks: new Set(), penalized: new Set() };
     cur.cmap = candyMapFor(board);
+    if (V && V.newBoard) V.newBoard();   // every board starts with all the narrator's words fresh
     updateHintUi();
     for (let y = 0; y < n; y++) cur.state.push(new Array(n).fill(0)); // 0 empty, 1 X, 2 candy, 3 ?
     $('gTitle').textContent = label; chalStop(); $('chalTimer').hidden = true; leaguePending = false;
@@ -757,7 +758,8 @@
         const land = nu.animate([{ transform: 'translateY(-130px)', opacity: 0 }, { transform: 'translateY(-115px)', opacity: 1, offset: 0.12 }, { transform: 'translateY(0)', opacity: 1, offset: 0.6 }, { transform: 'translateY(-10px)', offset: 0.78 }, { transform: 'none', opacity: 1 }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
         if (old) land.onfinish = () => { nu.style.clipPath = ''; old.remove(); };
         if (old) setTimeout(() => old.animate([{ transform: 'none' }, { transform: 'scale(1.04,.95)' }, { transform: 'none' }], { duration: 260 }), 420);   // the cake below gives a little under the weight
-        setTimeout(() => { S.prize(); buzz([15, 25, 15]); cakeSparkle(box); }, 380);
+        if (S.cakeDrop) S.cakeDrop();
+        setTimeout(() => { if (S.cakeLand) S.cakeLand(n >= CAKE_MAX); else S.prize(); buzz([25, 30, 40]); cakeSparkle(box); }, 380);
       }, 450);
       setTimeout(() => {   // into its button
         const br = box.getBoundingClientRect(), dx = tr.left + tr.width / 2 - (br.left + br.width / 2), dy = tr.top + tr.height / 2 - (br.top + br.height / 2), sc = tr.width / br.width * 0.9;

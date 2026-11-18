@@ -161,6 +161,25 @@
       reverb(); up.forEach((x, k) => bell(hz(x + 24), t + k * 0.06, 0.7, 0.14)); sparkle(t + 0.05, 0.07);
     },
     ui(name) { if (!ready()) return; const m = { open: 'tap', close: 'tap', back: 'tap', flip: 'tap', buy: 'coin', coin: 'coin', heart: 'heart', item: 'item' }[name]; if (m && S[m]) S[m](); },
+    // a cake layer falling: a rising whoosh while it drops
+    cakeDrop() {
+      if (!ready()) return; const t = ctx.currentTime;
+      const n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      n.buffer = noiseBuf; f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(600, t); f.frequency.exponentialRampToValueAtTime(3500, t + 0.32);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+      n.connect(f); f.connect(g); g.connect(master); n.start(t); n.stop(t + 0.42);
+      osc('sine', 880, t, 0.34, 0.12, 1760);
+    },
+    // a cake layer landing: a soft heavy thump, then a bright magical run of bells and a shimmer (top layer = a bigger finish)
+    cakeLand(top) {
+      if (!ready()) return; const t = ctx.currentTime; reverb();
+      osc('sine', 130, t, 0.35, 0.7, 48); noise(t, 0.08, 0.3, 900, 0.8);
+      const run = top ? [0, 4, 7, 12, 16, 19, 24, 28] : [0, 4, 7, 12, 16, 19];
+      run.forEach((st, i) => { bell(hz(12 + st), t + 0.08 + i * 0.07, 0.9, 0.16, 0.35); pluck(hz(24 + st), t + 0.08 + i * 0.07, 0.25, 0.07); });
+      const end = t + 0.08 + run.length * 0.07;
+      [0, 4, 7].forEach((st) => bell(hz((top ? 24 : 19) + st), end, 1.6, 0.13, 0.5));
+      for (let k = 0; k < 6; k++) noise(end + k * 0.05, 0.12, 0.06, 7000 + k * 600, 3);
+    },
     // the cake's candy bomb going off: a deep thump, a rumble that closes down, and a short crackle on top
     boom() {
       if (!ready()) return; const t = ctx.currentTime;
