@@ -1552,11 +1552,12 @@
     if (!chal) { score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
       store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true; leagueBump(score.points); }
     const firstWin = !!(cur.meta && cur.meta.kind === 'level') && store.get('fwin', '') !== today(); if (firstWin) store.set('fwin', today());
-    const earnedCoins = (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // coins are scarce: 1 per win, 2 without losing a heart
+    const earnedCoins = chal ? 0 : (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // the Daily Challenge pays no coins either   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
-    setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
+    if (earnedCoins) setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
     $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins' + (firstWin ? '<small class="fwin">☀️ First win today ×2</small>' : '');
+    if (!earnedCoins) $('winCoins').hidden = true;
     $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
     $('winGain').hidden = chal;   // no points line for the Daily Challenge
     if (m.kind === 'level') {
