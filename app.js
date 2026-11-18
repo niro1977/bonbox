@@ -655,7 +655,7 @@
     const bd = $('board'); bd.className = 'board ' + (tier === 'normal' ? '' : tier);
     $('game').classList.toggle('hardtier', tier !== 'normal');   // Hard / Very Hard / Extreme levels keep their own layout
     bd.style.setProperty('--n', n);
-    bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9); $('game').classList.toggle('full', n >= 10); document.body.classList.toggle('full10', n >= 10);
+    bd.classList.toggle('n8', n === 8); bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9); $('game').classList.toggle('full', n >= 10); document.body.classList.toggle('full10', n >= 10);
     $('maybeBtn').setAttribute('aria-pressed', 'false');
     $('lose').hidden = true; $('win').hidden = true; hideToast();
     buildBoard(); drawHearts(); drawFound();
