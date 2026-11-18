@@ -4,7 +4,7 @@
   const E = window.CandokuEngine, H = window.CandokuHints, S = window.CandokuSound;
   const SEEDS = window.CandokuSeeds || { hard: {}, veryhard: {} };
   // vivid tiles, one per color region
-  const COLORS = ['#22b8ff', '#7ee21f', '#ffd400', '#ff52c8', '#a45cff', '#00dcb0', '#ff8a00', '#ff3d3d', '#3a5cff', '#c98240'];
+  const COLORS = ['#00a6ff', '#4ff000', '#ffdc00', '#ff2db8', '#9a3cff', '#00e6b5', '#ff7800', '#ff1f45', '#2b50ff', '#d8862a'];   // vivid board colours
   const NAMES = ['Lollipop', 'Wrapped Candy', 'Chocolate Bar', 'Glazed Donut', 'Cupcake', 'Choc Chip Cookie', 'Cherries', 'Soft Serve', 'Shortcake', 'Candy Dango'];
   const starSvg = (on) => '<img class="star ' + (on ? '' : 'off') + '" src="art/star_' + (on ? 'gold' : 'grey') + '.webp" alt="" draggable="false">';
   const MAX_HEARTS = 3;
