@@ -2455,9 +2455,10 @@
   const chestLeft = () => (chest.q ? Math.max(0, chest.q.ready - Date.now()) : 0);
   const speedCost = () => Math.max(3, Math.ceil(chestLeft() / 60000 / 5));
   function mergePrize(a, b) { const o = Object.assign({}, a); Object.keys(b).forEach((k) => { o[k] = (o[k] || 0) + b[k]; }); return o; }
+  let chestForce = null;   // test mode only: the next small chest holds the wand (true) or not (false)
   function chestLoot(tier) {
     const common = () => { let p; do { p = rollPrize(0, false); } while (p.rare); return p; };
-    if (tier === 'small') return Math.random() < 0.25 ? { wands: 1 } : common();   // the small chest can hold a magic wand too (1 in 4)
+    if (tier === 'small') { const f = chestForce; chestForce = null; return (f !== null ? f : Math.random() < 0.25) ? { wands: 1 } : common(); }   // the small chest can hold a magic wand too (1 in 4)
     if (tier === 'med') return mergePrize({ coins: 4 }, common());
     return mergePrize(mergePrize({ coins: 8, inf: 15 }, common()), rollPrize(6, true));
   }
@@ -2572,7 +2573,8 @@
   if (location.search.includes('dbg') && location.search.includes('demo=chest')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
     const keep = chest.q || null; let k = 0;
-    const next = () => { chest.q = { tier: ['large', 'med', 'small'][k++ % 3], ready: Date.now() }; openChest(); setTimeout(() => { openChestNow(); chest.q = keep; }, 1300); setTimeout(next, 8200); };
+    const small = location.search.includes('demo=chestsmall');   // ?demo=chestsmall: only the small chest, every other one with the wand
+    const next = () => { if (small) chestForce = k % 2 === 0; chest.q = { tier: small ? 'small' : ['large', 'med', 'small'][k % 3], ready: Date.now() }; k++; openChest(); setTimeout(() => { openChestNow(); chest.q = keep; }, 1300); setTimeout(next, 8200); };
     next();
   }, 1800);
   // a spray of little stars from the chest at the moment it opens

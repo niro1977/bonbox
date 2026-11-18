@@ -2183,3 +2183,4 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* the cake button has its own candy-pink inside (the ring stays like every other button) */
 #medCake .disc{background:radial-gradient(circle at 35% 28%,#ffffff,#ffe1f1 45%,#ffb3d9 75%,#f58cc4)!important}
 .cakecard .ci-from{align-self:center;padding:3px 14px;border-radius:999px;background:linear-gradient(90deg,#ff4f9a,#a35cff);color:#fff;font-weight:900}
+#medCake .tag{max-width:none!important;overflow:visible!important;padding-left:7px!important;padding-right:7px!important;text-align:center}
