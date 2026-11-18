@@ -1316,7 +1316,7 @@
       count: () => wands, add: (n) => { wands += n; }, run: () => useWand(),
       earn: () => { const t = WAND_EVERY - (cleared % WAND_EVERY); return 'You win a free wand every ' + WAND_EVERY + ' levels you pass (' + t + ' more to go), in the Daily Bonus, or buy one with coins.'; } }
   };
-  ITEMS.shield = { name: 'Heart Shield', icon: 'shield', price: 45, count: () => items.shield, add: (n) => { items.shield += n; },
+  ITEMS.shield = { name: 'Heart Shield', icon: 'shield', price: 90, count: () => items.shield, add: (n) => { items.shield += n; },
     desc: 'Pick it before a level starts. The first mistake of that level will not cost you a heart.', run: () => toast('Pick the shield on the screen before a level starts.'),
     earn: () => 'Won in the Daily Bonus, the lucky wheel, chests and boss levels, or buy one with coins.' };
   ITEMS.double = { name: 'Double Points', icon: 'double', price: 50, count: () => items.double, add: (n) => { items.double += n; },
@@ -1413,7 +1413,7 @@
   const PRIZES = [
     { id: 'c10', w: 34, coins: 2 }, { id: 'c25', w: 24, coins: 4 }, { id: 'c50', w: 8, coins: 8, rare: 1 }, { id: 'c100', w: 2, coins: 15, rare: 1 },
     { id: 'h1', w: 9, hints: 1 }, { id: 'i1', w: 5, inf: 15, rare: 1 }, { id: 'w1', w: 2, wands: 1, rare: 1 },
-    { id: 's1', w: 6, shield: 1 }, { id: 'k1', w: 6, sweeper: 1 }, { id: 'l1', w: 6, lens: 1 }, { id: 'd1', w: 3, double: 1, rare: 1 }
+    { id: 's1', w: 1, shield: 1, rare: 1 }, { id: 'k1', w: 6, sweeper: 1 }, { id: 'l1', w: 6, lens: 1 }, { id: 'd1', w: 3, double: 1, rare: 1 }
   ];
   function rollPrize(streak, onlyRare) {
     const list = PRIZES.filter((p) => !onlyRare || p.rare);
@@ -1470,7 +1470,7 @@
     // (their amount, bigger on every 7th day in a row) and the order of the cards
     const yd0 = (() => { const y = new Date(); y.setDate(y.getDate() - 1); return y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0'); })();
     const big = ((bonus.last === yd0 ? bonus.streak + 1 : 1) % 7) === 0, coinAmt = () => (big ? 2 : 1) * [2, 3, 4, 5, 6, 8, 10][Math.floor(Math.random() * 7)];
-    const deck = [{ hints: 1 }, { wands: 1 }, { shield: 1 }, { sweeper: 1 }, { lens: 1 }, { double: 1 }, { life: 1 }, { coins: coinAmt() }, { coins: coinAmt() }];
+    const deck = [{ hints: 1 }, { wands: 1 }, Math.random() < 0.15 ? { shield: 1 } : { coins: coinAmt() }, { sweeper: 1 }, { lens: 1 }, { double: 1 }, { life: 1 }, { coins: coinAmt() }, { coins: coinAmt() }];   // the heart shield is rare: it is among the cards on about 1 day in 7
     for (let i = deck.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [deck[i], deck[r]] = [deck[r], deck[i]]; }
     const backOf = (c, p) => { const bk = c.querySelector('.back'); bk.className = 'back k-' + prizeKeys(p)[0]; bk.innerHTML = bigPrize(p); };
     for (let i = 0; i < 9; i++) {
@@ -2646,7 +2646,7 @@
     coins -= c; saveWallet(); updateHintUi(); chest.q.ready = Date.now() - 1; store.set('chest', chest); S.ui('buy', 1, 1); renderChest(); updateSides();
   }
   /* lucky wheel */
-  const WSEG = [{ c: 2 }, { h: 1 }, { s: 1 }, { k: 1 }, { w: 1 }, { l: 1 }, { d: 1 }, { c: 8 }], WW = [46, 9, 8, 8, 2, 8, 3, 16], WCOL = ['#ff5fa8', '#ffb347', '#7be37a', '#45d0ff', '#b07bff', '#ffe14d', '#ff7a5c', '#5fd8ff'];
+  const WSEG = [{ c: 2 }, { h: 1 }, { s: 1 }, { k: 1 }, { w: 1 }, { l: 1 }, { d: 1 }, { c: 8 }], WW = [52, 9, 2, 8, 2, 8, 3, 16], WCOL = ['#ff5fa8', '#ffb347', '#7be37a', '#45d0ff', '#b07bff', '#ffe14d', '#ff7a5c', '#5fd8ff'];
   let wheelRot = 0, spinning = false;
   function buildWheel() {
     const ICON = (g) => (g.c ? 'ic_coin' : g.h ? 'ic_hint' : g.w ? 'ic_wand' : g.s ? 'ic_shield' : g.k ? 'ic_sweeper' : g.l ? 'ic_lens' : 'ic_double');
@@ -2726,7 +2726,7 @@
   }
 
   /* ---------- Candy Pass: a vertical track of prizes; every level won without losing a heart climbs one step ---------- */
-  const PASS = [{ coins: 2 }, { coins: 3 }, { hints: 1 }, { coins: 4 }, { shield: 1 }, { coins: 5, sweeper: 1 }, { inf: 15 }, { coins: 6 }, { lens: 1 }, { coins: 15, wands: 1 }];
+  const PASS = [{ coins: 2 }, { coins: 3 }, { hints: 1 }, { coins: 4 }, { coins: 5 }, { coins: 5, sweeper: 1 }, { inf: 15 }, { coins: 6 }, { lens: 1 }, { coins: 15, wands: 1 }];
   let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
   function passAdvance() {
     if (pass.step >= PASS.length) return;
