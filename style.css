@@ -2241,3 +2241,5 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .wgcard .wg-big{font:900 20px/1.2 var(--display);color:#c2185b;margin:4px 0}
 .wgcard .wg-play{display:flex;align-items:center;justify-content:center;text-decoration:none;background:url(art/btn_green.webp) center/100% 100% no-repeat!important;color:#fff}
 .cake-flash{position:absolute;left:-30%;top:-15%;width:160%;height:130%;border-radius:50%;pointer-events:none;opacity:0;z-index:3;background:radial-gradient(circle,#fff 0,rgba(255,255,255,.95) 28%,rgba(255,240,170,.6) 48%,rgba(255,200,240,0) 70%)}
+/* the Continue buttons: the word as big as on Next level (it looked small on its big green button) */
+#leagueGo,#lgrGo,#ageGo{font-size:24px!important}

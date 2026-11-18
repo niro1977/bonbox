@@ -818,7 +818,7 @@
     if (el) { const f = document.createElement('i'); f.className = 'bomb-blast'; el.appendChild(f); setTimeout(() => f.remove(), 700); burstAt(el, true); }
     if (bd && bd.animate) bd.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-4px,2px)' }, { transform: 'translate(4px,-2px)' }, { transform: 'translate(-2px,1px)' }, { transform: 'translate(0,0)' }], { duration: 300 });
     if (S.boom) S.boom(); else S.whoosh(); buzz([30, 20, 50]);
-    if (placed) { const pc = placedCount(); S.candy(cur.regions[y][x], pc); if (V) V.candy(); }
+    if (placed) { const pc = placedCount(); S.candy(cur.regions[y][x], pc); sayCandyWord(); }
     saveGame();
     if (solved()) win();
   }
@@ -1200,11 +1200,13 @@
     const g = $('hearts'), t = g && g.parentElement; if (!t) return;
     t.classList.remove('react-happy', 'react-sad'); void t.offsetWidth; t.classList.add(kind === 'sad' ? 'react-sad' : 'react-happy');
   }
+  // the word on the board is always the word the narrator says
+  function sayCandyWord() { const w = V && V.candy ? V.candy() : null; if (w && !(cur && cur.done)) praiseWord(w.replace(/^¡/, '¡')); }
   function placedFx(y, x, pc) {
     const el = cellEl(y, x), last = pc === cur.n;
     burstAt(el, last); S.place(pc); bearReact('happy');
     if (last) S.praise(2);   // the word Perfect! appears later, at the moment the narrator says it
-    else if (pc === 1 || pc % 2 === 0) { praiseWord(PRAISE[praiseN++ % PRAISE.length]); S.praise(Math.floor(pc / 3)); }
+    else if (pc === 1 || pc % 2 === 0) S.praise(Math.floor(pc / 3));   // the word itself is shown with the narrator's word (see sayCandyWord)
   }
   function tap(y, x, maybe, candy) {
     if (cur.done) return;
@@ -1237,7 +1239,7 @@
     cur.state[y][x] = ns;
     if (ns === 2) {
       buzz(14); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc);
-      if (V) V.candy();   // the narrator says a word for every candy found
+      sayCandyWord();   // the narrator says a word for every candy found, and the same word shows on the board
     }
     else if (ns === 1) { buzz(5); S.x(); }
     else S.tap();
@@ -1494,7 +1496,7 @@
       if (isSolution(yy, xx)) { if (s !== 2) { cur.state[yy][xx] = 2; cur.wrongMarks.delete(k); placed = true; const pc = placedCount(); S.candy(cur.regions[yy][xx], pc); placedFx(yy, xx, pc); } }
       else { if (s !== 1) cur.state[yy][xx] = 1; S.x(); }
       paint();
-      if (i === n - 1) { spotlight(line, 2500); saveGame(); if (placed && V) V.candy(); if (solved()) win(); }
+      if (i === n - 1) { spotlight(line, 2500); saveGame(); if (placed) sayCandyWord(); if (solved()) win(); }
     }, D * (kind === 'car' ? (i + 1.2) / (n + 2.1) : (i + 1) / (n + 2.2))));
   }
   function armLens() {

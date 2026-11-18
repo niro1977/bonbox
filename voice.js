@@ -99,6 +99,8 @@
   // every word is recorded in English (audio/voice/) and Spanish (audio/voice/es/), by both narrators (the female one in f/)
   // one 'sweet' word only ("Mmm, sweet!" and "So sweet!" are left out so the word does not repeat)
   const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty', 'sugarrush', 'candylicious', 'bontastic', 'treattastic', 'whatatreat'];
+  // what the Spanish recordings of these words say (shown on the board in Spanish)
+  const ES_WORD = { first: '¡Dulce!', yummy: '¡Rico!', tasty: '¡Sabroso!', nice: '¡Bien hecho!', delicious: '¡Delicioso!', verytasty: '¡Muy sabroso!', sugarrush: '¡Subidón de azúcar!', candylicious: '¡Caramelicioso!', bontastic: '¡Fantástico!', treattastic: '¡Riquísimo!', whatatreat: '¡Qué golosina!' };
   // the words already said on this board: none of them comes back until the next board
   let boardUsed = new Set();
   const boardWord = () => { let left = PRAISE.filter((k) => !boardUsed.has(k)); if (!left.length) { boardUsed = new Set(); left = PRAISE.slice(); } const k = left[Math.floor(Math.random() * left.length)]; boardUsed.add(k); return k; };
@@ -123,10 +125,13 @@
     first() { V.say(boardWord()); },
     // a word for every candy found; a word still being spoken is never cut off (that candy just stays quiet)
     // about 2 times in 10 the word comes from the female narrator (audio/voice/f/, same words, a little faster)
+    // returns the word it says, so the game shows exactly that word on the board (null while a word is still being said)
     candy() {
-      if (current || (synth && synth.speaking) || !enabled || !S.isOn()) return;
-      const id = boardWord();
+      if (current || (synth && synth.speaking)) return null;
+      const id = boardWord(), word = ES ? (ES_WORD[id] || CLIPS[id]) : CLIPS[id];
+      if (!enabled || !S.isOn()) return word;
       if (Math.random() < 0.2) { last = performance.now(); playClip('f/' + id, CLIPS[id]); } else V.say(id, true);
+      return word;
     },
     // three hearts: Perfect. Two hearts: a warm well-done. One heart left: a close call.
     win(hearts) { V.say(hearts >= 3 ? 'perfectword' : hearts === 2 ? any('two', ['two1', 'two2', 'two3', 'two4']) : any('one', ['close', 'one1', 'one2', 'one3', 'one4']), true); },   // a finished level is always "Perfect!"
