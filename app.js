@@ -634,6 +634,7 @@
     const t = $('tier');
     t.hidden = tier === 'normal'; t.className = 'tier ' + tier; t.textContent = tierLabel[tier] || '';
     const bd = $('board'); bd.className = 'board ' + (tier === 'normal' ? '' : tier);
+    $('game').classList.toggle('hardtier', tier !== 'normal');   // Hard / Very Hard / Extreme levels keep their own layout
     bd.style.setProperty('--n', n);
     bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9); $('game').classList.toggle('full', n >= 10); document.body.classList.toggle('full10', n >= 10);
     $('maybeBtn').setAttribute('aria-pressed', 'false');
@@ -1033,7 +1034,19 @@
   }
   function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard(nervous() ? 'worried' : 'idle', 'Vinegar blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => { if (isBoss() && !cur.done) V.say('boss1', true); }, 3400); /* after "Extremely hard level!" has finished */ setTimeout(() => { if (isBoss() && !cur.done) bossSay('start'); }, 2800); }
   function bossMiss() { bossFace('laugh', 1400); bossSay('miss'); const b = $('board'); b.classList.remove('zap'); void b.offsetWidth; b.classList.add('zap'); setTimeout(() => b.classList.remove('zap'), 600); }
-  function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'), big = isBoss(); h.classList.remove('hit', 'laugh'); $('bossImg').src = foeImg('lose'); $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; bossSay('lose'); h.classList.add('defeat'); if (big) { bossCard('lose', 'Vinegar is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); } }
+  // beaten: for about 2 s Vinegar is furious and puffs steam out of his head, then he gives up (his "lose" face)
+  function foeFume(h) {
+    const img = $('bossImg'); img.src = foeImg('hit'); h.classList.add('fume');
+    const L = fxLayer(), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (let k = 0; !reduce && k < 12; k++) setTimeout(() => {
+      const r = img.getBoundingClientRect(); if (!r.width) return;
+      const side = k % 2 ? 1 : -1, p = document.createElement('i'); p.className = 'fume-puff';
+      p.style.left = (r.left + r.width / 2 + side * r.width * (0.26 + Math.random() * 0.12)) + 'px'; p.style.top = (r.top + r.height * (0.22 + Math.random() * 0.1)) + 'px';
+      p.style.setProperty('--dx', side * (8 + Math.random() * 14) + 'px'); L.appendChild(p); setTimeout(() => p.remove(), 1000);
+    }, k * 150);
+    setTimeout(() => { h.classList.remove('fume'); img.src = foeImg('lose'); }, 2000);
+  }
+  function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'), big = isBoss(); h.classList.remove('hit', 'laugh'); foeFume(h); $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; bossSay('lose'); h.classList.add('defeat'); if (big) { bossCard('lose', 'Vinegar is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); } }
 
   /* on some ordinary levels the Baron peeks in and blows a little fog over a few empty squares. It only hides them for a moment: nothing on the board changes. */
   let mischiefT = null, fogT = null;
@@ -1050,7 +1063,7 @@
     }
     const p = document.createElement('div'); p.className = 'boss-peek'; p.innerHTML = '<img src="art/boss_laugh.webp" alt="" draggable="false"><b>' + ['Hehe! A little fog for you!', 'Can you see now? Hehe!', 'Boo! Miss me?'][Math.floor(Math.random() * 3)] + '</b>'; wrap.appendChild(p);
     S.whoosh(); buzz([15, 30, 15]);
-    setTimeout(() => p.remove(), 3200); fogT = setTimeout(clearFog, 8000);
+    setTimeout(() => p.remove(), 3200); fogT = setTimeout(clearFog, 3400);   // the fog lasts about 3 s and melts away
   }
   let blowT = null;
   function foeBlow() {
@@ -1123,7 +1136,7 @@
   function placedFx(y, x, pc) {
     const el = cellEl(y, x), last = pc === cur.n;
     burstAt(el, last); S.place(pc); bearReact('happy');
-    if (last) { praiseWord('Perfect!', true); S.praise(2); }
+    if (last) S.praise(2);   // the word Perfect! appears later, at the moment the narrator says it
     else if (pc === 1 || pc % 2 === 0) { praiseWord(PRAISE[praiseN++ % PRAISE.length]); S.praise(Math.floor(pc / 3)); }
   }
   function tap(y, x, maybe, candy) {
@@ -1539,9 +1552,10 @@
     // a Hard / Extremely Hard win has ONE tune: the fanfare when the stars have landed (the opening jingle is left out, so the two never overlap)
     const hardWin = !!(cur.meta && cur.meta.kind === 'level' && tierOf(cur.meta.level) !== 'normal');
     cur.done = true; saveGame(); buzz([30, 40, 60]); if (!hardWin) S.win(); hideToast(); chalStop(); store.set('chal', { date: '', left: 0 });
-    if (foeKind()) bossDefeat();
+    const fumed = !!foeKind(); if (fumed) bossDefeat();
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
-    if (V && !isBoss()) setTimeout(() => V.win(cur.hearts), 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
+    // the narrator's win line; when it is "Perfect!" (no heart lost) the word shows on the screen at that same moment, not before
+    if (!isBoss()) setTimeout(() => { if (V) V.win(cur.hearts); if (cur.hearts >= MAX_HEARTS) praiseWord('Perfect!', true); }, 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
     const m = cur.meta, earned = Math.max(1, cur.hearts);
     let reward = false, wandReward = false;
     freshScore();
@@ -1555,7 +1569,7 @@
     const earnedCoins = chal ? 0 : (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // the Daily Challenge pays no coins either   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
-    if (earnedCoins) setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
+    if (earnedCoins) setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), fumed ? 3250 : 1400);
     $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins' + (firstWin ? '<small class="fwin">☀️ First win today ×2</small>' : '');
     if (!earnedCoins) $('winCoins').hidden = true;
     $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
@@ -1628,7 +1642,7 @@
           if (k === 2 && (earned === 3 || hardWin)) setTimeout(() => S.fanfare(), 160);
         }, t0 + 420);
       });
-    }, 450);
+    }, fumed ? 2300 : 450);   // after a fight Vinegar fumes for 2 s before the win card covers him
   }
 
   /* ---------- win celebration: the bear moves like a character, not a loop. Each cycle is a little different:
@@ -2082,7 +2096,7 @@
   const HAND3D = '<svg viewBox="0 0 64 64"><defs><linearGradient id="thg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#ffe9d6"/><stop offset="1" stop-color="#f7c9a6"/></linearGradient></defs><path d="M14 12c0-3 2-5 4.5-5S23 9 23 12v14l15 3.5c4 1 6.5 4.3 6.5 8.3V48c0 5-4 9-9 9H27c-3 0-5.8-1.5-7.5-4L10 39c-1.6-2.4-.8-5.4 1.6-6.8 1-.6 1.8-.7 2.4-.5z" fill="url(#thg)" stroke="#4a1f12" stroke-width="2.6" stroke-linejoin="round"/><path d="M16.5 11.5c.3-1.6 1.2-2.4 2.2-2.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".9"/></svg>';
   const TUT = [
     { t: 'Tap and double tap', d: 'Tap once for an X (no candy here). Double tap to place a candy!', h: () => '<div class="tsolo">' + tutBoard({}) + '<span class="thand" id="tHand">' + HAND3D + '</span></div>', run: tutHand },
-    { t: 'Drag for many X', d: 'Hold and drag your finger to mark a whole line of X in one move.', h: () => '<div class="tsolo">' + tutBoard({ candies: [[0, 1]], ids: [0] }) + '<span class="thand" id="tHand">' + HAND3D + '</span></div>', run: tutDrag },
+    { t: 'Drag for many X', d: 'Hold and drag your finger to mark a whole line of Xs in one move.', h: () => '<div class="tsolo">' + tutBoard({ candies: [[0, 1]], ids: [0] }) + '<span class="thand" id="tHand">' + HAND3D + '</span></div>', run: tutDrag },
     { t: 'Rows and columns', d: 'Two candies can never share a row or a column.', h: () => pair({ candies: TSOL, hi: rowOf(0).concat(colOf(1)) }, { candies: [[0, 0], [0, 3]], red: rowOf(0), ids: [0, 2] }) },
     { t: 'One per colour', d: 'Each colour area holds exactly one candy.', h: () => pair({ candies: TSOL, hi: regOf(2) }, { candies: [[1, 1], [3, 0]], red: regOf(2), ids: [3, 6] }) },
     { t: 'No touching!', d: 'Not side by side, and not even corner to corner.', h: () => pair({ candies: TSOL }, { candies: [[1, 1], [2, 2]], red: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2], [1, 1]], ids: [0, 3] }) },

@@ -1500,8 +1500,8 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 .bosshud.minion .hp u{background:linear-gradient(180deg,#bfe9ff,#58a8ff)}
 /* fog and the peeking Baron */
 .boardwrap{position:relative}
-.bfog{position:absolute;z-index:4;pointer-events:none;border-radius:40%;background:radial-gradient(circle at 35% 35%,#fff,#d9d0f2 45%,rgba(150,130,210,.85) 75%,rgba(120,100,190,0) 100%);filter:blur(1.5px);transform:scale(1.25);animation:fogIn 8s ease both}
-@keyframes fogIn{0%{opacity:0;transform:scale(.3)}7%{opacity:.97;transform:scale(1.35)}12%{transform:scale(1.22)}80%{opacity:.95;transform:scale(1.25)}100%{opacity:0;transform:scale(1.5)}}
+.bfog{position:absolute;z-index:4;pointer-events:none;border-radius:40%;background:radial-gradient(circle at 35% 35%,#fff,#d9d0f2 45%,rgba(150,130,210,.85) 75%,rgba(120,100,190,0) 100%);filter:blur(1.5px);transform:scale(1.25);animation:fogIn 2.9s cubic-bezier(.3,.7,.4,1) both}
+@keyframes fogIn{0%{opacity:0;transform:scale(.3);filter:blur(1.5px)}12%{opacity:.97;transform:scale(1.35);filter:blur(1.5px)}20%{transform:scale(1.22)}45%{opacity:.95;transform:scale(1.25);filter:blur(1.5px)}75%{opacity:.5;transform:scale(1.5) translateY(-4px);filter:blur(4px)}100%{opacity:0;transform:scale(1.85) translateY(-10px);filter:blur(8px)}}
 .boss-peek{position:absolute;right:-6px;top:-34px;z-index:7;pointer-events:none;display:flex;align-items:center;gap:4px;flex-direction:row-reverse;animation:peek 3.2s cubic-bezier(.23,1,.32,1) both}
 .boss-peek img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 4px 4px rgba(20,0,60,.5))}
 .boss-peek b{max-width:170px;padding:6px 12px;border-radius:14px 14px 4px 14px;background:#fff;color:#3a1466;font:900 13px/1.15 Nunito,system-ui,sans-serif;box-shadow:0 3px 0 rgba(40,0,90,.35),0 0 0 2px #7a4ad0}
@@ -1536,7 +1536,7 @@ body.in-game .toast.gtoast{max-width:min(360px,calc(100vw - 24px))}
 
 /* the puff of smoke that wipes an X */
 .bfog.smoke{background:radial-gradient(circle at 40% 40%,#f4f0ff,#a99cc9 50%,rgba(70,55,110,.9) 78%,rgba(60,45,100,0) 100%);animation:smokeIn 2.6s ease both}
-@keyframes smokeIn{0%{opacity:0;transform:scale(.2)}18%{opacity:1;transform:scale(1.45)}60%{opacity:.9;transform:scale(1.3) translateY(-4px)}100%{opacity:0;transform:scale(1.9) translateY(-16px)}}
+@keyframes smokeIn{0%{opacity:0;transform:scale(.2);filter:blur(1.5px)}18%{opacity:1;transform:scale(1.45);filter:blur(1.5px)}55%{opacity:.85;transform:scale(1.3) translateY(-4px);filter:blur(2.5px)}100%{opacity:0;transform:scale(2) translateY(-18px);filter:blur(8px)}}
 
 /* story, the sneeze: the picture slowly swells while he breathes in, and everything breaks loose on the narrator's ACHOO */
 .st-storm:not(.go) .st-gust,.st-storm:not(.go) .st-wind,.st-storm:not(.go) .st-achoo,.st-storm:not(.go) .st-flash{display:none}
@@ -2176,8 +2176,8 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* Gumi's Cake button: the full three-layer cake is always there; the layers not won yet are grey, the won ones in colour */
 #medCake .cakeico{position:relative;width:33px;height:44px;margin-top:-3px;display:block}
 #medCake .cakeico img{position:absolute;left:0;bottom:0;width:100%!important;height:auto!important;object-fit:contain}
-#medCake .cakeico .cghost{filter:grayscale(1) brightness(.95) contrast(1.1) opacity(.75)}
-#medCake .cakeico .cfill{filter:drop-shadow(0 1px 1px rgba(0,0,0,.25))}
+#medCake .cakeico .cghost{filter:grayscale(.85) brightness(1.08) contrast(1.15) opacity(.85)}
+#medCake .cakeico .cfill{filter:saturate(1.35) contrast(1.08) brightness(1.05) drop-shadow(0 1px 1px rgba(0,0,0,.3))}
 #medCake.locked .cakeico .cghost{filter:grayscale(1) brightness(.9) opacity(.6)}
 #medCake .disc{position:relative}
 /* the cake button has its own candy-pink inside (the ring stays like every other button) */
@@ -2186,3 +2186,17 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #medCake .tag{max-width:none!important;overflow:visible!important;padding-left:7px!important;padding-right:7px!important;text-align:center}
 /* every Continue button is green */
 #leagueGo,#lgrGo:not(.claim),#ageGo{background:url(art/btn_green.webp) center/100% 100% no-repeat!important;filter:drop-shadow(0 5px 3px rgba(0,40,0,.5))!important}
+/* a little shine on the cake button: a soft gloss and a twinkle */
+#medCake .cakeico::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.55) 45%,rgba(255,255,255,0) 60%);mix-blend-mode:soft-light;-webkit-mask:url(art/cake_stage_3.webp) center bottom/100% auto no-repeat;mask:url(art/cake_stage_3.webp) center bottom/100% auto no-repeat}
+#medCake .disc::before{content:"º6";position:absolute;right:7px;top:5px;z-index:3;font-size:11px;line-height:1;color:#fff;text-shadow:0 0 4px #fff,0 0 8px #ffd84a;animation:cakeTwinkle 2.4s ease-in-out infinite;pointer-events:none}
+#medCake.locked .disc::before{display:none}
+@keyframes cakeTwinkle{0%,100%{opacity:.15;transform:scale(.6)}50%{opacity:1;transform:scale(1.15)}}
+@media (prefers-reduced-motion:reduce){#medCake .disc::before{animation:none;opacity:.8}}
+/* Vinegar fuming after a lost fight: a red-hot face, a shake, and steam puffs rising from his head */
+.bosshud.fume>img{animation:fumeShake .16s linear infinite;filter:drop-shadow(0 0 7px rgba(255,50,0,.8)) saturate(1.5) sepia(.25) hue-rotate(-20deg)}
+@keyframes fumeShake{0%,100%{transform:translateX(0) rotate(0)}25%{transform:translateX(-2px) rotate(-2deg)}75%{transform:translateX(2px) rotate(2deg)}}
+.fume-puff{position:fixed;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;pointer-events:none;z-index:46;background:radial-gradient(circle at 38% 36%,#ffffff,#d9d2e6 40%,rgba(130,118,155,.85) 70%,rgba(110,98,140,0) 100%);animation:fumePuff 1s ease-out forwards}
+@keyframes fumePuff{0%{opacity:0;transform:translate(0,0) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-42px) scale(2.4);filter:blur(3px)}}
+@media (prefers-reduced-motion:reduce){.bosshud.fume>img{animation:none}}
+/* on regular levels the candy bar above the board sits about 2 mm lower */
+#game:not(.hardtier) #found{position:relative;top:8px}
