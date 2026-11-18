@@ -695,6 +695,8 @@
     pendingBoost = null;
     show('game');
     preSpoken = false;
+    // the narrator names a Hard / Very Hard / Extremely Hard level as it opens (not when a saved game is resumed)
+    if (V && !resumed && tierOf(lv) !== 'normal') setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) V.start(lv, tierOf(lv)); }, 400);
     if (isBossLv(lv) && !resumed) setTimeout(bossEnter, 1000);
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     if (foeKind()) blowT = setTimeout(foeBlow, 26000 + Math.random() * 14000);
@@ -809,7 +811,7 @@
     if (now - lastDragSound > 55) { lastDragSound = now; if (ns === 1) S.x(); else S.tap(); }
     return true;
   }
-  let lastTap = null;
+  let lastTap = null; const DBL_MS = 400;
   function attachDrag(board) {
     board.onpointerdown = (e) => {
       if (cur.done) return;
@@ -817,7 +819,9 @@
       if (!c) return;
       const y = +c.dataset.y, x = +c.dataset.x;
       drag = { y, x, start: c, mode: cur.state[y][x] === 1 ? 'remove' : 'add', moved: false, long: false, snap: false, px: e.clientX, py: e.clientY };
-      { const st = cur.state[y][x], dbl = lastTap && lastTap.y === y && lastTap.x === x && performance.now() - lastTap.t < 330;   // a second quick tap places a candy: that has its own sound
+      // a double tap: the second touch starts within DBL_MS of the first one lifting. Times are the touch times themselves (e.timeStamp),
+      // so a slow phone that is still drawing the first tap does not turn the second one into a single tap
+      { const st = cur.state[y][x], dbl = !!(lastTap && lastTap.y === y && lastTap.x === x && e.timeStamp - lastTap.t < DBL_MS); drag.dbl = dbl;   // a second quick tap places a candy: that has its own sound
         if (!cur.lensArmed && !dbl) { if (cur.maybeMode) { if (st !== 2) S.pre('tap'); } else S.pre(st === 0 || st === 3 ? 'x' : 'tap'); } }
       try { board.setPointerCapture(e.pointerId); } catch (_) {}
       if (!cur.maybeMode) drag.timer = setTimeout(() => { if (drag && !drag.moved) { drag.long = true; buzz(10); tap(y, x, true); } }, 420);
@@ -843,11 +847,10 @@
       clearTimeout(drag.timer);
       const d = drag; drag = null;
       if (e.type === 'pointerup' && !d.moved && !d.long) {
-        const now = performance.now();
-        if (lastTap && lastTap.y === d.y && lastTap.x === d.x && now - lastTap.t < 330 && cur.history.length) {
+        if (d.dbl && cur.history.length) {
           cur.state = cur.history.pop(); lastTap = null;     // undo the first tap, then place the candy
           tap(d.y, d.x, false, true);
-        } else { lastTap = { y: d.y, x: d.x, t: now }; tap(d.y, d.x, false); }
+        } else { lastTap = { y: d.y, x: d.x, t: e.timeStamp }; tap(d.y, d.x, false); }
       }
       else if (d.moved) paint();
     };
@@ -906,7 +909,7 @@
     const d = document.createElement('div'); d.className = 'boss-card ' + cls; d.innerHTML = '<i class="bc-flash"></i><img src="art/boss_' + img + '.webp" alt="" draggable="false"><b>' + text + '</b>';
     document.body.appendChild(d); setTimeout(() => d.remove(), 2700);
   }
-  function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard(nervous() ? 'worried' : 'idle', 'Vinegar blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => V.say('boss1', true), 250); setTimeout(() => { if (isBoss() && !cur.done) bossSay('start'); }, 2800); }
+  function bossEnter() { if (!isBoss() || cur.done || $('game').hidden) return; bossCard(nervous() ? 'worried' : 'idle', 'Vinegar blocks the way!', 'in'); S.whoosh(); buzz([40, 60, 90]); if (V) setTimeout(() => { if (isBoss() && !cur.done) V.say('boss1', true); }, 3400); /* after "Extremely hard level!" has finished */ setTimeout(() => { if (isBoss() && !cur.done) bossSay('start'); }, 2800); }
   function bossMiss() { bossFace('laugh', 1400); bossSay('miss'); const b = $('board'); b.classList.remove('zap'); void b.offsetWidth; b.classList.add('zap'); setTimeout(() => b.classList.remove('zap'), 600); }
   function bossDefeat() { clearTimeout(bossT); const h = $('bossHud'), big = isBoss(); h.classList.remove('hit', 'laugh'); $('bossImg').src = foeImg('lose'); $('bossHp').style.width = '0%'; $('bossHpN').textContent = '0 / ' + cur.n; bossSay('lose'); h.classList.add('defeat'); if (big) { bossCard('lose', 'Vinegar is defeated!', 'out'); if (V) setTimeout(() => V.say('boss2', true), 300); } }
 
@@ -1299,9 +1302,9 @@
     $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + r.p[k] + ' min' : '+' + r.p[k]) + '</b></div>').join('');
     $('rwItems').classList.toggle('many', $('rwItems').children.length > 4);
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
-    $('reward').hidden = false; S.prize(); buzz([25, 30, 45]);
+    $('reward').hidden = false; if (!r.voice) S.prize(); buzz([25, 30, 45]);   // the big card of a world's last level opens while the win fanfare still plays: no second tune over it
     r.flown = false; if (r.p && r.p.coins) setTimeout(() => flyReward(r), 900); setTimeout(() => flyItems(r), 1000);
-    if (V && r.voice) setTimeout(() => V.say('bigreward', true), 350);   // the narrator speaks only for the big prize of a world's last level; every other prize just flies to its counter
+    if (V && r.voice) setTimeout(() => V.say('reward3', true), 350);   // "Wow! Nice reward!": the defeat line just before already says "Amazing!"   // the narrator speaks only for the big prize of a world's last level; every other prize just flies to its counter
   }
   // the coins of a prize fly up into the top-bar wallet by themselves while the card is showing
   function flyReward(r) {
@@ -1384,7 +1387,9 @@
 
   /* ---------- win ---------- */
   function win() {
-    cur.done = true; saveGame(); buzz([30, 40, 60]); S.win(); hideToast(); chalStop(); store.set('chal', { date: '', left: 0 });
+    // a Hard / Extremely Hard win has ONE tune: the fanfare when the stars have landed (the opening jingle is left out, so the two never overlap)
+    const hardWin = !!(cur.meta && cur.meta.kind === 'level' && tierOf(cur.meta.level) !== 'normal');
+    cur.done = true; saveGame(); buzz([30, 40, 60]); if (!hardWin) S.win(); hideToast(); chalStop(); store.set('chal', { date: '', left: 0 });
     if (foeKind()) bossDefeat();
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     if (V && !isBoss()) setTimeout(() => V.win(cur.hearts), 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
@@ -1406,7 +1411,8 @@
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
-        cleared++; store.set('cleared', cleared); prepBoard(level).then(() => prepBoard(level + 1));   // always two boards ahead: a few big boards take a long time to make if (m.level === bonusLevelOf(Math.floor(m.level / 10))) bonusPending = true;                       // only a first-time pass counts toward the reward
+        cleared++; store.set('cleared', cleared); prepBoard(level).then(() => prepBoard(level + 1));   // always two boards ahead: a few big boards take a long time to make
+        if (m.level === bonusLevelOf(Math.floor(m.level / 10))) bonusPending = true;                       // only a first-time pass counts toward the reward
         if (cleared % HINT_EVERY === 0) { give({ hints: 1 }); reward = true; soon(() => announce({ hints: 1 }, 'Level reward!'), 3600); }
         checkUnlocks(m);
         if (cleared % WAND_EVERY === 0) { give({ wands: 1 }); wandReward = true; soon(() => announce({ wands: 1 }, 'Big level reward!', true), 4200); }
@@ -1459,7 +1465,7 @@
         setTimeout(() => {
           S.star(k + 1, good); buzz(good ? 18 : 8); burst(el, good);
           if (card && card.animate) card.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(6px)' }, { transform: 'translateY(0)' }], { duration: 190, easing: 'ease-out' });
-          if (k === 2 && earned === 3) setTimeout(() => S.fanfare(), 160);
+          if (k === 2 && (earned === 3 || hardWin)) setTimeout(() => S.fanfare(), 160);
         }, t0 + 420);
       });
     }, 450);
@@ -2518,7 +2524,7 @@
   }
 
   /* ---------- Candy Pass: a vertical track of prizes; every level won without losing a heart climbs one step ---------- */
-  const PASS = [{ coins: 2 }, { coins: 3 }, { hints: 1 }, { coins: 4 }, { shield: 1 }, { coins: 5 }, { inf: 15 }, { coins: 6 }, { lens: 1 }, { coins: 15, wands: 1 }];
+  const PASS = [{ coins: 2 }, { coins: 3 }, { hints: 1 }, { coins: 4 }, { shield: 1 }, { coins: 5, sweeper: 1 }, { inf: 15 }, { coins: 6 }, { lens: 1 }, { coins: 15, wands: 1 }];
   let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
   function passAdvance() {
     if (pass.step >= PASS.length) return;
@@ -2645,7 +2651,7 @@
 
   /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
      platform, every level you lose drops him one. Each platform holds a bigger prize; a golden chest waits on top. Once a day. ---------- */
-  const CLIMB = [{ coins: 2 }, { inf: 15 }, { coins: 4 }, { hints: 1 }, { coins: 6 }, { inf: 30 }, { coins: 15, wands: 1 }], CLIMB_MS = 24 * 3600e3;
+  const CLIMB = [{ coins: 2 }, { inf: 15 }, { coins: 4, sweeper: 1 }, { hints: 1 }, { coins: 6 }, { inf: 30 }, { coins: 15, wands: 1 }], CLIMB_MS = 24 * 3600e3;
   let climb = Object.assign({ start: 0, step: 0, cl: [], day: '' }, store.get('climb', {}));
   const climbOn = () => climb.start > 0 && Date.now() < climb.start + CLIMB_MS;
   const climbLeft = () => Math.max(0, climb.start + CLIMB_MS - Date.now());
@@ -2687,7 +2693,7 @@
   function openClimb() { S.unlock(); S.tap(); closeAll(); $('climb').hidden = false; renderClimb(); }
 
   /* ---------- Sour Storm: every few days the Baron attacks for 24 hours; each level you win is a hit on him ---------- */
-  const STORM_GOAL = 12, STORM_MS = 24 * 3600e3, STORM_REST = 72 * 3600e3, STORM_PRIZE = [[4, { coins: 5 }], [8, { coins: 5, hints: 1 }], [12, { coins: 10, wands: 1, inf: 15 }]];
+  const STORM_GOAL = 12, STORM_MS = 24 * 3600e3, STORM_REST = 72 * 3600e3, STORM_PRIZE = [[4, { coins: 5 }], [8, { coins: 5, hints: 1, sweeper: 1 }], [12, { coins: 10, wands: 1, inf: 15 }]];
   let storm = Object.assign({ start: 0, hits: 0, cl: [] }, store.get('storm', {})), stormTick = null;
   const stormOn = () => storm.start > 0 && Date.now() < storm.start + STORM_MS;
   const stormFree = () => !stormOn() && Date.now() > storm.start + STORM_REST;
@@ -2756,6 +2762,8 @@
   function quickEnd(msg, reward, extra) {
     // side-game prizes are half of what they were
     if (reward > 0) reward = Math.max(1, Math.floor(reward / 2)); if (extra && extra.inf) extra = Object.assign({}, extra, { inf: Math.ceil(extra.inf / 2) });
+    // a good result in a side game sometimes brings a sweeper too (the cart race gives one for every won race)
+    if (reward > 0 && !(extra && extra.sweeper) && Math.random() < 0.3) extra = Object.assign({}, extra || {}, { sweeper: 1 });
     stopQuick(); $('quickInfo').classList.remove('low'); if (reward) { coinHold += reward; } if (reward) give({ coins: reward }, true); if (extra) give(extra);
     S.prize(); buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + (reward || extra ? ' +' + reward + ' ' + coinSvg : '') + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
     if (reward) { updateHintUi(); setTimeout(() => flyCoins($('quickMsg'), reward, 0, true), 400); }
@@ -3073,7 +3081,7 @@
       if (over) return; over = true; quickKey = null; draw();
       if (how === 'crash') S.wrong();
       // quickEnd halves the prize of the side games; the bonus stage pays exactly what was collected
-      quickEnd(how === 'win' ? 'You won the race!' : how === 'crash' ? 'Crashed! No prize this time' : 'The rival won this time', how === 'crash' ? 0 : (got + (how === 'win' ? 2 : 0)) * 2, null);
+      quickEnd(how === 'win' ? 'You won the race!' : how === 'crash' ? 'Crashed! No prize this time' : 'The rival won this time', how === 'crash' ? 0 : (got + (how === 'win' ? 2 : 0)) * 2, how === 'win' ? { sweeper: 1 } : null);
     };
     const spawn = () => {
       const roll = Math.random(), free = Math.floor(Math.random() * 3);
