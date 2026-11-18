@@ -16,11 +16,11 @@
     set(k, v) { try { localStorage.setItem('candoku.' + k, JSON.stringify(v)); } catch (e) {} }
   };
   // ?dbg=1&demo=cake: a ready game for showing Gumi's Cake (level 176, a 2-layer cake, 9 sugar stars). Seeded once per profile.
-  // ?dbg=1&demo=cake1: the same from level 1 with an empty cake
+  // ?dbg=1&demo=cake1: the same from level 10 (where the cake opens) with an empty cake
   if (/[?&]dbg=1/.test(location.search) && /[?&]demo=cake/.test(location.search) && !store.get('demoSeeded', false)) {
     const one = /[?&]demo=cake1/.test(location.search);
     store.set('demoSeeded', true); store.set('seenIntro', true); store.set('seenHow', true); store.set('seenCoach', true); store.set('age', { y: 1990, kid: false, at: Date.now() });
-    store.set('level', one ? 1 : 176); store.set('cleared', one ? 0 : 175); store.set('cake', { n: one ? 0 : 2 }); store.set('sugar', { n: one ? 0 : 9 }); store.set('lives', { n: 5, t: Date.now() });
+    store.set('level', one ? 10 : 176); store.set('cleared', one ? 9 : 175); store.set('cake', { n: one ? 0 : 2 }); store.set('sugar', { n: one ? 0 : 9 }); store.set('lives', { n: 5, t: Date.now() });
   }
 
   let level = store.get('level', 1);
@@ -688,13 +688,15 @@
      Sugar Stars: a new level won without losing a heart gives a star; 10 stars open a surprise prize.
      First win of the day: the first level won each day pays double coins. ---------- */
   let cake = store.get('cake', { n: 0 }), sugar = store.get('sugar', { n: 0 });
-  const CAKE_MAX = 3, SUGAR_AT = 10;
+  const CAKE_MAX = 3, SUGAR_AT = 10, CAKE_FROM = 10;   // Gumi's Cake opens at level 10: wins before it build nothing
+  const cakeOpen = () => level >= CAKE_FROM;
   const cakeReveal = (k, size) => Math.min(k, Math.max(1, size - 3));   // at least three candies are always left to find
   let cakeAnim = '';   // 'up' or 'down': played on the map button the next time the map is on the screen
   function setCake(n) { const was = cake.n; cake.n = Math.max(0, Math.min(CAKE_MAX, n)); if (cake.n !== was) cakeAnim = cake.n > was ? 'up' : 'down'; store.set('cake', cake); updateCakeMeds(); }
   function updateCakeMeds() {
-    const ci = document.querySelector('#medCake .disc img'); if (ci) { ci.src = 'art/3d_cake_' + Math.max(1, cake.n) + '.webp'; ci.classList.toggle('off', cake.n === 0); }
-    const t = $('medCakeTag'); if (t) t.textContent = cake.n ? cake.n + '/' + CAKE_MAX + ' · ×' + (cake.n + 1) : '0/' + CAKE_MAX;
+    const fill = document.querySelector('#medCake .cfill'); if (fill) { fill.hidden = !cake.n || !cakeOpen(); if (cake.n) fill.src = 'art/cake_stage_' + cake.n + '.webp'; }
+    const mc = $('medCake'); if (mc) mc.classList.toggle('locked', !cakeOpen());
+    const t = $('medCakeTag'); if (t) t.textContent = !cakeOpen() ? '🔒 Lv ' + CAKE_FROM : cake.n ? cake.n + '/' + CAKE_MAX + ' · ×' + (cake.n + 1) : '0/' + CAKE_MAX;
     const s = $('medStarTag'); if (s) s.textContent = sugar.n + '/' + SUGAR_AT;
     if (!cakeHold && cakeAnim && !$('home').hidden && !document.querySelector('.overlay:not([hidden])')) playCakeAnim();
   }
@@ -767,6 +769,7 @@
   function openCakeInfo(kind) {
     S.unlock(); S.tap();
     const b = $('ciBody');
+    if (kind === 'cake' && !cakeOpen()) { toast("🎂 Gumi's Cake opens at level " + CAKE_FROM + '!'); return; }
     if (kind === 'cake') {
       $('ciTitle').textContent = "Gumi's Cake";
       // the full cake on top, then two layers, then one: the player sees what he is building toward
@@ -811,7 +814,7 @@
     const resumed = applySaved(savedFor(cur.meta));
     if (!resumed && pendingBoost) { if (pendingBoost.shield) { items.shield--; cur.shield = true; } if (pendingBoost.double) { items.double--; cur.double = true; } saveWallet(); updateHintUi(); }
     pendingBoost = null;
-    if (!resumed) { cur.cake = cake.n; if (cake.n) setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) cakeGift(); }, 1500); }
+    if (!resumed) { cur.cake = lv >= CAKE_FROM ? cake.n : 0; if (cake.n) setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) cakeGift(); }, 1500); }
     show('game');
     preSpoken = false;
     // the narrator names a Hard / Very Hard / Extremely Hard level as it opens (not when a saved game is resumed)
@@ -1166,7 +1169,7 @@
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); cur.cakeDrop = false; if (cur.meta && cur.meta.kind === 'level' && cake.n > 0) { setCake(cake.n - 1); cur.cakeDrop = true; } $('loseCake').hidden = !cur.cakeDrop; freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); cur.cakeDrop = false; if (cur.meta && cur.meta.kind === 'level' && cur.meta.level >= CAKE_FROM && cake.n > 0) { setCake(cake.n - 1); cur.cakeDrop = true; } $('loseCake').hidden = !cur.cakeDrop; freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -1558,7 +1561,7 @@
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
-        setCake(cake.n + 1); $('winGain').insertAdjacentHTML('beforeend', '<small class="wcake new"><img src="art/3d_cake_' + cake.n + '.webp" alt="" draggable="false">' + (cake.n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!') + '</small>');
+        if (m.level >= CAKE_FROM) setCake(cake.n + 1); if (m.level >= CAKE_FROM) $('winGain').insertAdjacentHTML('beforeend', '<small class="wcake new"><img src="art/3d_cake_' + cake.n + '.webp" alt="" draggable="false">' + (cake.n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!') + '</small>');
         if (cur.hearts >= MAX_HEARTS) {
           sugar.n++; if (sugar.n >= SUGAR_AT) { sugar.n = 0; const sp = chestLoot('med'); give(sp); soon(() => announce(sp, 'Sugar Stars complete!', true), 4800); }
           store.set('sugar', sugar); updateCakeMeds();
