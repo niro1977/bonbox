@@ -774,7 +774,7 @@
         if (S.cakeFly) S.cakeFly();
         const fly = box.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(' + dx * 0.45 + 'px,' + (dy * 0.45 - 60) + 'px) scale(' + (0.5 + sc / 2) + ')', offset: 0.5 }, { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + sc + ')' }], { duration: 700, easing: 'ease-in', fill: 'forwards' });
         fly.onfinish = () => { st.remove(); done(); };
-      }, 1900);
+      }, 1350);   // straight on to its button right after the landing
     });
   }
   function cakeSparkle(el) {
