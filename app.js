@@ -1643,7 +1643,7 @@
     const A = (el, kf, ms, ease) => { const an = el.animate(kf, { duration: ms * 0.7, easing: ease || 'linear', fill: 'forwards' }); return an.finished.catch(() => {}); };   // the whole celebration runs about a quarter faster
     const tf = (y, sx, sy, r) => 'translateY(' + y + 'px) scale(' + sx + ',' + sy + ') rotate(' + (r || 0) + 'deg)';
     if (body.classList.contains('vid')) {
-      // the hand-animated film: it pops in and plays in a loop while the window is open
+      // the hand-animated film: it pops in, Gumi jumps once, lands and then stands still
       const v = body.querySelector('.gv').film; body.style.animation = 'none'; if (sh) sh.style.animation = '';
       v.play();
       await A(body, [{ transform: tf(-40, 0.7, 0.7, 0), opacity: 0 }, { transform: tf(2, 1.05, 0.95, 0), opacity: 1, offset: 0.7 }, { transform: tf(0, 1, 1, 0), opacity: 1 }], 480, out);
@@ -2197,6 +2197,7 @@
     'void main(){vec3 c=texture2D(t,vec2(u.x,u.y/3.)).rgb;float a=smoothstep(.04,.96,texture2D(t,vec2(u.x,u.y/3.+1./3.)).r);' +
     'if(hs!=0.){float j=smoothstep(.05,.95,texture2D(t,vec2(u.x,u.y/3.+2./3.)).r);vec3 h=rgb2hsv(c);float d=h.x*360.;if(d<180.)d+=360.;h.x=fract((330.+hs+(d-330.)*.35)/360.+2.);c=mix(c,hsv2rgb(h),j);}' +
     'gl_FragColor=vec4(c*a,a);}';
+  const FILM_STOP = 3.4;
   function makeFilm(name, hue) {
     const cv = document.createElement('canvas'); cv.className = 'gv'; cv.width = 420; cv.height = 606;
     const gl = cv.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false }) || cv.getContext('experimental-webgl');
@@ -2219,7 +2220,8 @@
     const draw = () => {
       if (v.readyState >= 2) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); gl.viewport(0, 0, 420, 606); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); ok = true; } catch (e) {} }
     };
-    const loop = () => { if (!on) return; draw(); if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(loop); else requestAnimationFrame(loop); };
+    // one jump only: the film stops at 3.4 s, when Gumi has landed and stands still again (all outfits share the same timing)
+    const loop = () => { if (!on) return; if (v.currentTime >= FILM_STOP) { on = false; v.pause(); draw(); return; } draw(); if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(loop); else requestAnimationFrame(loop); };
     v.addEventListener('loadeddata', draw);
     cv.film = {
       video: v,
