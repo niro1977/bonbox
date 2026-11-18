@@ -2181,14 +2181,14 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #medCake.locked .cakeico .cghost{filter:grayscale(1) brightness(.9) opacity(.6)}
 #medCake .disc{position:relative}
 /* the cake button has its own candy-pink inside (the ring stays like every other button) */
-#medCake .disc{background:radial-gradient(circle at 38% 30%,#d9479a,#a8247a 50%,#6e1258 85%,#55104a)!important}
+#medCake .disc{background:#7d1862!important}
 .cakecard .ci-from{align-self:center;padding:3px 14px;border-radius:999px;background:linear-gradient(90deg,#ff4f9a,#a35cff);color:#fff;font-weight:900}
 #medCake .tag{max-width:none!important;overflow:visible!important;padding-left:7px!important;padding-right:7px!important;text-align:center}
 /* every Continue button is green */
 #leagueGo,#lgrGo:not(.claim),#ageGo{background:url(art/btn_green.webp) center/100% 100% no-repeat!important;filter:drop-shadow(0 5px 3px rgba(0,40,0,.5))!important}
 /* a little shine on the cake button: a soft gloss and a twinkle */
 #medCake .cakeico::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.55) 45%,rgba(255,255,255,0) 60%);mix-blend-mode:soft-light;-webkit-mask:url(art/cake_stage_3.webp?2) center bottom/100% auto no-repeat;mask:url(art/cake_stage_3.webp?2) center bottom/100% auto no-repeat}
-#medCake .disc::before{content:"º6";position:absolute;right:7px;top:5px;z-index:3;font-size:11px;line-height:1;color:#fff;text-shadow:0 0 4px #fff,0 0 8px #ffd84a;animation:cakeTwinkle 2.4s ease-in-out infinite;pointer-events:none}
+#medCake .disc::before{display:none;content:"º6";position:absolute;right:7px;top:5px;z-index:3;font-size:11px;line-height:1;color:#fff;text-shadow:0 0 4px #fff,0 0 8px #ffd84a;animation:cakeTwinkle 2.4s ease-in-out infinite;pointer-events:none}
 #medCake.locked .disc::before{display:none}
 @keyframes cakeTwinkle{0%,100%{opacity:.15;transform:scale(.6)}50%{opacity:1;transform:scale(1.15)}}
 @media (prefers-reduced-motion:reduce){#medCake .disc::before{animation:none;opacity:.8}}
@@ -2205,3 +2205,5 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #reviveCoins[hidden]{display:none!important}
 #reviveCoins svg,#reviveCoins img{width:22px;height:22px}
 #reviveCoins.short{filter:grayscale(.7) brightness(.9)!important;opacity:.8}
+/* the cake button has no glass shine over the top, so the top layer and the cherry stay clear */
+#medCake .disc::after{display:none}
