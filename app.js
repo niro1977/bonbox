@@ -28,7 +28,7 @@
   let daily = store.get('daily', { last: '', streak: 0 });
   let cur = null;
   let score = store.get('score', { date: '', points: 0, run: 0, best: 0 });
-  const START_HINTS = 3, HINT_EVERY = 10, WAND_EVERY = 30;   // the wand is rare: one free wand every 30 levels
+  const START_HINTS = 3, HINT_EVERY = 10, WAND_EVERY = 20;   // one free wand every 20 levels
   let items = Object.assign({ shield: 1, double: 0, sweeper: 1, lens: 1, car: 1, rocket: 1 }, store.get('items', {}));
   let coins = store.get('coins', 30), wands = store.get('wands', 1), bonus = store.get('bonus', { last: '', streak: 0 });
   let hintsLeft = store.get('hints', START_HINTS), cleared = store.get('cleared', 0);   // hints in the bag, levels passed for the first time
@@ -1343,7 +1343,7 @@
       desc: 'A hint finds a square where an X surely belongs and marks it for you, and tells you why. It places a candy only when that is the last choice left.',
       count: () => hintsLeft, add: (n) => { hintsLeft += n; }, run: () => hint(),
       earn: () => { const t = HINT_EVERY - (cleared % HINT_EVERY); return 'You win 1 free hint for every ' + HINT_EVERY + ' levels you pass (' + t + ' more to go), and in the Daily Bonus.'; } },
-    wand: { name: 'Magic Wand', icon: 'wand', price: 100,
+    wand: { name: 'Magic Wand', icon: 'wand', price: 60,
       desc: 'The wand puts one correct candy on the board for you, with no risk. Use it when you are really stuck.',
       count: () => wands, add: (n) => { wands += n; }, run: () => useWand(),
       earn: () => { const t = WAND_EVERY - (cleared % WAND_EVERY); return 'You win a free wand every ' + WAND_EVERY + ' levels you pass (' + t + ' more to go), in the Daily Bonus, or buy one with coins.'; } }
@@ -1534,7 +1534,7 @@
     // (their amount, bigger on every 7th day in a row) and the order of the cards
     const yd0 = (() => { const y = new Date(); y.setDate(y.getDate() - 1); return y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0'); })();
     const big = ((bonus.last === yd0 ? bonus.streak + 1 : 1) % 7) === 0, coinAmt = () => (big ? 2 : 1) * [2, 3, 4, 5, 6, 8, 10][Math.floor(Math.random() * 7)];
-    const deck = [{ hints: 1 }, Math.random() < 0.15 ? { wands: 1 } : { coins: coinAmt() }, Math.random() < 0.15 ? { shield: 1 } : { coins: coinAmt() }, { sweeper: 1 }, { lens: 1 }, { double: 1 }, { life: 1 }, { coins: coinAmt() }, { coins: coinAmt() }];   // the heart shield is rare: it is among the cards on about 1 day in 7
+    const deck = [{ hints: 1 }, { wands: 1 }, { shield: 1 }, { sweeper: 1 }, { lens: 1 }, { double: 1 }, { life: 1 }, { coins: coinAmt() }, { coins: coinAmt() }];   // every helper is among the nine cards every day (the bonus comes once a day)
     for (let i = deck.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [deck[i], deck[r]] = [deck[r], deck[i]]; }
     const backOf = (c, p) => { const bk = c.querySelector('.back'); bk.className = 'back k-' + prizeKeys(p)[0]; bk.innerHTML = bigPrize(p); };
     for (let i = 0; i < 9; i++) {
