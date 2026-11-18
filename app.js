@@ -1545,10 +1545,12 @@
     const m = cur.meta, earned = Math.max(1, cur.hearts);
     let reward = false, wandReward = false;
     freshScore();
-    score.run++;
-    const pt = pointsFor(cur.n, score.run); if (cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; } if (cur.cake) pt.gain *= cur.cake + 1;   // the cake multiplies this level's points
-    score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
-    store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true; leagueBump(score.points);
+    // the timed Daily Challenge (the round "Play" button on the map) pays only its two prizes: no points, no league
+    const chal = !!(m && m.kind === 'daily');
+    if (!chal) score.run++;
+    const pt = chal ? { gain: 0, mult: 1 } : pointsFor(cur.n, score.run); if (!chal && cur.double) { pt.gain *= 2; pt.mult = pt.mult + '×2 booster'; } if (!chal && cur.cake) pt.gain *= cur.cake + 1;   // the cake multiplies this level's points
+    if (!chal) { score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
+      store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true; leagueBump(score.points); }
     const firstWin = !!(cur.meta && cur.meta.kind === 'level') && store.get('fwin', '') !== today(); if (firstWin) store.set('fwin', today());
     const earnedCoins = (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
@@ -1556,6 +1558,7 @@
     setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), 1400);
     $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins' + (firstWin ? '<small class="fwin">☀️ First win today ×2</small>' : '');
     $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
+    $('winGain').hidden = chal;   // no points line for the Daily Challenge
     if (m.kind === 'level') {
       if (isBossLv(m.level)) merge = [];
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
