@@ -2181,7 +2181,7 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #medCake.locked .cakeico .cghost{filter:grayscale(1) brightness(.9) opacity(.6)}
 #medCake .disc{position:relative}
 /* the cake button has its own candy-pink inside (the ring stays like every other button) */
-#medCake .disc{background:radial-gradient(circle at 35% 28%,#ffffff,#ffe1f1 45%,#ffb3d9 75%,#f58cc4)!important}
+#medCake .disc{background:radial-gradient(circle at 38% 30%,#d9479a,#a8247a 50%,#6e1258 85%,#55104a)!important}
 .cakecard .ci-from{align-self:center;padding:3px 14px;border-radius:999px;background:linear-gradient(90deg,#ff4f9a,#a35cff);color:#fff;font-weight:900}
 #medCake .tag{max-width:none!important;overflow:visible!important;padding-left:7px!important;padding-right:7px!important;text-align:center}
 /* every Continue button is green */
