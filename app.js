@@ -4,7 +4,7 @@
   const E = window.CandokuEngine, H = window.CandokuHints, S = window.CandokuSound;
   const SEEDS = window.CandokuSeeds || { hard: {}, veryhard: {} };
   // vivid tiles, one per color region
-  const COLORS = ['#00a6ff', '#4ff000', '#ffdc00', '#ff2db8', '#9a3cff', '#00e6b5', '#ff7800', '#ff1f45', '#2b50ff', '#d8862a'];   // vivid board colours
+  const COLORS = ['#0090e8', '#2fbf00', '#f2b800', '#e8189f', '#8a2df0', '#00b894', '#f06400', '#e8102f', '#2243e6', '#b8691a'];   // vivid, deep board colours (they stand out on the light board)
   const NAMES = ['Lollipop', 'Wrapped Candy', 'Chocolate Bar', 'Glazed Donut', 'Cupcake', 'Choc Chip Cookie', 'Cherries', 'Soft Serve', 'Shortcake', 'Candy Dango'];
   const starSvg = (on) => '<img class="star ' + (on ? '' : 'off') + '" src="art/star_' + (on ? 'gold' : 'grey') + '.webp" alt="" draggable="false">';
   const MAX_HEARTS = 3;
@@ -255,8 +255,8 @@
   // ?dbg=1&demo=vehicles : straight into a 10x10 level with 5 gummy cars and 5 candy rockets to try (test mode only)
   if (location.search.includes('dbg') && location.search.includes('demo=vehicles')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
-    store.set('seenIntro', true); store.set('seenCoach', true); store.set('seenHow', true); if (store.get('age', null) == null) store.set('age', { y: 1990, kid: false, at: Date.now() }); bonus = { last: today(), streak: 1 }; store.set('bonus', bonus); if (level < 24) { level = 24; store.set('level', 24); }
-    items.car = 5; items.rocket = 5; saveWallet(); updateHintUi(); setCake(0); store.set('game', null); transition(() => startLevel(24));
+    store.set('seenIntro', true); store.set('seenCoach', true); store.set('seenHow', true); if (store.get('age', null) == null) store.set('age', { y: 1990, kid: false, at: Date.now() }); bonus = { last: today(), streak: 1 }; store.set('bonus', bonus); const LV = +((location.search.match(/[?&]lv=(\d+)/) || [])[1] || 24); if (level < LV) { level = LV; store.set('level', LV); }
+    items.car = 5; items.rocket = 5; saveWallet(); updateHintUi(); setCake(0); store.set('game', null); transition(() => startLevel(LV));
   }, 2500);
   // ?dbg=1&demo=bombs : straight into level 12 with a three-layer cake, so the three candy bombs can be tried (test mode only)
   if (location.search.includes('dbg') && location.search.includes('demo=bombs')) setTimeout(() => {
