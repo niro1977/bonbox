@@ -22,7 +22,7 @@
     two1: 'Nicely done!', two2: 'Great job!', two3: 'Well played!', two4: 'So close to perfect!',
     one1: 'Phew! That was close!', one2: 'Wow, you just made it!', one3: 'By a whisker!', one4: 'What a narrow escape!',
     letsplay: "Let's play!",
-    mmmsweet: 'Mmm, sweet!', sugarrush: 'Sugar rush!', candylicious: 'Candy-licious!', sosweet: 'So sweet!', gumtastic: 'Gum-tastic!', bontastic: 'Bon-tastic!', treattastic: 'Treat-tastic! What a treat!',
+    mmmsweet: 'Mmm, sweet!', sugarrush: 'Sugar rush!', candylicious: 'Candy-licious!', sosweet: 'So sweet!', gumtastic: 'Gum-tastic!', bontastic: 'Bon-tastic!', treattastic: 'Treat-tastic!', whatatreat: 'What a treat!',
     first: 'Sweet!', yummy: 'Yummy!', tasty: 'Tasty!', nice: 'Nice one!', delicious: 'Delicious!',
     perfect: 'Delicious! Perfect!', divine: 'Divine! Perfect!', sugartastic: 'Sugar-tastic! Perfect!',
     verytasty: 'Very tasty!', close: 'Sweet! That was close!', lose: 'Oh no! Try again!',
@@ -97,7 +97,7 @@
     return (lastOf[key] = b.pop());
   };
   // the new words are recorded in English only: in Spanish the six old ones are used (they have Spanish recordings)
-  const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty'].concat(ES ? [] : ['mmmsweet', 'sugarrush', 'candylicious', 'sosweet', 'bontastic', 'treattastic']);
+  const PRAISE = ['first', 'yummy', 'tasty', 'nice', 'delicious', 'verytasty'].concat(ES ? [] : ['mmmsweet', 'sugarrush', 'candylicious', 'sosweet', 'bontastic', 'treattastic', 'whatatreat']);
   const V = {
     available() { return true; },
     isEnabled() { return enabled; },
