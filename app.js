@@ -252,6 +252,12 @@
     setCake(2); coins = Math.max(coins, 100); saveWallet(); updateHintUi(); store.set('game', null);
     transition(() => startLevel(12)).then(() => setTimeout(() => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, 2500));
   }, 2500);
+  // ?dbg=1&demo=bombs : straight into level 12 with a three-layer cake, so the three candy bombs can be tried (test mode only)
+  if (location.search.includes('dbg') && location.search.includes('demo=bombs')) setTimeout(() => {
+    const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
+    store.set('seenIntro', true); store.set('seenCoach', true); store.set('seenHow', true); if (store.get('age', null) == null) store.set('age', { y: 1990, kid: false, at: Date.now() }); bonus = { last: today(), streak: 1 }; store.set('bonus', bonus); if (level < 12) { level = 12; store.set('level', 12); }
+    setCake(3); store.set('game', null); transition(() => startLevel(12));
+  }, 2500);
   // ?dbg=1&demo=bonus : the nine-card daily bonus again and again (a demonstration, test mode only)
   if (location.search.includes('dbg') && location.search.includes('demo=bonus')) setTimeout(() => {
     const sp = $('splash'); if (sp) sp.remove(); document.querySelectorAll('.intro,.overlay').forEach((e) => { e.hidden = true; });
@@ -782,12 +788,10 @@
   function explodeBomb(y, x) {
     cur.bombs.delete(y + ',' + x); snapshot();
     let placed = 0;
-    for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) {
-      if (yy < 0 || xx < 0 || yy >= cur.n || xx >= cur.n || cur.bombs.has(yy + ',' + xx)) continue;
-      const s = cur.state[yy][xx], k = yy + ',' + xx;
-      if (isSolution(yy, xx)) { if (s !== 2) { cur.state[yy][xx] = 2; cur.wrongMarks.delete(k); placed++; } }
-      else if (s === 0 || s === 3) cur.state[yy][xx] = 1;
-    }
+    // only the bomb's own square is uncovered: the candy if it is there, an X if it is not
+    { const s = cur.state[y][x], k = y + ',' + x;
+      if (isSolution(y, x)) { if (s !== 2) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); placed++; } }
+      else if (s === 0 || s === 3) cur.state[y][x] = 1; }
     paint(); drawFound();
     const el = cellEl(y, x), bd = $('board');
     if (el) { const f = document.createElement('i'); f.className = 'bomb-blast'; el.appendChild(f); setTimeout(() => f.remove(), 700); burstAt(el, true); }
@@ -805,7 +809,7 @@
       $('ciTitle').textContent = "Gumi's Cake";
       // the full cake on top, then two layers, then one: the player sees what he is building toward
       b.innerHTML = '<p class="ci-from">Opens at level ' + CAKE_FROM + '</p><p>From level ' + CAKE_FROM + ' on, every new level you win in a row adds a layer to your cake (up to 3).</p>'
-        + '<p>Each layer gives you a candy bomb on the next level\'s board: tap it and it clears the squares around it. And more points! Lose a level and the top layer falls off.</p>'
+        + '<p>Each layer gives you a candy bomb on the next level\'s board: tap it and it shows what its square holds. And more points! Lose a level and the top layer falls off.</p>'
         + '<p class="ci-sub">What your cake gives you at the start of a level:</p>'
         + [3, 2, 1].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp?2" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
           + ['1 bomb on the board', '2 bombs on the board', '3 bombs on the board + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')

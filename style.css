@@ -2215,6 +2215,6 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 @keyframes bombWobble{0%,100%{transform:rotate(-6deg) scale(1)}50%{transform:rotate(6deg) scale(1.06)}}
 .cell.bombin .cbomb{animation:bombIn .5s cubic-bezier(.34,1.56,.64,1),bombWobble 1.6s ease-in-out .5s infinite}
 @keyframes bombIn{0%{transform:scale(0) rotate(-40deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
-.bomb-blast{position:absolute;left:50%;top:50%;width:300%;height:300%;margin:-150% 0 0 -150%;border-radius:50%;pointer-events:none;z-index:6;background:radial-gradient(circle,#fff 0,#ffe14d 22%,#ff8a3d 45%,rgba(255,80,160,.5) 62%,rgba(255,80,160,0) 72%);animation:blast .65s ease-out forwards}
+.bomb-blast{position:absolute;left:50%;top:50%;width:180%;height:180%;margin:-90% 0 0 -90%;border-radius:50%;pointer-events:none;z-index:6;background:radial-gradient(circle,#fff 0,#ffe14d 22%,#ff8a3d 45%,rgba(255,80,160,.5) 62%,rgba(255,80,160,0) 72%);animation:blast .65s ease-out forwards}
 @keyframes blast{0%{transform:scale(.2);opacity:1}100%{transform:scale(1.15);opacity:0}}
 @media (prefers-reduced-motion:reduce){.cell .cbomb{animation:none}}
