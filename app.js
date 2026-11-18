@@ -676,13 +676,13 @@
   function saveGame() {
     try {
       if (!cur || cur.done || !cur.meta) { store.set('game', null); return; }
-      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints, cake: cur.cake || 0,
+      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints, cake: cur.cake || 0, bombs: cur.bombs ? [...cur.bombs] : [],
         wrong: [...cur.wrongMarks], pen: [...cur.penalized], saved: Date.now() });
     } catch (e) {}
   }
   function applySaved(g) {
     if (!g || g.n !== cur.n || !Array.isArray(g.state) || g.state.length !== cur.n) return false;
-    cur.shield = !!g.shield; cur.double = !!g.double; cur.cake = g.cake || 0;
+    cur.shield = !!g.shield; cur.double = !!g.double; cur.cake = g.cake || 0; cur.bombs = new Set(g.bombs || []);
     cur.state = g.state.map((r) => r.slice()); cur.hearts = g.hearts; cur.hints = g.hints || 0;
     cur.wrongMarks = new Set(g.wrong || []); cur.penalized = new Set(g.pen || []);
     cur.foundPrev = new Set(); for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 2) cur.foundPrev.add(cur.regions[y][x]);
@@ -696,6 +696,7 @@
      Sugar Stars: a new level won without losing a heart gives a star; 10 stars open a surprise prize.
      First win of the day: the first level won each day pays double coins. ---------- */
   let cake = store.get('cake', { n: 0 }), sugar = store.get('sugar', { n: 0 });
+  { const pre = new Image(); pre.src = 'art/ic_bomb.webp'; }   // the cake's bomb picture is ready before the first bomb lands
   const CAKE_MAX = 3, SUGAR_AT = 10, CAKE_FROM = 10;   // Gumi's Cake opens at level 10: wins before it build nothing
   const cakeOpen = () => level >= CAKE_FROM;
   const cakeReveal = (k, size) => Math.min(k, Math.max(1, size - 3));   // at least three candies are always left to find
@@ -764,16 +765,37 @@
     }
   }
   function cakeGift() {
+    // one candy bomb per layer, on random empty squares far enough apart that no two blasts cover the same square
     const k = cur.cake; if (!k || cur.done) return;
-    const free = [];
-    for (let y = 0; y < cur.n; y++) { if (cur.state[y].includes(2)) continue; const v = cur.solution[y], x = Array.isArray(v) ? v.findIndex(Boolean) : v; if (x >= 0 && x < cur.n) free.push([y, x]); }
-    for (let i = free.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [free[i], free[r]] = [free[r], free[i]]; }
-    const got = free.slice(0, cakeReveal(k, cur.n));
-    got.forEach(([y, x], i) => { cur.state[y][x] = 2; cur.wrongMarks.delete(y + ',' + x); setTimeout(() => { if (cur && !cur.done) burstAt(cellEl(y, x), false); }, 120 + i * 220); });
+    const cells = []; for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 0) cells.push([y, x]);
+    for (let i = cells.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [cells[i], cells[r]] = [cells[r], cells[i]]; }
+    const got = [];
+    for (const [y, x] of cells) { if (got.length >= k) break; if (got.every(([yy, xx]) => Math.max(Math.abs(yy - y), Math.abs(xx - x)) >= 3)) got.push([y, x]); }
+    cur.bombs = new Set(got.map(([y, x]) => y + ',' + x));
     if (k >= CAKE_MAX) cur.shield = true;
-    paint(); drawFound(); S.prize(); buzz([20, 30, 20]);
-    toast('🎂 Cake gift: ' + got.length + (got.length === 1 ? ' candy' : ' candies') + ' in place' + (k >= CAKE_MAX ? ' + a heart shield' : '') + ' · points ×' + (k + 1));
+    paint(); S.prize(); buzz([20, 30, 20]);
+    got.forEach(([y, x], i) => setTimeout(() => { const el = cellEl(y, x); if (el && cur && !cur.done) { el.classList.remove('bombin'); void el.offsetWidth; el.classList.add('bombin'); } }, i * 200));
+    toast('🎂 Cake gift: ' + got.length + (got.length === 1 ? ' bomb' : ' bombs') + ' on the board' + (k >= CAKE_MAX ? ' + a heart shield' : '') + ' · points ×' + (k + 1));
     saveGame();
+  }
+  const isSolution = (y, x) => { const v = cur.solution[y]; return Array.isArray(v) ? !!v[x] : v === x; };
+  function explodeBomb(y, x) {
+    cur.bombs.delete(y + ',' + x); snapshot();
+    let placed = 0;
+    for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) {
+      if (yy < 0 || xx < 0 || yy >= cur.n || xx >= cur.n || cur.bombs.has(yy + ',' + xx)) continue;
+      const s = cur.state[yy][xx], k = yy + ',' + xx;
+      if (isSolution(yy, xx)) { if (s !== 2) { cur.state[yy][xx] = 2; cur.wrongMarks.delete(k); placed++; } }
+      else if (s === 0 || s === 3) cur.state[yy][xx] = 1;
+    }
+    paint(); drawFound();
+    const el = cellEl(y, x), bd = $('board');
+    if (el) { const f = document.createElement('i'); f.className = 'bomb-blast'; el.appendChild(f); setTimeout(() => f.remove(), 700); burstAt(el, true); }
+    if (bd && bd.animate) bd.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-4px,2px)' }, { transform: 'translate(4px,-2px)' }, { transform: 'translate(-2px,1px)' }, { transform: 'translate(0,0)' }], { duration: 300 });
+    S.whoosh(); buzz([30, 20, 50]);
+    if (placed) { const pc = placedCount(); S.candy(cur.regions[y][x], pc); if (V) V.candy(); }
+    saveGame();
+    if (solved()) win();
   }
   function openCakeInfo(kind) {
     S.unlock(); S.tap();
@@ -783,10 +805,10 @@
       $('ciTitle').textContent = "Gumi's Cake";
       // the full cake on top, then two layers, then one: the player sees what he is building toward
       b.innerHTML = '<p class="ci-from">Opens at level ' + CAKE_FROM + '</p><p>From level ' + CAKE_FROM + ' on, every new level you win in a row adds a layer to your cake (up to 3).</p>'
-        + '<p>Each layer helps you on the next level: candies already in the right place on the board, and more points. Lose a level and the top layer falls off.</p>'
+        + '<p>Each layer gives you a candy bomb on the next level\'s board: tap it and it clears the squares around it. And more points! Lose a level and the top layer falls off.</p>'
         + '<p class="ci-sub">What your cake gives you at the start of a level:</p>'
         + [3, 2, 1].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp?2" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
-          + ['1 candy already in place', '2 candies already in place', '3 candies in place + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')
+          + ['1 bomb on the board', '2 bombs on the board', '3 bombs on the board + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')
         + '<p class="ci-tip">☀️ <span>Your first win of each day pays double coins!</span></p>';
     } else {
       $('ciTitle').textContent = 'Sugar Stars';
@@ -932,6 +954,7 @@
   function dragApply(c) {
     if (!c) return false;
     const y = +c.dataset.y, x = +c.dataset.x, s = cur.state[y][x];
+    if (cur.bombs && cur.bombs.has(y + ',' + x)) return false;
     let ns = s;
     if (drag.mode === 'add' && (s === 0 || s === 3)) ns = 1;
     else if (drag.mode === 'remove' && s === 1) ns = 0;
@@ -1102,13 +1125,15 @@
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
       const el = cellEl(y, x), s = cur.state[y][x];
       const wrongX = s === 1 && cur.wrongMarks.has(y + ',' + x);   // black X: only after a wrong candy attempt
-      const key = s === 2 ? 'c' + cur.regions[y][x] : s === 1 ? (wrongX ? 'xw' : 'x') : s === 3 ? 'q' : '';
+      const bomb = s === 0 && cur.bombs && cur.bombs.has(y + ',' + x);
+      const key = s === 2 ? 'c' + cur.regions[y][x] : s === 1 ? (wrongX ? 'xw' : 'x') : s === 3 ? 'q' : bomb ? 'b' : '';
       el.classList.toggle('has', s === 2);
       if (el.dataset.k === key) continue;      // leave unchanged squares alone so animations don't replay
       el.dataset.k = key;
       if (s === 2) el.innerHTML = '<svg class="candy" style="--idur:' + (3 + Math.random() * 2.5).toFixed(1) + 's;--idelay:' + (0.4 + Math.random() * 1.6).toFixed(1) + 's"><use href="#c' + cur.cmap[cur.regions[y][x]] + '"/></svg>';
       else if (s === 1) el.innerHTML = '<span class="x' + (wrongX ? ' bad' : '') + '"></span>';
       else if (s === 3) el.innerHTML = QMARK;
+      else if (bomb) el.innerHTML = '<img class="cbomb" src="art/ic_bomb.webp" alt="" draggable="false">';
       else el.innerHTML = '';
     }
     drawFound();
@@ -1151,6 +1176,7 @@
     if (cur.done) return;
     if (cur.lensArmed) { lensPeek(y, x); return; }
     S.unlock();
+    if (cur.bombs && cur.bombs.has(y + ',' + x) && cur.state[y][x] === 0) { explodeBomb(y, x); return; }
     const s = cur.state[y][x];
     if (maybe || cur.maybeMode) {
       if (s === 2) return;

@@ -2210,3 +2210,11 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* every round button on the map gets the beige frame (the ready ones keep their yellow glow on top of it) */
 .sides .med .disc{box-shadow:inset 0 -4px 0 rgba(0,0,0,.14),0 0 0 3px #f3dcae,0 0 9px 3px rgba(255,226,170,.75)!important}
 .sides .med.ready .disc{box-shadow:inset 0 -4px 0 rgba(0,0,0,.14),0 0 0 3px #f3dcae,0 0 16px 5px #ffe14d!important}
+/* the cake's candy bombs on the board */
+.cell .cbomb{position:absolute;left:1%;top:0;width:98%;height:98%;object-fit:contain;pointer-events:none;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 2px 2px rgba(60,0,40,.55));animation:bombWobble 1.6s ease-in-out infinite}
+@keyframes bombWobble{0%,100%{transform:rotate(-6deg) scale(1)}50%{transform:rotate(6deg) scale(1.06)}}
+.cell.bombin .cbomb{animation:bombIn .5s cubic-bezier(.34,1.56,.64,1),bombWobble 1.6s ease-in-out .5s infinite}
+@keyframes bombIn{0%{transform:scale(0) rotate(-40deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.bomb-blast{position:absolute;left:50%;top:50%;width:300%;height:300%;margin:-150% 0 0 -150%;border-radius:50%;pointer-events:none;z-index:6;background:radial-gradient(circle,#fff 0,#ffe14d 22%,#ff8a3d 45%,rgba(255,80,160,.5) 62%,rgba(255,80,160,0) 72%);animation:blast .65s ease-out forwards}
+@keyframes blast{0%{transform:scale(.2);opacity:1}100%{transform:scale(1.15);opacity:0}}
+@media (prefers-reduced-motion:reduce){.cell .cbomb{animation:none}}
