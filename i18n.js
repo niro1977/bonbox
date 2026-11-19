@@ -35,7 +35,7 @@
     '1 candy already in place': '1 dulce ya colocado', '2 candies already in place': '2 dulces ya colocados', '3 candies in place + a heart shield': '3 dulces colocados + un escudo de corazón',
     'Points ×2': 'Puntos ×2', 'Points ×3': 'Puntos ×3', 'Points ×4': 'Puntos ×4', 'Your first win of each day pays double coins!': '¡Tu primera victoria de cada día paga monedas dobles!',
     'Win a level without losing a heart to earn a sugar star. Collect 10 for a surprise prize!': 'Gana un nivel sin perder corazones y ganas una estrella de azúcar. ¡Junta 10 para un premio sorpresa!',
-    'Sugar Stars complete!': '¡Estrellas de azúcar completas!', 'Loved it?': '¿Te gustó?', 'Hundreds more levels are waiting in the app': 'Cientos de niveles más te esperan en la app',
+    'Sugar Stars complete!': '¡Estrellas de azúcar completas!', 'Loved it?': '¿Te gustó?', 'More levels in the app, and new ones keep coming': 'Más niveles en la app, y siempre llegan nuevos',
     'Cakes, candy bombs, gummy cars, new worlds and Vinegar to beat. Your Daily Challenge stays free here every day.': 'Pasteles, bombas de dulce, autos de gomita, mundos nuevos y Vinagre por vencer. Tu Desafío diario sigue gratis aquí todos los días.',
     'Get it on Google Play': 'Disponible en Google Play', 'Not now': 'Ahora no', 'Leave this level?': '¿Salir de este nivel?', 'Are you sure you want to quit?': '¿Seguro que quieres salir?', 'Replay': 'Repetir', 'Quit': 'Salir', 'Gummy Car': 'Auto de gomita', 'Candy Rocket': 'Cohete de dulce', 'Gummy cars': 'Autos de gomita', 'Candy rockets': 'Cohetes de dulce',
     'Use 1 gummy car': 'Usar 1 auto de gomita', 'Use 1 candy rocket': 'Usar 1 cohete de dulce',
