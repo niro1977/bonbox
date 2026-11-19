@@ -9,10 +9,25 @@
   const starSvg = (on) => '<img class="star ' + (on ? '' : 'off') + '" src="art/star_' + (on ? 'gold' : 'grey') + '.webp" alt="" draggable="false">';
   const MAX_HEARTS = 3;
   const $ = (id) => document.getElementById(id);
+  // inside the Android app (Capacitor). Native plugins (App: back button, Share) are called through window.Capacitor.Plugins, no bundler needed
+  const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const nativePlugin = (name) => (IS_NATIVE && window.Capacitor.isPluginAvailable && window.Capacitor.isPluginAvailable(name) ? window.Capacitor.Plugins[name] : null);
+  // a player under 13 (age screen) plays without the online ranking: no player id, nickname or points are sent, no nickname is shown to others
+  const isKid = () => !!(window.CandokuAge && window.CandokuAge.kid);
   const M = window.CandokuMusic, V = window.CandokuVoice;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const store = {
-    get(k, d) { try { const v = localStorage.getItem('candoku.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    // a damaged saved value gives the default instead: a saved null, or a value of the wrong kind, used to stop the game on the Loading screen for good
+    get(k, d) {
+      try {
+        const v = localStorage.getItem('candoku.' + k); if (!v) return d;
+        const p = JSON.parse(v);
+        if (p === null || p === undefined) return d;
+        if (d === null || d === undefined) return p;
+        if (typeof d === 'object') return typeof p === 'object' && Array.isArray(p) === Array.isArray(d) ? p : d;
+        return typeof p === typeof d ? p : d;
+      } catch (e) { return d; }
+    },
     set(k, v) { try { localStorage.setItem('candoku.' + k, JSON.stringify(v)); } catch (e) {} }
   };
   // ?dbg=1&demo=cake: a ready game for showing Gumi's Cake (level 176, a 2-layer cake, 9 sugar stars). Seeded once per profile.
@@ -23,7 +38,7 @@
     store.set('level', one ? 10 : 176); store.set('cleared', one ? 9 : 175); store.set('cake', { n: one ? 0 : 2 }); store.set('sugar', { n: one ? 0 : 9 }); store.set('lives', { n: 5, t: Date.now() });
   }
 
-  let level = store.get('level', 1);
+  let level = store.get('level', 1); if (!(level >= 1)) level = 1;   // a damaged level (negative, not a number) starts again from level 1 instead of an empty map
   let stars = store.get('stars', {});
   let daily = store.get('daily', { last: '', streak: 0 });
   let cur = null;
@@ -32,6 +47,7 @@
   let items = Object.assign({ shield: 1, double: 0, sweeper: 1, lens: 1, car: 1, rocket: 1 }, store.get('items', {}));
   let coins = store.get('coins', 30), wands = store.get('wands', 1), bonus = store.get('bonus', { last: '', streak: 0 });
   let hintsLeft = store.get('hints', START_HINTS), cleared = store.get('cleared', 0);   // hints in the bag, levels passed for the first time
+  if (!(cleared >= 0)) cleared = 0; if (!(hintsLeft >= 0)) hintsLeft = START_HINTS;
   const RANKS = [[0, 'Rookie'], [200, 'Candy Fan'], [500, 'Sweet Tooth'], [1000, 'Sugar Pro'], [2000, 'Candy Master'], [4000, 'Candy Legend']];
   function freshScore() {
     const t = today();
@@ -68,7 +84,7 @@
   if (!pname || nameBad(pname)) { do { pname = 'Player' + Math.floor(1000 + Math.random() * 9000); } while (nameBad(pname)); store.set('pname', pname); }
   let rhide = store.get('rhide', []);   // names this player reported: they are not shown to him again
   function postScore() {
-    if (!score.points) return Promise.resolve(null);
+    if (!score.points || isKid()) return Promise.resolve(null);
     return fetch(RANK_URL + '/score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: pid, name: pname, points: score.points }) })
       .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   }
@@ -290,13 +306,16 @@
     S.unlock(); S.tap();
     freshScore();
     $('rankName2').value = pname; $('rankNameMsg').textContent = '';
+    const kid = isKid(); document.querySelector('#ranking .namefield').hidden = kid; $('rankTerms').hidden = kid; $('rankKid').hidden = !kid;
     $('rankList').innerHTML = '<p class="small">Loading…</p>'; $('rankMine').textContent = '';
     $('ranking').hidden = false;
+    if (kid) return renderBoard(null);    // under 13: only the league with the game's characters, nothing goes online
     const posted = await postScore();     // also refreshes my row
     if (posted) return renderBoard(posted);
     try { const r = await fetch(RANK_URL + '/top?id=' + encodeURIComponent(pid)); renderBoard(r.ok ? await r.json() : null); } catch (e) { renderBoard(null); }
   }
   function saveName() {
+    if (isKid()) return;
     const v = $('rankName2').value.replace(/[<>&"'`]/g, '').trim().slice(0, 16);
     if (v && nameBad(v)) { $('rankName2').value = pname; $('rankNameMsg').textContent = 'Please choose another name.'; return; }
     $('rankNameMsg').textContent = '';
@@ -520,7 +539,8 @@
       b.dataset.lv = lv; if (isBossLv(lv)) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting'); else if (lv >= ULTRA_FROM) b.classList.add('ultra');
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
       { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); if (tier === 'normal') { b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); } }   // every button of a world wears the colour of that world's ribbon
-      let html = '' + lv;
+      // the glint on the level you are on is a real element moved by transform (a background-position animation redrew the whole map every frame)
+      let html = (lv === level && tier !== 'veryhard' && tier !== 'extreme' ? '<i class="nglint" aria-hidden="true"><b></b></i>' : '') + lv;
       if (tier !== 'normal') html += '<span class="badge">' + (tier === 'hard' ? 'HARD' : tier === 'extreme' ? 'EXTREME' : 'VERY HARD') + '</span>';
       if (lv < level && stars[lv]) { b.classList.add('hasst'); html += '<span class="st">'; for (let i = 1; i <= 3; i++) html += starSvg(i <= stars[lv]); html += '</span>'; }
       b.innerHTML = html;
@@ -632,7 +652,11 @@
       const w = boardWorker(), local = () => res(runPlan(p));
       if (!w) { setTimeout(local, 0); return; }
       const id = ++bSeq; let done = false; const fin = (b) => { if (done) return; done = true; if (b) res(b); else local(); };
-      bJobs[id] = fin; w.postMessage({ id, n: p.n, seeds: p.seeds, rate: p.rate }); setTimeout(() => fin(null), 25000);   // never wait for ever
+      bJobs[id] = fin; w.postMessage({ id, n: p.n, seeds: p.seeds, rate: p.rate });
+      // never wait for ever, but never make the board on the screen thread while the background maker still works: that froze a slow phone
+      // for a whole minute, even in the middle of the level before (this wait starts when the board is prepared ahead of time)
+      const t0 = Date.now(), watch = () => { if (done) return; if (bWorker && Date.now() - t0 < 180000) { setTimeout(watch, 15000); return; } fin(null); };
+      setTimeout(watch, 25000);
     }).then((b) => { keepBoard(lv, sig, b); delete boardWait[lv]; return b; });
     return boardWait[lv];
   }
@@ -820,7 +844,7 @@
     if (S.boom) S.boom(); else S.whoosh(); buzz([30, 20, 50]);
     if (placed) { const pc = placedCount(); S.candy(cur.regions[y][x], pc); sayCandyWord(); }
     saveGame();
-    if (solved()) win();
+    if (solved()) winSoon();
   }
   function openCakeInfo(kind) {
     S.unlock(); S.tap();
@@ -1244,7 +1268,7 @@
     else if (ns === 1) { buzz(5); S.x(); }
     else S.tap();
     paint();
-    if (solved()) win();
+    if (solved()) winSoon();
   }
   function mistake(y, x) {
     if (infOn()) { toast('♾️ Unlimited hearts: no heart lost!'); S.x(); buzz(20); bearReact('happy'); return; }
@@ -1361,7 +1385,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { cur: () => cur, items: (o) => { Object.assign(items, o); saveWallet(); updateHintUi(); return items; }, cakeBuild: (n) => cakeBuild(n, $('medCake')), bonus9: () => openBonus(), plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) win(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { cur: () => cur, items: (o) => { Object.assign(items, o); saveWallet(); updateHintUi(); return items; }, cakeBuild: (n) => cakeBuild(n, $('medCake')), bonus9: () => openBonus(), plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) winSoon(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1437,7 +1461,7 @@
     for (const [y, x] of h.cells) { const el = cellEl(y, x); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted'); }
     spotlight(h.cells, 3000); toast(h.text, true); buzz(15);
     if (h.type === 'candy') { const [y, x] = h.cells[0]; S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount()); } else S.hint();
-    if (solved()) win();
+    if (solved()) winSoon();
   }
   /* ---------- sweeper and magnifier ---------- */
   function useSweeper() {
@@ -1496,7 +1520,7 @@
       if (isSolution(yy, xx)) { if (s !== 2) { cur.state[yy][xx] = 2; cur.wrongMarks.delete(k); placed = true; const pc = placedCount(); S.candy(cur.regions[yy][xx], pc); placedFx(yy, xx, pc); } }
       else { if (s !== 1) cur.state[yy][xx] = 1; S.x(); }
       paint();
-      if (i === n - 1) { spotlight(line, 2500); saveGame(); if (placed) sayCandyWord(); if (solved()) win(); }
+      if (i === n - 1) { spotlight(line, 2500); saveGame(); if (placed) sayCandyWord(); if (solved()) winSoon(); }
     }, D * (kind === 'car' ? (i + 1.2) / (n + 2.1) : (i + 1) / (n + 2.2))));
   }
   function armLens() {
@@ -1506,7 +1530,7 @@
   function lensPeek(y, x) {
     cur.lensArmed = false; $('board').classList.remove('lens');
     items.lens--; saveWallet(); updateHintUi(); snapshot(); const k = y + ',' + x;
-    if (cur.solution[y] === x) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); paint(); toast('✅ Yes! A candy goes right here', true); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc); if (solved()) win(); }
+    if (cur.solution[y] === x) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); paint(); toast('✅ Yes! A candy goes right here', true); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc); if (solved()) winSoon(); }
     else { cur.state[y][x] = 1; cur.wrongMarks.delete(k); paint(); toast('❌ Not here. Marked with an X', true); S.x(); }
     spotlight([[y, x]], 3000); buzz(16);
   }
@@ -1521,7 +1545,7 @@
     paint();
     const el = cellEl(y, x); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted');
     spotlight([[y, x]], 3000); buzz(20); S.candy(cur.regions[y][x], placedCount()); placedFx(y, x, placedCount());
-    if (solved()) win();
+    if (solved()) winSoon();
   }
   /* ---------- daily bonus: pick one of nine cards ---------- */
   const PRIZES = [
@@ -1651,6 +1675,7 @@
   }
   function saveProfileName() {
     const v = $('pfName').value.replace(/[<>&"'`]/g, '').trim().slice(0, 16);
+    if (v && nameBad(v)) { $('pfName').value = pname; toast('Please choose another name.'); return; }   // the same word filter as the ranking window (the profile skipped it)
     if (v && v !== pname) { pname = v; store.set('pname', pname); postScore(); }
   }
   /* ---------- shop ---------- */
@@ -1670,6 +1695,12 @@
   function restart() { if (cur.done) return; S.tap(); snapshot(); cur.state = cur.state.map((r) => r.map(() => 0)); cur.wrongMarks.clear(); cur.foundPrev = new Set(); paint(); }
 
   /* ---------- win ---------- */
+  // The last candy is drawn first; the win itself (scores, prizes, saving, the win card) runs right after that frame.
+  // Running it inside the same tap made the last candy show up late on slower phones. cur.done blocks more taps in between.
+  function winSoon() {
+    if (cur.done) return; cur.done = true; const g = cur;
+    requestAnimationFrame(() => setTimeout(() => { if (cur !== g) return; cur.done = false; win(); }, 0));
+  }
   function win() {
     // a Hard / Extremely Hard win has ONE tune: the fanfare when the stars have landed (the opening jingle is left out, so the two never overlap)
     const hardWin = !!(cur.meta && cur.meta.kind === 'level' && tierOf(cur.meta.level) !== 'normal');
@@ -1853,6 +1884,8 @@
   }
   /* sweets confetti: two cannons at the bottom corners fire a burst of sweets up over the win card; they spread, tumble, flutter down and it is over in a few seconds */
   const partyArt = []; let partyRun = 0;
+  // the win confetti pictures are loaded and decoded early, when the app is idle, so the first win of a session does not stutter
+  setTimeout(() => { if (partyArt.length) return; for (let k = 1; k <= 21; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; if (im.decode) im.decode().catch(() => {}); partyArt.push(im); } }, 5000);
   function candyParty() {
     const cv = $('winParty'); if (!cv || !cv.getContext) return; const run = ++partyRun;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -2023,7 +2056,7 @@
     $('introDots').innerHTML = PANELS.map((_, i) => '<i class="' + (i === introStep - 1 ? 'on' : '') + '"></i>').join('');
     if (V) { const wait = introVoiceAt - performance.now(), step = introStep; if (wait > 60) setTimeout(() => { if (introStep === step && !$('intro').hidden) V.say(p.text, true); }, wait); else V.say(p.text, true); }
   }
-  function showEnding() { store.set('seenEnd', true); PANELS = ENDING; ENDING.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); introStep = 1; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; if (M) M.start('menu'); renderIntro(); const rb = $('replayEnd'); if (rb) rb.hidden = false; }
+  function showEnding() { store.set('seenEnd', true); if (V && V.prefetch) V.prefetch(ENDING.map((p) => p.text)); PANELS = ENDING; ENDING.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); introStep = 1; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; if (M) M.start('menu'); renderIntro(); const rb = $('replayEnd'); if (rb) rb.hidden = false; }
   function maybeEnding() { if (level > LAST_LEVEL && !store.get('seenEnd', false)) setTimeout(showEnding, 700); }
   /* Age screen: asked once, on the very first launch, before the story. Neutral (no age is suggested or preferred).
      Under 13 the game is marked as child-directed: the Android app reads window.CandokuAge and serves only child-safe ads. */
@@ -2040,7 +2073,7 @@
     };
     $('age').hidden = false;
   }
-  function showIntro() { PANELS = STORY; introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; renderIntro(); }
+  function showIntro() { if (V && V.prefetch) V.prefetch(STORY.map((p) => p.text)); PANELS = STORY; introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; renderIntro(); }
   function endIntro() {
     const wasEnd = PANELS === ENDING; PANELS = STORY;
     store.set('seenIntro', true); store.set('seenHow', true);
@@ -2195,12 +2228,17 @@
   $('rateGo').onclick = () => { S.tap(); const nat = NATIVE(); if (nat && nat.review) { try { nat.review(); } catch (e) {} } else if (DBG) toast('(test) the Google Play rating window opens here'); closeRate(); };
   $('shareBtn').onclick = async () => {
     const text = T('Bonbox 🍬 ' + cur.label + ' ' + cur.n + '×' + cur.n + ' solved' + (cur.hints ? '' : ' with no hints'));
+    // the link is always the game's Google Play page (inside the app location.href was https://localhost/, a dead link);
+    // in the app the phone's own share sheet opens (the web view has no navigator.share)
+    const NS = nativePlugin('Share');
     try {
-      if (navigator.share) await navigator.share({ text, url: location.href });
-      else { await navigator.clipboard.writeText(text + ' ' + location.href); $('shareBtn').textContent = 'Copied!'; setTimeout(() => { $('shareBtn').textContent = 'Share'; }, 1500); }
+      if (NS) await NS.share({ text, url: PLAY_URL, dialogTitle: 'Bonbox' });
+      else if (navigator.share) await navigator.share({ text, url: PLAY_URL });
+      else { await navigator.clipboard.writeText(text + ' ' + PLAY_URL); $('shareBtn').textContent = 'Copied!'; setTimeout(() => { $('shareBtn').textContent = 'Share'; }, 1500); }
     } catch (e) {}
   };
-  document.addEventListener('visibilitychange', () => { if (document.hidden) return; });
+  // the privacy and terms links open the page in the player's language, in the phone's browser
+  document.querySelectorAll('a[data-legal]').forEach((a) => { a.href = 'https://bonbox.pages.dev/' + (window.LANG === 'es' ? (a.dataset.legal === 'privacy' ? 'privacidad' : 'terminos') : a.dataset.legal); });
 
   /* ---------- tutorial coach (first level) ---------- */
   let forceCoach = false, coachStep = 0;
@@ -2884,6 +2922,7 @@
      (with ?dbg=1 they are simulated so the flows can be tested). */
   const MAX_LIVES = 5, LIFE_MS = 30 * 60e3, DBG = location.search.includes('dbg');
   let lives = Object.assign({ n: MAX_LIVES, t: 0 }, store.get('lives', {}));
+  if (!(lives.n >= 0 && lives.n <= MAX_LIVES)) lives.n = MAX_LIVES; if (typeof lives.t !== 'number' || !isFinite(lives.t)) lives.t = 0;   // damaged lives: back to full
   function livesNow() {
     if (lives.n >= MAX_LIVES) { lives.n = MAX_LIVES; lives.t = 0; return lives.n; }
     if (!lives.t) lives.t = Date.now();
@@ -3628,6 +3667,31 @@
     const ready = () => setTimeout(bye, Math.max(0, 7000 - (Date.now() - t0)));
     const hero = new Image(); hero.onload = hero.onerror = () => { if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready); }; hero.src = 'art/bg_' + (Math.floor((level - 1) / 10) % 30) + '.jpg';
     setTimeout(bye, 12000); }
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) navigator.serviceWorker.addEventListener('controllerchange', () => { if (!sessionStorage.getItem('swr') && document.getElementById('splash')) { sessionStorage.setItem('swr', '1'); location.reload(); } });
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').then((r) => r.update && r.update()).catch(() => {}), 300));
+  if (IS_NATIVE) {
+    // Inside the app every file is already on the phone, so no service worker: it copied ~30 MB of pictures and sounds a second time,
+    // could start an old version after an update, and pushed the app's data past Android's 25 MB backup limit (progress not backed up).
+    // A worker left by an older version of the app is removed together with its files.
+    if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+    if (window.caches) caches.keys().then((ks) => ks.filter((k) => /^candoku-/.test(k)).forEach((k) => caches.delete(k))).catch(() => {});
+  } else {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) navigator.serviceWorker.addEventListener('controllerchange', () => { if (!sessionStorage.getItem('swr') && document.getElementById('splash')) { sessionStorage.setItem('swr', '1'); location.reload(); } });
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load', () => setTimeout(() => navigator.serviceWorker.register('sw.js').then((r) => r.update && r.update()).catch(() => {}), 300));
+  }
+  // Android's back button: closes the window on top, asks before leaving a level that is being played, and on the map puts the game in the
+  // background. Without it, back in the middle of a level closed the game, and coming back meant the full loading screen again.
+  function onBack() {
+    const vis = [...document.querySelectorAll('.overlay:not([hidden])')].filter((o) => o.getBoundingClientRect().width > 0);
+    if (vis.length) {
+      const top = vis.reduce((a, b) => ((+getComputedStyle(b).zIndex || 0) >= (+getComputedStyle(a).zIndex || 0) ? b : a));
+      if (top.id === 'age') return;                              // the age question has to be answered
+      const x = top.querySelector('.xclose'); if (x) x.click();   // a window without a close button waits for its own buttons
+      return;
+    }
+    if (!$('intro').hidden) return;                              // the story has its own Skip button
+    if (!$('game').hidden) { $('backBtn').click(); return; }     // asks first when a level is being played
+    const A = nativePlugin('App'); if (A) A.minimizeApp();
+  }
+  window.__bonboxBack = onBack;   // also called by the automatic tests
+  { const A = nativePlugin('App'); if (A) A.addListener('backButton', onBack); }
+  window.__bonboxReady = true;    // the game started: index.html shows a "Try again" card only when this never happens
 })();

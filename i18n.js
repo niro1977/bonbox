@@ -14,6 +14,11 @@
   document.documentElement.lang = 'es';
 
   const D = {
+    // ---- settings links, nickname terms, under-13 ranking note, loading safety net (Stage 1, 2026-11-19) ----
+    'Privacy Policy': 'Política de privacidad', 'Terms of Use': 'Términos de uso', 'Terms': 'Términos',
+    'By choosing a name you agree to our': 'Al elegir un nombre aceptas nuestros',
+    'Online ranking is for players aged 13 and over.': 'El ranking en línea es para jugadores de 13 años o más.',
+    'Something went wrong while loading.': 'Algo salió mal al cargar.',
     // ---- candies, ranks, worlds ----
     'Lollipop': 'Paleta', 'Wrapped Candy': 'Caramelo', 'Chocolate Bar': 'Barra de chocolate', 'Glazed Donut': 'Dona glaseada', 'Cupcake': 'Cupcake',
     'Choc Chip Cookie': 'Galleta con chispas', 'Cherries': 'Cerezas', 'Soft Serve': 'Helado suave', 'Shortcake': 'Pastelito', 'Candy Dango': 'Dango dulce', 'Swirl Pop': 'Paleta espiral',
@@ -226,7 +231,7 @@
   // prize lists: "3 coins and 1 magic wand"
   const PZ = { 'gummy car': ['auto de gomita', 'autos de gomita'], 'candy rocket': ['cohete de dulce', 'cohetes de dulce'], 'life': ['vida', 'vidas'], 'coin': ['moneda', 'monedas'], 'hint': ['pista', 'pistas'], 'magic wand': ['varita mágica', 'varitas mágicas'], 'heart shield': ['escudo de corazón', 'escudos de corazón'],
     'double-points booster': ['potenciador de puntos dobles', 'potenciadores de puntos dobles'], 'sweeper': ['escoba', 'escobas'], 'magnifier': ['lupa', 'lupas'], 'min of unlimited heart': ['min de corazones ilimitados', 'min de corazones ilimitados'] };
-  const PZ_RE = /^(\d+) (coin|hint|magic wand|heart shield|double-points booster|sweeper|magnifier|min of unlimited heart)s?$/;
+  const PZ_RE = /^(\d+) (coin|hint|magic wand|heart shield|double-points booster|sweeper|magnifier|gummy car|candy rocket|min of unlimited heart)s?$/;
   function prize(s) {
     const parts = s.split(' and '), out = [];
     for (const p of parts) { const m = p.match(PZ_RE); if (!m) return null; out.push(m[1] + ' ' + PZ[m[2]][+m[1] === 1 ? 0 : 1]); }
@@ -271,7 +276,7 @@
     [/^Welcome to (.+)!$/, (m) => '¡Bienvenido a ' + tr(m[1]) + '!'],
     [/^These (\d+) colors must use these (\d+) (row|column)s, so cross out the other colors there\.$/, (m) => 'Estos ' + m[1] + ' colores deben usar estas ' + m[2] + (m[3] === 'row' ? ' filas' : ' columnas') + ', así que tacha ahí los demás colores.'],
     [/^These (\d+) (row|column)s only hold (\d+) colors, so those colors can't go anywhere else\.$/, (m) => 'En estas ' + m[1] + (m[2] === 'row' ? ' filas' : ' columnas') + ' solo caben ' + m[3] + ' colores, así que esos colores no pueden ir en ningún otro lugar.'],
-    [/^(\d+)× (coin|hint|magic wand|heart shield|double-points booster|sweeper|magnifier|min of unlimited hearts?)s?$/, (m) => m[1] + '× ' + PZ[m[2].replace(/hearts$/, 'heart')][+m[1] === 1 ? 0 : 1]],
+    [/^(\d+)× (coin|hint|magic wand|heart shield|double-points booster|sweeper|magnifier|gummy car|candy rocket|min of unlimited hearts?)s?$/, (m) => m[1] + '× ' + PZ[m[2].replace(/hearts$/, 'heart')][+m[1] === 1 ? 0 : 1]],
     [/^(coin|hint|magic wand|heart shield|double-points booster|sweeper|magnifier|min of unlimited hearts)s?$/, (m) => PZ[m[1].replace(/hearts$/, 'heart')][/s$/.test(m[0]) && m[1] !== 'min of unlimited hearts' ? 1 : 0]],
     [/^(.+\S) \+(\d+)$/, (m) => { const t = tr(m[1]); return t === m[1] ? null : t + ' +' + m[2]; }]
   ];

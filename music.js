@@ -39,6 +39,9 @@
     src.connect(g); g.connect(bus); src.start(t);
     fadeOut(playing);
     playing = { key, src, gain: g };
+    // only the menu tune and the tune now playing stay decoded (about 11 MB each); every world tune heard used to stay, up to 108 MB.
+    // The tune that is fading out keeps its own copy until it stops.
+    Object.keys(buffers).forEach((k) => { if (k !== key && k !== 'menu') { delete buffers[k]; loading[k] = null; } });
   }
 
   const M = {

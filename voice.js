@@ -36,6 +36,17 @@
   const ID_OF = {}; Object.keys(CLIPS).forEach((k) => { ID_OF[CLIPS[k]] = k; });
   const buffers = {}, loading = {};
 
+  // Only the short, frequent lines are kept ready (about 8 MB). Every other line (story, worlds, prizes, ending) is loaded when it is
+  // needed, and only the last few of those stay in memory. Loading all 113 lines at the first touch held about 75 MB of decoded sound,
+  // made slow phones stutter, and could get the game closed by Android.
+  const READY = ['go', 'ready', 'letsplay', 'perfectword', 'two1', 'two2', 'two3', 'two4', 'one1', 'one2', 'one3', 'one4', 'close', 'lose'];
+  const MAX_KEPT = 12, kept = [];
+  const isReady = (id) => READY.indexOf(id) >= 0 || PRAISE.indexOf(id.replace(/^f\//, '')) >= 0;
+  function remember(id) {
+    if (isReady(id)) return;
+    const i = kept.indexOf(id); if (i >= 0) kept.splice(i, 1); kept.push(id);
+    while (kept.length > MAX_KEPT) { const old = kept.shift(); delete buffers[old]; delete loading[old]; }   // a line still playing keeps its own copy
+  }
   function load(id) {
     if (buffers[id] !== undefined) return Promise.resolve(buffers[id]);
     if (loading[id]) return loading[id];
@@ -44,11 +55,13 @@
     loading[id] = fetch(DIR + id + '.mp3')
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('missing'))))
       .then((ab) => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej)))
-      .then((b) => (buffers[id] = b))
+      .then((b) => { buffers[id] = b; remember(id); return b; })
       .catch(() => (buffers[id] = null));
     return loading[id];
   }
-  function preload() { Object.keys(CLIPS).forEach(load); PRAISE.forEach((k) => load('f/' + k)); }
+  function preload() { READY.forEach(load); PRAISE.forEach((k) => { load(k); load('f/' + k); }); }
+  // the story and the ending load their next lines while the first one plays, so no line starts late
+  function prefetch(textsOrIds) { (textsOrIds || []).forEach((t) => { const id = CLIPS[t] ? t : ID_OF[t]; if (id) load(id); }); }
 
   function stop() {
     if (current) { try { current.onended = null; current.stop(); } catch (e) {} current = null; }
@@ -78,6 +91,7 @@
     if (!ctx) return;
     load(id).then((buf) => {
       if (!buf) { stop(); speakFallback(text); return; }
+      remember(id);
       stop();
       const src = ctx.createBufferSource(), g = ctx.createGain(), M = root.CandokuMusic;
       src.buffer = buf; g.gain.value = 1.15;
@@ -109,6 +123,7 @@
     isEnabled() { return enabled; },
     setEnabled(v) { enabled = !!v; try { localStorage.setItem('candoku.voice', JSON.stringify(enabled)); } catch (e) {} if (!enabled) stop(); else preload(); },
     preload,
+    prefetch,
     cancel: stop,
     // say by clip id ("first") or by its exact text ("Sweet!"); unknown text uses the device voice
     say(textOrId, force) {
