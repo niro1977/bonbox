@@ -1978,7 +1978,7 @@
   // the story scenes as short animated films (made from the same pictures); the picture is the fallback
   const STORYVID = { story1: 'story1.mp4?3', story2p: 'story2p.mp4?3', story3: 'story3.mp4?3', story4: 'story4.mp4?3' };
   // Vinegar's sneeze on the storm slide (v354): opening picture (sulking, no storm yet) + LTX film whose blast is at SNEEZE.at s and whose last frame is story3.jpg
-  const SNEEZE = { img: 'story3a', film: 'story3s.mp4?2', at: 2.77 };   // v2: a visible giant breath (2.2 s) before the sneeze; blast at 2.77 s   // ?2 = the second, livelier films
+  const SNEEZE = { img: 'story3a', film: 'story3s.mp4?3', at: 2.73 };   // v3: a visible giant breath before the sneeze, the two films blended (no jump of Gumi at the join); blast at 2.73 s   // ?2 = the second, livelier films
   const LIVE = {
     story1: [{ x: 422, y: 560, rx: 215, ry: 290, a: 'bob' }],
     story2p: [{ x: 379, y: 965, rx: 135, ry: 160, a: 'shiver' }],
@@ -2416,7 +2416,7 @@
     'void main(){vec3 c=texture2D(t,vec2(u.x,u.y/3.)).rgb;float a=smoothstep(.04,.96,texture2D(t,vec2(u.x,u.y/3.+1./3.)).r);' +
     'if(hs!=0.){float j=smoothstep(.05,.95,texture2D(t,vec2(u.x,u.y/3.+2./3.)).r);vec3 h=rgb2hsv(c);float d=h.x*360.;if(d<180.)d+=360.;h.x=fract((330.+hs+(d-330.)*.35)/360.+2.);c=mix(c,hsv2rgb(h),j);}' +
     'gl_FragColor=vec4(c*a,a);}';
-  const FILM_STOP = 3.4;
+  const FILM_STOP = 3.4, FILM_RATE = 1.25;
   function makeFilm(name, hue) {
     const cv = document.createElement('canvas'); cv.className = 'gv'; cv.width = 420; cv.height = 606;
     const gl = cv.getContext('webgl', { premultipliedAlpha: true, alpha: true, antialias: false }) || cv.getContext('experimental-webgl');
@@ -2434,7 +2434,11 @@
       [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER].forEach((k) => gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR));
     } catch (e) { return null; }
     const v = document.createElement('video'); v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
-    v.className = 'gvsrc'; v.src = 'video/' + name + '_s.mp4?4';
+    v.className = 'gvsrc';
+    // the whole film is loaded into memory first (about 1 MB, only the outfit being worn): streamed, the video sometimes ran out of data
+    // in the middle of the jump and Gumi froze for 0.1-0.6 s (v356). If that fails, it streams as before.
+    const url = 'video/' + name + '_s.mp4?5';   // ?5: re-encoded for fast decoding (no B-frames), v356
+    fetch(url).then((r) => (r.ok ? r.blob() : Promise.reject(new Error('http')))).then((bl) => { if (!v.isConnected && v.__gone) return; v.__blob = URL.createObjectURL(bl); v.src = v.__blob; }).catch(() => { v.src = url; });
     let on = false, ok = false;
     const draw = () => {
       if (v.readyState >= 2) { try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); gl.viewport(0, 0, 420, 606); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); ok = true; } catch (e) {} }
@@ -2444,7 +2448,9 @@
     v.addEventListener('loadeddata', draw);
     cv.film = {
       video: v,
-      play() { on = true; v.currentTime = 0; const p = v.play(); if (p && p.catch) p.catch(() => {}); loop(); },
+      // played at 1.25x: the 24 fps film then shows exactly 30 frames a second, which every screen (60, 90, 120 Hz) shows evenly; at 24 fps a 60 Hz phone
+      // holds the frames 2 and 3 refreshes in turn and the jump judders (v356)
+      play() { on = true; v.currentTime = 0; v.defaultPlaybackRate = FILM_RATE; v.playbackRate = FILM_RATE; const p = v.play(); if (p && p.catch) p.catch(() => {}); loop(); },
       pause() { on = false; v.pause(); },
       get ok() { return ok; },
     };
@@ -2464,7 +2470,7 @@
       const gb = document.querySelector('#win .gbody');
       if (gb) {
         gb.querySelectorAll('.gf,.gv').forEach((e) => e.remove()); gb.classList.remove('frames', 'vid');
-        gb.querySelectorAll('.gvsrc').forEach((e) => { e.pause(); e.removeAttribute('src'); e.load(); e.remove(); });
+        gb.querySelectorAll('.gvsrc').forEach((e) => { e.__gone = true; e.pause(); e.removeAttribute('src'); e.load(); if (e.__blob) URL.revokeObjectURL(e.__blob); e.remove(); });
         const fc = WINVID[o.id] ? makeFilm(WINVID[o.id], hue) : null;
         if (fc) {
           const v = fc.film.video; v.onerror = () => { fc.remove(); v.remove(); gb.classList.remove('vid'); };
