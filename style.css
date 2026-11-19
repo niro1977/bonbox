@@ -2268,3 +2268,21 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 .nameterms{margin:-2px 0 8px;font-size:12px;opacity:.85}
 .nameterms a{color:inherit;text-decoration:underline}
 .rkid{font-weight:800;color:#8a5a30}
+
+/* v355: Vinegar's sneeze shakes the whole picture (cloud, candy-cane pole, Gumi) the moment it lands, strong at first, then settling.
+   Slightly enlarged while it shakes so the picture's edges never show. */
+.st-panel.st-storm.go .st-img.hasvid{animation:snzQuake 1.5s cubic-bezier(.2,.7,.3,1) both!important}
+@keyframes snzQuake{
+  0%{transform:scale(1.08) translate(0,0) rotate(0)}
+  6%{transform:scale(1.08) translate(-14px,9px) rotate(-1.6deg)}
+  12%{transform:scale(1.08) translate(13px,-8px) rotate(1.4deg)}
+  18%{transform:scale(1.08) translate(-12px,-7px) rotate(-1.2deg)}
+  25%{transform:scale(1.08) translate(11px,8px) rotate(1deg)}
+  33%{transform:scale(1.07) translate(-8px,5px) rotate(-.8deg)}
+  42%{transform:scale(1.06) translate(7px,-5px) rotate(.6deg)}
+  52%{transform:scale(1.05) translate(-5px,3px) rotate(-.4deg)}
+  63%{transform:scale(1.04) translate(4px,-2px) rotate(.3deg)}
+  76%{transform:scale(1.02) translate(-2px,1px) rotate(-.15deg)}
+  100%{transform:scale(1) translate(0,0) rotate(0)}
+}
+@media (prefers-reduced-motion:reduce){.st-panel.st-storm.go .st-img.hasvid{animation:none!important}}
