@@ -1422,7 +1422,10 @@ html[lang="es"] .med .tag{font-size:11px;letter-spacing:0;padding:4px 8px 6px!im
 #lose.bossw .lose-boss{display:block;width:104px;height:104px;object-fit:contain;animation:bossLaugh .3s ease-in-out infinite}
 .rw-it img.rw-boss{width:120px;height:120px;object-fit:contain}
 /* on the map he hovers over his level; beaten bosses stay behind, small and sulking */
-.node.bossn::before{content:"";position:absolute;left:auto;right:-58px;top:-40px;width:70px;height:70px;margin-left:0;z-index:4;transform:none;background:url(art/boss_idle.webp) center/contain no-repeat;filter:drop-shadow(0 4px 4px rgba(20,0,60,.45));animation:bossBob 2.6s ease-in-out infinite;pointer-events:none}
+.node.bossn::before{content:"";position:absolute;left:auto;right:-58px;top:-40px;width:70px;height:70px;margin-left:0;z-index:4;transform:none;background:url(art/boss_idle.webp) center/contain no-repeat;filter:drop-shadow(0 4px 4px rgba(20,0,60,.45));pointer-events:none}
+/* he bobs only next to the boss levels near the player (app.js renderHome adds .near): 48 bobbing heads over the whole map made Chrome
+   give about 60 map elements their own layer, which slowed down every window that opened over the map */
+.node.bossn.near:not(.beaten)::before{animation:bossBob 2.6s ease-in-out infinite}
 .node.bossn.beaten::before{background-image:url(art/boss_lose.webp);top:-22px;right:-36px;width:46px;height:46px;animation:none;opacity:.92}
 @media (prefers-reduced-motion:reduce){.bosshud>img,.pl-boss,.node.bossn::before{animation:none}}
 

@@ -365,7 +365,11 @@
   }
   const fitTitles = () => document.querySelectorAll('.overlay:not([hidden]) .card h2').forEach(fitTitle);
   { let q = 0; const later = () => { if (q) return; q = 1; Promise.resolve().then(() => { q = 0; fitTitles(); }); };   // fitted before the next frame is drawn, so the title is never seen at a wrong size first
-    new MutationObserver(later).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'], childList: true, characterData: true });
+    // only what can change a title: a window opening or closing, or the title's own text. (It used to run on every change anywhere on the page,
+    // a timer ticking or a sparkle, and measured the page each time while a window was open.)
+    const mo = new MutationObserver(later);
+    document.querySelectorAll('.overlay').forEach((ov) => mo.observe(ov, { attributes: true, attributeFilter: ['hidden'] }));
+    document.querySelectorAll('.overlay .card h2').forEach((h) => mo.observe(h, { subtree: true, childList: true, characterData: true }));
     window.addEventListener('resize', later); if (document.fonts && document.fonts.ready) document.fonts.ready.then(later); }
   /* ---------- polish: every button answers the finger; every window pops in with a sound ---------- */
   const PRESSABLE = 'button,.node,.bcard,.mcard,.med,.chip,.colcell,.bst,.evcard', SCROLLS = '#map,.shopscroll,#evGrid,#questList,.rlist,#colGrid,#passList,#giftList,#gameList,.cl-scroll,#stormRows';
@@ -383,8 +387,11 @@
         document.body.classList.toggle('ov-open', anyOverlay());
         const now = performance.now(), card = ov.querySelector('.card');
         if (!ov.hidden) {
-          if (card) { card.classList.remove('popin'); void card.offsetWidth; card.classList.add('popin'); }
-          ov.classList.remove('fadein'); void ov.offsetWidth; ov.classList.add('fadein');
+          // started with the Web Animations API: restarting the CSS classes forced the whole page to be measured twice on every window
+          if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            if (card) card.animate([{ opacity: 0, transform: 'translateY(14px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.23,1,.32,1)' });
+            ov.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'cubic-bezier(.23,1,.32,1)' });
+          }
           if (!quiet[ov.id] && now - lastPop > 120) { lastPop = now; S.popIn(); }
         } else if (!quiet[ov.id] && now - lastPop > 120) { lastPop = now; S.popOut(); }
       }).observe(ov, { attributes: true, attributeFilter: ['hidden'] });
@@ -1722,7 +1729,8 @@
     const earnedCoins = chal ? 0 : (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // the Daily Challenge pays no coins either   // coins are scarce: 1 per win, 2 without losing a heart
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
-    if (earnedCoins) setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), fumed ? 3250 : 1400);
+    const winWait = !fumed ? 450 : isBoss() ? 1200 : 700;   // the win card: 0.45 s after the last candy; after Vinegar 1.2 s, after his minion 0.7 s
+    if (earnedCoins) setTimeout(() => flyCoins($('winCoins'), earnedCoins, 0), winWait + 950);
     $('winCoins').hidden = false; $('winCoins').innerHTML = '+' + earnedCoins + ' ' + coinSvg + ' coins' + (firstWin ? '<small class="fwin">☀️ First win today ×2</small>' : '');
     if (!earnedCoins) $('winCoins').hidden = true;
     $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp?2" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
@@ -1795,7 +1803,7 @@
           if (k === 2 && (earned === 3 || hardWin)) setTimeout(() => S.fanfare(), 160);
         }, t0 + 420);
       });
-    }, fumed ? 2300 : 450);   // after a fight Vinegar fumes for 2 s before the win card covers him
+    }, winWait);   // after a fight Vinegar fumes for a moment before the win card covers him (was 2.3 s: it felt like the game had stuck)
   }
 
   /* ---------- win celebration: the bear moves like a character, not a loop. Each cycle is a little different:
@@ -2047,7 +2055,7 @@
     { const v = body.querySelector('.st-vid'); if (v) { v.muted = true; v.addEventListener('playing', () => v.classList.add('on'), { once: true }); if (p.fx !== 'storm') v.play().catch(() => {}); } }
     if (p.fx === 'storm') {
       // the sneeze lands on the narrator's "ACHOO": until then the Baron only breathes in, then the storm breaks
-      const panel = body.querySelector('.st-storm'), at = V && V.isEnabled() && S.isOn() ? (window.LANG === 'es' ? 2350 : 3050) : 1400, step = introStep;
+      const panel = body.querySelector('.st-storm'), at = V && V.isEnabled() && S.isOn() ? (window.LANG === 'es' ? 2140 : 2770) : 1400, step = introStep;   // story lines are read 10% faster since v353 (was 2350 / 3050)
       setTimeout(() => { if (introStep !== step || $('intro').hidden || !panel.isConnected) return; panel.classList.add('go'); { const v = panel.querySelector('.st-vid'); if (v) v.play().catch(() => {}); } S.whoosh(); buzz([60, 40, 120, 40, 60]); setTimeout(() => { if (introStep === step && !$('intro').hidden) S.whoosh(); }, 700); }, at);
     }
     else if (p.fx === 'dark') buzz([30, 60, 30]);
@@ -3663,8 +3671,8 @@
     } else maybeLeagueResult(maybeBonus);
   }
   { const sp = document.getElementById('splash'), t0 = window.__t0 || Date.now(); let gone = false;
-    const bye = () => { if (gone || !sp) return; gone = true; sp.classList.add('out'); setTimeout(() => sp.remove(), 450); if ($('game').hidden) scrollToLevel(level); };
-    const ready = () => setTimeout(bye, Math.max(0, 7000 - (Date.now() - t0)));
+    const bye = () => { if (gone || !sp) return; gone = true; sp.classList.add('out'); setTimeout(() => sp.remove(), 450); if ($('game').hidden) scrollToLevel(level); if (S.warm) setTimeout(S.warm, 700); };
+    const ready = () => setTimeout(bye, Math.max(0, 5000 - (Date.now() - t0)));   // the loading screen stays 5 s (was 7 s)
     const hero = new Image(); hero.onload = hero.onerror = () => { if (document.readyState === 'complete') ready(); else window.addEventListener('load', ready); }; hero.src = 'art/bg_' + (Math.floor((level - 1) / 10) % 30) + '.jpg';
     setTimeout(bye, 12000); }
   if (IS_NATIVE) {

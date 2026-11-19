@@ -20,7 +20,10 @@
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     return ctx;
   }
-  function ready() { return on && init(); }
+  // the loading screen stays silent: inside the app sound can play without a tap, and the daily bonus window, opening under the loading
+  // screen, played its whole opening tune there. Any sound asked for while it is up is skipped (the music already waits for it to go).
+  const splashUp = () => { const s = document.getElementById('splash'); return !!(s && !s.classList.contains('out')); };
+  function ready() { return on && !splashUp() && init(); }
 
   /* ---- studio-style polish: a short plate reverb, FM bells and plucked marimba ---- */
   let wet = null;
@@ -119,7 +122,9 @@
   const preAt = {};
   const S = {
     pre(name) { if (!on || !S[name]) return; S[name](); preAt[name] = performance.now(); },
-    unlock() { ready(); },
+    unlock() { if (on) init(); },   // a tap on the loading screen still wakes the sound up for later, silently
+    // build the sound engine and the reverb ahead of time, when the phone is idle (they took about 0.2 s and 0.15 s on a phone, on the first tap and the first window)
+    warm() { if (!on) return; const idle = window.requestIdleCallback || ((f) => setTimeout(f, 200)); idle(() => { if (!init()) return; idle(() => { try { reverb(); } catch (e) {} }, { timeout: 4000 }); }, { timeout: 3000 }); },
     ctx() { return on ? init() : null; },
     dest() { return master; },
     isOn() { return on; },
