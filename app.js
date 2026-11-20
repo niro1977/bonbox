@@ -391,10 +391,7 @@
         const now = performance.now(), card = ov.querySelector('.card');
         if (!ov.hidden) {
           // started with the Web Animations API: restarting the CSS classes forced the whole page to be measured twice on every window
-          if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            if (card) card.animate([{ opacity: 0, transform: 'translateY(14px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.23,1,.32,1)' });
-            ov.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'cubic-bezier(.23,1,.32,1)' });
-          }
+          // v362: windows open at once, with no pop or tilt (he asked for it): the old CSS spin-pop and this scale-in overlapped and made the frame jump
           if (!quiet[ov.id] && now - lastPop > 120) { lastPop = now; S.popIn(); }
         } else if (!quiet[ov.id] && now - lastPop > 120) { lastPop = now; S.popOut(); }
       }).observe(ov, { attributes: true, attributeFilter: ['hidden'] });
@@ -2706,7 +2703,7 @@
   let quests = store.get('quests', null), chest = store.get('chest', { n: 0 }), wheel = store.get('wheel', { date: '', extra: 0 });
   let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0, odd: 0, jars: 0, shoot: 0, hoop: 0, cart: 0 });
 
-  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm', 'chal', 'odds'].forEach((id) => { $(id).hidden = true; }); };
+  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm', 'chal', 'odds'].forEach((id) => { $(id).hidden = true; }); if (!$('evwin').hidden) closeEvWin(false); };
   const QDEF = [
     { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 3 },
     { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 3 },
@@ -3270,21 +3267,60 @@
   function quickOpen(title, info) {
     closeAll(); stopQuick(); quickThen = null; $('quick').classList.remove('big'); $('quickInfo').classList.remove('low'); $('quickTitle').textContent = title; $('quickInfo').textContent = info; $('quickMsg').textContent = ''; $('quickBody').innerHTML = ''; $('quickClose').textContent = 'Give up'; $('quickBar').style.width = '100%'; $('quick').hidden = false;
   }
-  function quickEnd(msg, reward, extra) {
+  function quickEnd(msg, reward, extra, o) {
     // side-game prizes are half of what they were
     if (reward > 0) reward = Math.max(1, Math.floor(reward / 2)); if (extra && extra.inf) extra = Object.assign({}, extra, { inf: Math.ceil(extra.inf / 2) });
     // a good result in a side game sometimes brings a sweeper too (the cart race gives one for every won race)
     if (reward > 0 && !(extra && extra.sweeper) && Math.random() < 0.3) extra = Object.assign({}, extra || {}, { sweeper: 1 });
     stopQuick(); $('quickInfo').classList.remove('low'); if (reward) { coinHold += reward; } if (reward) give({ coins: reward }, true); if (extra) give(extra);
-    S.prize(); buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + (reward || extra ? ' +' + reward + ' ' + coinSvg : '') + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
-    if (reward) { updateHintUi(); setTimeout(() => flyCoins($('quickMsg'), reward, 0, true), 400); }
+    buzz([20, 30, 50]); updateSides(); $('quickMsg').innerHTML = msg + (reward || extra ? ' +' + reward + ' ' + coinSvg : '') + (extra ? ' · ' + prizeText(extra) : ''); $('quickClose').textContent = 'Done';
+    if (reward) updateHintUi();
+    setTimeout(() => showEvWin(Object.assign({ msg, reward, extra, from: 'quick' }, o || {})), 450);
+  }
+  /* ---------- event win screen: one for every mini-game. A banner, Gumi, stars that light one by one, the result, the prize counting up,
+     NEW BEST! when a record falls; Collect sends the coins and helpers flying into their counters and goes back to the events. ---------- */
+  let ewHeld = 0;
+  function showEvWin(o) {
+    const reward = o.reward || 0, extra = o.extra || null, stars = o.stars != null ? o.stars : o.win ? 3 : reward >= 3 ? 2 : reward >= 1 ? 1 : 0;
+    ewHeld = reward;
+    $('ewTitle').textContent = T(o.win ? 'You win!' : stars >= 1 ? 'Well done!' : 'Nice try!');
+    $('ewGumi').src = 'art/' + (o.win || stars >= 2 ? 'gumi_win' : stars === 1 ? 'gumi_jump' : 'gumi_sad') + '.webp';
+    $('ewRes').innerHTML = o.msg || '';
+    const p = Object.assign({}, reward ? { coins: reward } : {}, extra || {});
+    $('ewPrize').innerHTML = Object.keys(p).length ? bigPrize(p) : '<small>' + T('No prize this time') + '</small>';
+    // a new record for this game (from the second play on, so the very first game is not a "record")
+    let best = false; if (o.key && o.score != null) { const b = store.get('gbest', {}); if (b[o.key] != null && o.score > b[o.key]) best = true; if (b[o.key] == null || o.score > b[o.key]) { b[o.key] = o.score; store.set('gbest', b); } }
+    $('ewBest').hidden = true; const st = [...$('ewStars').children]; st.forEach((e) => e.className = '');
+    $('ewGo').textContent = T(Object.keys(p).length ? 'Collect' : 'OK'); $('ewGo').disabled = false; $('ewGo').dataset.from = o.from || 'quick';
+    const party = $('winParty'); if (o.win && party) { $('evwin').insertBefore(party, $('evwin').firstChild); }
+    $('evwin').hidden = false; $('evwin').classList.toggle('won', !!o.win);
+    if (o.win) { S.fanfare(); setTimeout(candyParty, 120); } else S.prize();
+    st.forEach((e, i) => setTimeout(() => { if (i < stars) { e.className = 'on'; S.star && S.star(i + 1, 1); buzz(12); } else e.className = 'off'; }, 380 + i * 320));
+    // the coins count up from 0 to the prize
+    const cb = $('ewPrize').querySelector('.k-coins b'); if (cb && reward > 1) { const t0 = performance.now() + 380 + stars * 320, D = Math.min(900, 120 + reward * 60); cb.textContent = '0';
+      const up = (t) => { const k = Math.max(0, Math.min(1, (t - t0) / D)); cb.textContent = String(Math.round(reward * k)); if (k < 1 && !$('evwin').hidden) requestAnimationFrame(up); else cb.textContent = String(reward); }; requestAnimationFrame(up); }
+    if (best) setTimeout(() => { $('ewBest').hidden = false; S.ui('item'); }, 600 + stars * 320);
+    $('ewGo').onclick = () => {
+      if ($('ewGo').disabled) return; $('ewGo').disabled = true; S.tap();
+      const box = $('ewPrize'), ci = box.querySelector('.k-coins img'); if (ewHeld) { flyCoins(ci || box, ewHeld, 0, true); ewHeld = 0; }
+      if (extra) flyItems({ p: extra }, box);
+      setTimeout(() => closeEvWin(true), ewHeldWait(p));
+    };
+  }
+  const ewHeldWait = (p) => (Object.keys(p).length ? 1250 : 0);
+  function closeEvWin(next) {
+    if (ewHeld) { coinHold = Math.max(0, coinHold - ewHeld); ewHeld = 0; updateHintUi(); }   // closed without collecting: the coins are already in the wallet, only shown now
+    const party = $('winParty'), win = $('win'); if (party && win && party.parentElement !== win) win.insertBefore(party, win.querySelector('.card'));
+    const from = $('ewGo').dataset.from; $('evwin').hidden = true; if (!next) return;
+    if (from === 'memory') { $('memory').hidden = true; updateSides(); openEvents(); return; }
+    stopQuick(); quickKey = null; $('quick').hidden = true; $('quick').classList.remove('big'); updateSides(); const th = quickThen; quickThen = null; if (th) th(); else openEvents();
   }
   // Odd One Out: one candy is different, tap it. 6 boards, 30 seconds, a wrong tap costs 3 seconds.
   function startOdd() {
     freshDay(); if ((plays.odd || 0) >= MAX_PLAYS) return; plays.odd = (plays.odd || 0) + 1; store.set('plays', plays); updateSides();
     quickOpen('Odd One Out', 'Find the different candy on 6 boards in 15 seconds!');
     const sizes = [3, 3, 4, 4, 5, 5]; let round = 0, score = 0, penalty = 0, over = false, shownS = -1; const t0 = performance.now(), TOTAL = 15000;   // a fast game: 15 seconds for all six boards, a wrong tap costs 2 of them
-    const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, Math.floor(score / 2), null); };
+    const fin = (win) => { if (over) return; over = true; quickEnd(win ? 'All found!' : 'Time! ' + score + ' / ' + sizes.length, Math.floor(score / 2), null, { win, key: 'odd', score, stars: win ? 3 : score >= 4 ? 2 : score >= 2 ? 1 : 0 }); };
     const board = () => {
       const n = sizes[round], a = Math.floor(Math.random() * 10); let b = Math.floor(Math.random() * 9); if (b >= a) b++;
       const odd = Math.floor(Math.random() * n * n), g = document.createElement('div'); g.className = 'oddgrid'; g.style.gridTemplateColumns = 'repeat(' + n + ',1fr)';
@@ -3312,7 +3348,7 @@
     const cols = ['#22b8ff', '#ff52c8', '#ffd400', '#7ee21f'], JSW = [2, 6, 7, 4], body = $('quickBody'), TOT = 14; let n = 0, ok = 0, lives = 3, over = false, now = 0, tStart = 0, dur = 2400;
     body.innerHTML = '<div class="jdrop"><i id="jDrop"></i></div><div class="jars">' + cols.map((c, i) => '<button type="button" class="jar" data-i="' + i + '" style="--jc:' + c + '"><b></b><img src="art/sw_' + JSW[i] + '.webp" alt="" draggable="false"><u></u></button>').join('') + '</div>';
     const drop = $('jDrop');
-    const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? T('Perfect!') : ok + ' / ' + TOT + ' sorted', Math.floor(ok / 4), ok >= TOT ? { hints: 1 } : null); };
+    const fin = () => { if (over) return; over = true; quickEnd(ok >= TOT ? T('Perfect!') : ok + ' / ' + TOT + ' sorted', Math.floor(ok / 4), ok >= TOT ? { hints: 1 } : null, { win: ok >= TOT, key: 'jars', score: ok, stars: ok >= TOT ? 3 : ok >= 9 ? 2 : ok >= 4 ? 1 : 0 }); };
     const next = () => {
       if (over) return; if (n >= TOT) return fin();
       now = Math.floor(Math.random() * 4); drop.style.background = 'url(art/sw_' + JSW[now] + '.webp) center/contain no-repeat';
@@ -3413,7 +3449,7 @@
     let nextC = pick();
     const sPos = (i) => head - i * D + chain[i].off;
     const burst = (x, y, c) => { for (let k = 0; k < 9; k++) { const a = Math.random() * 6.283, v = 50 + Math.random() * 110; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, l: 0.55, c }); } };
-    const finish = (win) => { if (over) return; over = true; quickEnd(win ? 'Cleared!' : 'They got through! ' + popped + ' popped', win ? 4 : Math.min(2, Math.floor(popped / 12)), win ? { inf: 15 } : null); };
+    const finish = (win) => { if (over) return; over = true; quickEnd(win ? 'Cleared!' : 'They got through! ' + popped + ' popped', win ? 4 : Math.min(2, Math.floor(popped / 12)), win ? { inf: 15 } : null, { win, key: 'shoot', score: popped, stars: win ? 3 : popped >= 24 ? 2 : popped >= 12 ? 1 : 0 }); };
     const resolve = (k) => {
       combo = 0;
       for (;;) {
@@ -3486,12 +3522,16 @@
   function startHoop() {
     loadHoop();
     freshDay(); if ((plays.hoop || 0) >= MAX_PLAYS) return; plays.hoop = (plays.hoop || 0) + 1; store.set('plays', plays); updateSides();
-    quickOpen('Hoop Shot', 'Pull the ball back, aim, and let go. Fill the hoops!');
+    quickOpen('Hoop Shot', 'Hit the gold hoop for double points. 3 in a row and you are on fire!');
     const { cv, g, xy } = quickCanvas();
     const BALLS = 12, SX = 150, SY = 330, TOPY = 88, BOTY = 268;
     const rowT = [0.13, 0.38, 0.63, 0.88], sc = (t) => 0.74 + 0.36 * t, halfW = (t) => 103 + 42 * t;
     const rings = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const t = rowT[r]; rings.push({ r, c, x: 151 + (c - 1.5) * halfW(t) * 0.46, y: TOPY + (BOTY - TOPY) * t, s: sc(t), ball: null, glow: 0, drop: 0 }); }
     let left = BALLS, filled = 0, lines = 0, drag = null, ball = null, over = false, last = performance.now(), tNow = 0, shake = 0; const doneLines = {}, parts = [], texts = [], loose = [];
+    // v362: points instead of a plain count. One hoop is gold (x2) and moves after every throw; 3 hits in a row light the ball on fire
+    // (x2 until the next miss, x4 on the gold hoop); a swish right in the middle of the hoop gives one more ball (up to 4)
+    let pts = 0, streak = 0, fire = false, gold = null, extraBalls = 0;
+    const pickGold = () => { const free = rings.filter((q) => !q.ball && q !== gold); gold = free.length ? free[Math.floor(Math.random() * free.length)] : null; if (gold) gold.flash = 1; };
     const kindOf = (n) => (n % 2 ? 'hoop_ball_r' : 'hoop_ball_g');
     const target = (d) => { const px = Math.max(-70, Math.min(70, d.x - SX)), py = Math.max(0, Math.min(96, d.y - SY)); return { x: SX - px * 2.5, y: SY - 52 - py * 2.25, pull: py }; };
     const drawBall = (k, x, y, rad, rot) => { const im = hoopArt[k]; g.save(); g.translate(x, y); if (rot) g.rotate(rot); if (im.complete && im.naturalWidth) g.drawImage(im, -rad, -rad, rad * 2, rad * 2); else glossBall(g, 0, 0, rad, '#4fdc4a', '#1f8f1c'); g.restore(); };
@@ -3507,7 +3547,10 @@
       sets.push(['d0', rings.filter((q) => q.r === q.c)], ['d1', rings.filter((q) => q.r + q.c === 3)]);
       sets.forEach(([id, qs]) => { if (!doneLines[id] && qs.every((q) => q.ball)) { doneLines[id] = 1; lines++; qs.forEach((q) => { q.glow = 1.6; burst(q.x, q.y, ['#ffe14d', '#fff', '#ffb347'], 8); }); say(T('LINE!'), 150, 150, '#ffe14d', 1); S.fanfare(); buzz([20, 30, 50]); shake = 0.3; } });
     };
-    const finish = () => { if (over) return; over = true; const full = filled >= 16; quickEnd(filled + ' hoops · ' + lines + ' line' + (lines === 1 ? '' : 's'), Math.floor(filled / 4) + lines, full ? { hints: 1, inf: 15 } : lines >= 3 ? { inf: 15 } : null); };
+    const finish = () => { if (over) return; over = true; const full = filled >= 16, win = full || lines >= 3;
+      quickEnd(pts + ' ' + T('points') + ' · ' + filled + ' ' + T('hoops') + ' · ' + lines + ' ' + T(lines === 1 ? 'line' : 'lines'), Math.floor(pts / 4) + lines, full ? { hints: 1, inf: 15 } : lines >= 3 ? { inf: 15 } : null,
+        { win, key: 'hoop', score: pts, stars: win ? 3 : pts >= 16 || lines >= 2 ? 2 : pts >= 6 ? 1 : 0 }); };
+    pickGold();
     cv.onpointerdown = (e) => { if (over || ball) return; const [x, y] = xy(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} drag = { x, y: Math.max(SY, y) }; };
     cv.onpointermove = (e) => { if (!drag) return; const [x, y] = xy(e); drag.x = x; drag.y = y; };
     const release = () => {
@@ -3522,7 +3565,7 @@
       const tr = g.createLinearGradient(0, 296, 0, 360); tr.addColorStop(0, '#7a1420'); tr.addColorStop(0.25, '#c0252f'); tr.addColorStop(1, '#5a0d16'); g.fillStyle = tr; g.fillRect(0, 296, 300, 64);
       g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(SX, SY + 17, 30, 8, 0, 0, 6.283); g.fill();
       // scoreboard
-      g.textAlign = 'center'; g.fillStyle = '#7a3a06'; g.font = '900 17px Nunito,sans-serif'; g.fillText(filled + ' / 16', 96, 44); g.font = '900 10px Nunito,sans-serif'; g.fillText(T('HOOPS'), 96, 56);
+      g.textAlign = 'center'; g.fillStyle = '#7a3a06'; g.font = '900 17px Nunito,sans-serif'; g.fillText(String(pts), 96, 44); g.font = '900 10px Nunito,sans-serif'; g.fillText(T('POINTS'), 96, 56);
       g.font = '900 17px Nunito,sans-serif'; g.fillText(String(lines), 150, 44); g.font = '900 10px Nunito,sans-serif'; g.fillText(T('LINES'), 150, 56);
       g.font = '900 17px Nunito,sans-serif'; g.fillText(String(left), 204, 44); g.font = '900 10px Nunito,sans-serif'; g.fillText(T('BALLS'), 204, 56);
       // hoops, far rows first; a ball in flight is drawn at the depth of its row
@@ -3530,7 +3573,10 @@
       rings.forEach((q) => {
         if (q.glow > 0) { g.globalAlpha = Math.min(1, q.glow); const gl = g.createRadialGradient(q.x, q.y, 2, q.x, q.y, 34 * q.s); gl.addColorStop(0, 'rgba(255,240,140,.95)'); gl.addColorStop(1, 'rgba(255,220,80,0)'); g.fillStyle = gl; g.beginPath(); g.arc(q.x, q.y, 34 * q.s, 0, 6.283); g.fill(); g.globalAlpha = 1; }
         g.fillStyle = 'rgba(90,40,0,.25)'; g.beginPath(); g.ellipse(q.x + 3, q.y + 20 * q.s, 20 * q.s, 6 * q.s, 0, 0, 6.283); g.fill();
+        if (q === gold) { const pu = 0.75 + 0.25 * Math.sin(tNow * 6), rg = 38 * q.s * (1 + (q.flash || 0) * 0.6); const gl = g.createRadialGradient(q.x, q.y, 2, q.x, q.y, rg); gl.addColorStop(0, 'rgba(255,236,120,' + pu + ')'); gl.addColorStop(0.55, 'rgba(255,190,40,' + (pu * 0.55) + ')'); gl.addColorStop(1, 'rgba(255,170,0,0)'); g.fillStyle = gl; g.beginPath(); g.arc(q.x, q.y, rg, 0, 6.283); g.fill(); }
         drawRing(q, 0);
+        if (q === gold) { g.strokeStyle = 'rgba(255,215,40,' + (0.7 + 0.3 * Math.sin(tNow * 6)) + ')'; g.lineWidth = 3.2 * q.s; g.beginPath(); g.ellipse(q.x, q.y + 1, 19 * q.s, 7.5 * q.s, 0, 0, 6.283); g.stroke();
+          g.font = '900 ' + Math.round(12 * q.s) + 'px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = 3; g.strokeStyle = '#7a3a06'; g.strokeText('x2', q.x, q.y - 15 * q.s); g.fillStyle = '#ffe14d'; g.fillText('x2', q.x, q.y - 15 * q.s); }
         if (q.ball) { const dy = 7 * q.s - Math.abs(Math.sin(q.drop * 9)) * q.drop * 10; drawBall(q.ball, q.x, q.y + dy, 13.5 * q.s, 0); drawRing(q, 1); }
       });
       loose.forEach((b) => drawBall(b.k, b.x, b.y, b.rad, b.rot));
@@ -3543,6 +3589,7 @@
         g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 3; g.beginPath(); g.moveTo(SX - 34, SY - 8); g.lineTo(SX + px * 0.55, SY + py * 0.3); g.lineTo(SX + 34, SY - 8); g.stroke();
         drawBall(kindOf(BALLS - left), SX + px * 0.55, SY + py * 0.3, 19, 0);
       } else if (!ball && left > 0) { drawBall(kindOf(BALLS - left), SX, SY + Math.sin(tNow * 3) * 2, 19, 0); if (left === BALLS) { g.globalAlpha = 0.6 + 0.4 * Math.sin(tNow * 4); g.fillStyle = '#fff'; g.font = '900 12px Nunito,sans-serif'; g.textAlign = 'center'; g.fillText(T('▼ pull down ▼'), SX, 312); g.globalAlpha = 1; } }
+      if (fire) { const fb = ball || (!drag && left > 0 ? { x: SX, y: SY, rad: 19 } : null); if (fb) { const fl = g.createRadialGradient(fb.x, fb.y, fb.rad * 0.4, fb.x, fb.y, fb.rad * 2); fl.addColorStop(0, 'rgba(255,200,60,.85)'); fl.addColorStop(0.5, 'rgba(255,90,20,.45)'); fl.addColorStop(1, 'rgba(255,60,0,0)'); g.fillStyle = fl; g.beginPath(); g.arc(fb.x, fb.y, fb.rad * 2, 0, 6.283); g.fill(); } }
       if (ball) { g.fillStyle = 'rgba(60,20,0,.22)'; const u = Math.min(1, ball.t); g.beginPath(); g.ellipse(SX + (ball.tx - SX) * u, SY + (ball.ty - SY) * u + 10, ball.rad * 0.9, ball.rad * 0.3, 0, 0, 6.283); g.fill(); drawBall(ball.k, ball.x, ball.y, ball.rad, ball.rot); }
       parts.forEach((p) => { g.globalAlpha = Math.max(0, p.l / 0.6); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, 3, 0, 6.283); g.fill(); }); g.globalAlpha = 1;
       texts.forEach((t) => { g.globalAlpha = Math.max(0, Math.min(1, t.a)); g.font = '900 ' + (t.big ? 34 : 20) + 'px Nunito,sans-serif'; g.textAlign = 'center'; g.lineWidth = t.big ? 7 : 4; g.strokeStyle = '#5a2a00'; g.strokeText(t.t, t.x, t.y); g.fillStyle = t.c; g.fillText(t.t, t.x, t.y); }); g.globalAlpha = 1;
@@ -3554,16 +3601,27 @@
         ball.t += dt / 0.62; ball.rot += dt * 5; const tg = { x: ball.tx, y: ball.ty }, p = pathAt(tg, Math.min(1, ball.t)); ball.x = p.x; ball.y = p.y; ball.rad = p.rad;
         if (ball.t >= 1) {
           let best = null, bd = 9; rings.forEach((q) => { const d = Math.hypot((ball.tx - q.x) / (20 * q.s), (ball.ty - q.y) / (11 * q.s)); if (d < bd) { bd = d; best = q; } });
-          if (best && bd < 0.62 && !best.ball) { best.ball = ball.k; best.drop = 1; filled++; burst(best.x, best.y, ['#fff', '#ffe14d', ball.k.endsWith('r') ? '#ff4d7a' : '#7ee21f'], 12); say(bd < 0.22 ? T('Perfect!') : T('Swish!'), best.x, best.y - 26, '#fff'); S.candy(filled % 9, Math.min(8, 2 + filled)); buzz([10, 20, 20]); checkLines(); }
-          else { const side = best ? Math.sign(ball.tx - best.x) || 1 : 1, onBoard = ball.ty > TOPY - 6 && ball.ty < BOTY + 14 && Math.abs(ball.tx - 151) < 150; loose.push({ k: ball.k, x: ball.x, y: ball.y, rad: ball.rad, rot: ball.rot, vx: side * (best && bd < 1.5 ? 70 : 20), vy: best && bd < 1.5 ? -150 : -40, life: 0 }); if (best && bd < 1.5) { say(best.ball ? T('Taken!') : T('Rim!'), ball.x, ball.y - 20, '#fff'); S.x(); buzz(14); } else { S.wrong(); } if (!onBoard) loose[loose.length - 1].vy = 60; }
+          if (best && bd < 0.62 && !best.ball) {
+            const isGold = best === gold, mult = (isGold ? 2 : 1) * (fire ? 2 : 1); best.ball = ball.k; best.drop = 1; filled++; pts += mult; streak++;
+            burst(best.x, best.y, isGold || fire ? ['#fff', '#ffe14d', '#ff9a1f', '#ff5a1f'] : ['#fff', '#ffe14d', ball.k.endsWith('r') ? '#ff4d7a' : '#7ee21f'], isGold ? 22 : 12);
+            const swish = bd < 0.22 && extraBalls < 4;
+            say(isGold ? T('GOLD x2!') : swish ? T('SWISH! +1 ball') : T('Swish!'), best.x, best.y - 26, isGold ? '#ffe14d' : '#fff', isGold ? 1 : 0);
+            if (mult > 1) say('+' + mult, best.x + 30, best.y - 6, '#ffb347');
+            if (swish) { extraBalls++; left++; if (isGold) say(T('SWISH! +1 ball'), 150, 210, '#fff'); }
+            S.candy(filled % 9, Math.min(8, 2 + filled)); buzz([10, 20, 20]); if (isGold) { S.hint(); shake = 0.2; }
+            if (streak === 3 && !fire) { fire = true; say(T('ON FIRE!'), 150, 190, '#ff7a1f', 1); S.fanfare(); buzz([20, 30, 40]); }
+            checkLines(); }
+          else { const side = best ? Math.sign(ball.tx - best.x) || 1 : 1, onBoard = ball.ty > TOPY - 6 && ball.ty < BOTY + 14 && Math.abs(ball.tx - 151) < 150; loose.push({ k: ball.k, x: ball.x, y: ball.y, rad: ball.rad, rot: ball.rot, vx: side * (best && bd < 1.5 ? 70 : 20), vy: best && bd < 1.5 ? -150 : -40, life: 0 }); if (best && bd < 1.5) { say(best.ball ? T('Taken!') : T('Rim!'), ball.x, ball.y - 20, '#fff'); S.x(); buzz(14); } else { S.wrong(); } if (!onBoard) loose[loose.length - 1].vy = 60; streak = 0; fire = false; }
+          pickGold();
           ball = null; if (left <= 0 || filled >= 16) setTimeout(finish, 1100);
         }
       }
       loose.forEach((b) => { b.vy += 520 * dt; b.x += b.vx * dt; b.y += b.vy * dt; b.rot += dt * 7; b.rad = Math.min(20, b.rad + dt * 5); b.life += dt; }); for (let i = loose.length - 1; i >= 0; i--) if (loose[i].y > 400) loose.splice(i, 1);
-      rings.forEach((q) => { q.glow = Math.max(0, q.glow - dt); q.drop = Math.max(0, q.drop - dt * 2.2); });
+      rings.forEach((q) => { q.glow = Math.max(0, q.glow - dt); q.drop = Math.max(0, q.drop - dt * 2.2); q.flash = Math.max(0, (q.flash || 0) - dt * 2); });
+      if (fire && ball) for (let k = 0; k < 2; k++) parts.push({ x: ball.x + (Math.random() - 0.5) * 10, y: ball.y + (Math.random() - 0.5) * 10, vx: (Math.random() - 0.5) * 30, vy: -20 - Math.random() * 40, l: 0.35, c: ['#ffe14d', '#ff9a1f', '#ff5a1f'][k + (Math.random() < 0.5 ? 0 : 1)] });
       parts.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.l -= dt; }); for (let i = parts.length - 1; i >= 0; i--) if (parts[i].l <= 0) parts.splice(i, 1);
       texts.forEach((t) => { t.y -= 24 * dt; t.a -= dt * 1.1; }); for (let i = texts.length - 1; i >= 0; i--) if (texts[i].a <= 0) texts.splice(i, 1);
-      $('quickBar').style.width = (left / BALLS * 100) + '%'; $('quickInfo').textContent = 'Balls ' + left + ' · hoops ' + filled + ' · lines ' + lines;
+      $('quickBar').style.width = Math.min(100, left / BALLS * 100) + '%'; $('quickInfo').textContent = 'Balls ' + left + ' · points ' + pts + ' · lines ' + lines + (fire ? ' · 🔥' : '');
       draw(); quickRaf = requestAnimationFrame(tick);
     };
     quickRaf = requestAnimationFrame((t) => { last = t; tick(t); });
@@ -3594,7 +3652,7 @@
       if (over) return; over = true; quickKey = null; draw();
       if (how === 'crash') S.wrong();
       // quickEnd halves the prize of the side games; the bonus stage pays exactly what was collected
-      quickEnd(how === 'win' ? 'You won the race!' : how === 'crash' ? 'Crashed! No prize this time' : 'The rival won this time', how === 'crash' ? 0 : (got + (how === 'win' ? 2 : 0)) * 2, how === 'win' ? { sweeper: 1 } : null);
+      quickEnd(how === 'win' ? 'You won the race!' : how === 'crash' ? 'Crashed! No prize this time' : 'The rival won this time', how === 'crash' ? 0 : (got + (how === 'win' ? 2 : 0)) * 2, how === 'win' ? { sweeper: 1 } : null, { win: how === 'win', key: 'cart', score: got, stars: how === 'win' ? 3 : how === 'crash' ? 0 : got >= 2 ? 2 : 1 });
     };
     const spawn = () => {
       const roll = Math.random(), free = Math.floor(Math.random() * 3);
@@ -3661,8 +3719,9 @@
     const grid = $('memGrid'); grid.innerHTML = ''; let first = null, lock = false, found = 0, moves = 14;
     $('memMoves').textContent = 'Moves left: ' + moves; $('memMsg').textContent = ''; $('memClose').textContent = 'Give up';
     const finish = (win) => {
-      const reward = win ? Math.max(1, Math.floor((2 + Math.floor(moves / 3)) / 2)) : 0; give({ coins: reward }, true); S.prize(); updateSides();
+      const reward = win ? Math.max(1, Math.floor((2 + Math.floor(moves / 3)) / 2)) : 0; if (reward) coinHold += reward; give({ coins: reward }, true); updateHintUi(); updateSides();
       $('memMsg').innerHTML = (win ? 'Great memory! +' : 'Out of moves. +') + reward + ' ' + coinSvg; $('memClose').textContent = 'Done'; lock = true;
+      setTimeout(() => showEvWin({ msg: win ? T('Great memory!') + ' ' + found + ' / 6' : T('Out of moves.') + ' ' + found + ' / 6', reward, win, from: 'memory', key: 'memory', score: win ? 10 + moves : found, stars: win ? (moves >= 2 ? 3 : 2) : found >= 4 ? 1 : 0 }), 450);
     };
     deck.forEach((id) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'mcard'; b.dataset.id = id;
@@ -3707,7 +3766,7 @@
     const candy = (i, x, y, sz, rot) => { const im = tossArt.c[i % tossArt.c.length]; g.save(); g.translate(x, y); g.rotate(rot || 0); if (ok(im)) g.drawImage(im, -sz / 2, -sz / 2, sz, sz); else glossBall(g, 0, 0, sz / 2, '#ff5fa8', '#a8123a'); g.restore(); };
     const burst = (x, y, n) => { const col = ['#fff', '#ffe14d', '#ff8fd0', '#7fe3ff']; for (let k = 0; k < n; k++) { const a = Math.random() * 6.283, v = 40 + Math.random() * 110; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, l: 0.6, c: col[k % 4] }); } };
     const say = (s, x, y, c) => texts.push({ t: s, x, y, a: 1.3, c });
-    const finish = () => { if (over) return; over = true; quickEnd(hits + ' / ' + N + ' in the jar', Math.floor((hits + perfect) / 2), hits >= N ? { hints: 1 } : null); };
+    const finish = () => { if (over) return; over = true; quickEnd(hits + ' / ' + N + ' in the jar', Math.floor((hits + perfect) / 2), hits >= N ? { hints: 1 } : null, { win: hits >= N, key: 'toss', score: hits + perfect, stars: hits >= N ? 3 : hits >= N * 0.6 ? 2 : hits >= 2 ? 1 : 0 }); };
     cv.onpointerdown = (e) => { e.preventDefault(); if (over || fly || shot >= N) return; fly = { u: 0, i: shot, x: SX, y: SY - 30, rot: 0, st: 'up' }; spring = 1; S.whoosh(); buzz(8); };
     const draw = () => {
       if (ok(tossArt.bg)) g.drawImage(tossArt.bg, -30, 0, 360, 360); else { g.fillStyle = '#c86ad0'; g.fillRect(0, 0, 300, 360); }

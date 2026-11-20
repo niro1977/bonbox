@@ -2336,6 +2336,31 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 /* v361: while a window is open, the map's looping animations behind it rest (they are dimmed anyway), so opening and using windows has the device to itself */
 body.ov-open #home *{animation-play-state:paused!important}
 /* v361: the Events screen and every event window opens with a short, quick pop (was a 0.4 s spin from nothing) */
-#events .card,#pass .card,#chest .card,#wheel .card,#storm .card,#quick .card,#memory .card,#toss .card,#climb .card{animation:evcardin .24s cubic-bezier(.2,.9,.3,1.12) both}
+/* v362: no open animation at all on any window: it simply appears (the 0.4 s spin-pop from .card made the frame jump and tilt) */
+.overlay .card{animation:none}
 @keyframes evcardin{from{opacity:0;transform:scale(.86) translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#events .card,#pass .card,#chest .card,#wheel .card,#storm .card,#quick .card,#memory .card,#toss .card,#climb .card{animation:none}}
+
+/* ===== event win screen (v362) ===== */
+#evwin{z-index:30}
+#evwin .card{gap:6px}
+.ew-top{position:relative;height:126px;display:grid;place-items:center;margin-top:2px}
+.ew-gumi{height:124px;width:auto;filter:drop-shadow(0 6px 6px rgba(60,0,90,.4));animation:ewhop 1.1s cubic-bezier(.3,0,.4,1) .25s infinite;transform-origin:50% 100%}
+#evwin:not(.won) .ew-gumi{animation:none}
+@keyframes ewhop{0%,100%{transform:translateY(0) scale(1,1)}12%{transform:translateY(0) scale(1.08,.9)}40%{transform:translateY(-16px) scale(.96,1.05)}70%{transform:translateY(0) scale(1.05,.94)}84%{transform:scale(1,1)}}
+.ew-best{position:absolute;right:4%;top:6px;transform:rotate(12deg);padding:5px 10px;border-radius:10px;background:linear-gradient(#ff6fb4,#e0247a);color:#fff;border:2.5px solid #fff;font:900 15px/1 Nunito,system-ui,sans-serif;box-shadow:0 4px 0 rgba(120,0,60,.45);animation:ewstamp .45s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes ewstamp{from{opacity:0;transform:rotate(12deg) scale(2.4)}to{opacity:1;transform:rotate(12deg) scale(1)}}
+.ew-stars{display:flex;justify-content:center;gap:10px;height:52px;align-items:flex-end}
+.ew-stars i{width:44px;height:44px;background:url(art/ic_sugarstar.webp) center/contain no-repeat;filter:grayscale(1) brightness(.75);opacity:.35;transform:scale(.6)}
+.ew-stars i:nth-child(2){width:52px;height:52px}
+.ew-stars i.on{filter:drop-shadow(0 0 8px rgba(255,220,80,.95));opacity:1;animation:ewstar .45s cubic-bezier(.2,1.6,.4,1) both}
+.ew-stars i.off{opacity:.45;transform:scale(.85);transition:opacity .3s,transform .3s}
+@keyframes ewstar{from{opacity:0;transform:scale(2.2) rotate(-30deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.ew-res{margin:2px 0 0;font:900 17px/1.2 Nunito,system-ui,sans-serif;color:#6b3d1e}
+.ew-prize{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;min-height:58px;align-items:center}
+.ew-prize .pz{display:flex;flex-direction:column;align-items:center;gap:0}
+.ew-prize .pz img{width:46px;height:46px;filter:drop-shadow(0 3px 2px rgba(60,0,90,.35))}
+.ew-prize .pz b{font:900 18px/1 Nunito,system-ui,sans-serif;color:#6b3d1e;font-variant-numeric:tabular-nums}
+.ew-prize small{font:800 14px Nunito,system-ui,sans-serif;color:#8a5a30}
+#evwin .winparty{z-index:31}
+@media (prefers-reduced-motion:reduce){.ew-gumi,.ew-best,.ew-stars i.on{animation:none}}
