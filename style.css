@@ -2286,3 +2286,32 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
   100%{transform:scale(1) translate(0,0) rotate(0)}
 }
 @media (prefers-reduced-motion:reduce){.st-panel.st-storm.go .st-img.hasvid{animation:none!important}}
+
+/* ===== tutorial v358: a bigger window and bigger boards; the 1-2 counters and the right / wrong badges sit above the boards, never on them ===== */
+#tutorial .card{--cw:min(410px,calc(100vw - 12px))}
+#tutorial .tstage{min-height:230px}
+#tutorial .tsolo{width:min(232px,62vw);margin-top:26px}
+#tutorial .tpair{gap:12px}
+#tutorial .tside{display:grid;grid-template-rows:auto auto;justify-items:center;align-content:start;gap:6px}
+#tutorial .tside .tb{width:100%;min-height:0;height:auto}
+#tutorial .tmark{position:relative;right:auto;top:auto;flex:none}
+.tfx{position:absolute;z-index:4;width:58px;height:58px;left:50%;top:50%;transform:translate(-50%,-50%) scale(.3);opacity:0;pointer-events:none;filter:drop-shadow(0 5px 4px rgba(40,0,80,.5));transition:none}
+.tfx.on{animation:tfxin .35s cubic-bezier(.23,1,.32,1) both}
+.tfx.big{width:84px;height:84px}
+.tfx.spin.on{animation:tfxin .35s cubic-bezier(.23,1,.32,1) both,tfxwave .8s .35s ease-in-out 2}
+.tfx.block{animation:tfxblock .5s ease-out both}
+@keyframes tfxin{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes tfxwave{50%{transform:translate(-50%,-50%) rotate(-18deg) scale(1.08)}}
+@keyframes tfxblock{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.3);filter:drop-shadow(0 0 14px #9ff) drop-shadow(0 5px 4px rgba(40,0,80,.5))}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.tc.tglow{animation:thi .7s ease-in-out infinite;box-shadow:0 0 0 3px #fff36b,0 0 12px 4px #ffe14d!important;z-index:2}
+.tc.tgone u{transition:opacity .3s,transform .3s;opacity:0!important;transform:scale(.3)}
+.tpts{position:absolute;left:50%;top:18%;z-index:5;transform:translateX(-50%);white-space:nowrap;padding:4px 12px;border-radius:99px;background:linear-gradient(180deg,#ffe95c,#ffb21f);border:2.5px solid #fff;color:#5a2a00;font:900 16px/1 Nunito,system-ui,sans-serif;box-shadow:0 3px 0 rgba(120,60,0,.45);animation:tptsup 1.6s ease-out both;pointer-events:none}
+@keyframes tptsup{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}35%{transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-16px)}}
+.thlp{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+.thlp .tsolo{margin-top:0!important;width:min(200px,54vw)!important}
+.thname{font:900 18px/1.1 Nunito,system-ui,sans-serif;color:#7a2fd0;min-height:20px}
+.ticons{display:grid;grid-template-columns:repeat(5,46px);justify-content:center;gap:6px 10px;width:100%;margin-top:4px}
+.ticon{all:unset;cursor:pointer;display:grid;place-items:center;width:46px;height:46px;padding:2px;box-sizing:border-box;border-radius:12px;transition:transform .2s,background .2s}
+.ticon img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(40,0,80,.4))}
+.ticon.on{background:rgba(255,236,110,.75);box-shadow:0 0 0 2px #ffb21f;transform:scale(1.12)}
+@media (prefers-reduced-motion:reduce){.tfx.on,.tfx.spin.on,.tfx.block,.tc.tglow,.tpts{animation:none!important;opacity:1}}

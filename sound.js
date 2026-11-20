@@ -69,7 +69,7 @@
     pending[name] = fetch('audio/sfx/' + name + '.mp3').then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('missing'))))
       .then((ab) => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej))).then((b) => { bufs[name] = b; }).catch(() => { bufs[name] = null; });
   }
-  function preloadSamples() { ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'fanfare', 'stars', 'cake_layer', 'cake_top', 'cake_fly'].forEach(loadSample); }
+  function preloadSamples() { ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'fanfare', 'stars', 'cake_layer', 'cake_top', 'cake_fly', 'first_bells', window.LANG === 'es' ? 'first_es' : 'first_en'].forEach(loadSample); }
   // plays a recorded sample; returns false (so the caller can use the synth) when it is not loaded yet
   function sample(name, rate, gain, when) {
     const b = bufs[name]; if (!b || !ctx) return false;
@@ -208,6 +208,13 @@
       const base = [0, 4, 7][Math.min(i, 3) - 1] + 12;
       reverb(); bell(hz(base + 12), t, 1.2, 0.26); bell(hz(base + 24), t + 0.02, 1.0, 0.14); sparkle(t, 0.1);
       [0, 7, 12, 16].forEach((x, k) => bell(hz(base + 24 + x), t + 0.05 + k * 0.05, 0.6, 0.08));
+    },
+    // first place in the league table: crown bells and the deep narrator "You're number one!" (bells only when the narrator is off)
+    first(voice) {
+      if (!ready()) return;
+      if (sample(voice ? (window.LANG === 'es' ? 'first_es' : 'first_en') : 'first_bells', 1, 1)) return;
+      if (voice && sample('first_bells', 1, 1)) return;
+      S.fanfare();
     },
     fanfare() {
       if (!ready()) return;

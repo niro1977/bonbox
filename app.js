@@ -258,7 +258,7 @@
       rows.forEach((row) => { const b = row.querySelector('.lrk'); if (b) b.outerHTML = rankBadge(row._new + 1); });
       const me = rows.find((r) => r._e.me); if (me) { me.classList.remove('climb'); me.classList.add('landed'); }
       $('leagueMsg').classList.remove('lwait'); $('leagueZone').classList.remove('lwait');
-      if (ni === 0) { S.fanfare && S.fanfare(); } else if (up) S.praise && S.praise(1);
+      if (ni === 0) { if (S.first) S.first(!!(V && V.isEnabled())); else if (S.fanfare) S.fanfare(); }   // its own first-place sound, not the win tune again else if (up) S.praise && S.praise(1);
     }, 550 + 1000));
   }
   // ?dbg=1&demo=lose : level 12 with a two-layer cake and 100 coins, lost on purpose, so the out-of-hearts screen can be seen (test mode only)
@@ -354,7 +354,10 @@
     void off; }
   /* ---------- window titles: always one line, centred on the plate, shrunk just enough to fit inside it ---------- */
   function fitTitle(h) {
-    const box = h && h.getBoundingClientRect(); if (!box || !box.width || !h.clientWidth) return;
+    const box = h && h.getBoundingClientRect();
+    // a window that is still popping in can measure 0 wide on its first frame: try again on the next frames instead of never fitting the title
+    if (!box || !box.width || !h.clientWidth) { if (h && h.clientWidth && (h._retry = (h._retry || 0) + 1) < 40) requestAnimationFrame(() => fitTitle(h)); return; }
+    h._retry = 0;
     // a title is measured once for its text and its plate, and then keeps that size: it never changes while the window is open.
     // The text and the plate are measured on screen together, so the window's pop-in animation (which scales both) cannot change the result.
     const key = h.textContent + '|' + h.clientWidth + '|' + h.clientHeight; if (h._fit === key) return;
@@ -1893,13 +1896,21 @@
   /* sweets confetti: two cannons at the bottom corners fire a burst of sweets up over the win card; they spread, tumble, flutter down and it is over in a few seconds */
   const partyArt = []; let partyRun = 0;
   // the win confetti pictures are loaded and decoded early, when the app is idle, so the first win of a session does not stutter
-  setTimeout(() => { if (partyArt.length) return; for (let k = 1; k <= 21; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; if (im.decode) im.decode().catch(() => {}); partyArt.push(im); } }, 5000);
+  // v357: each sweet becomes a fully decoded bitmap at its largest drawn size (60 px x screen density), so drawing the burst never decodes or
+  // shrinks a picture again; drawn straight from the webp, Chrome decoded pictures in the middle of the win frames (10-30 ms a frame)
+  const partyBmp = [];
+  const partyView = { w: window.innerWidth, h: window.innerHeight }; addEventListener('resize', () => { partyView.w = window.innerWidth; partyView.h = window.innerHeight; });
+  const loadParty = () => { if (partyArt.length) return; for (let k = 1; k <= 21; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; partyArt.push(im); const i = k - 1, px = Math.round(60 * Math.min(2, window.devicePixelRatio || 1)); (im.decode ? im.decode() : Promise.reject()).then(() => (window.createImageBitmap ? createImageBitmap(im, { resizeWidth: px, resizeHeight: px, resizeQuality: 'high' }) : null)).then((b) => { if (b) partyBmp[i] = b; }).catch(() => {}); } };
+  setTimeout(loadParty, 5000);
   function candyParty() {
     const cv = $('winParty'); if (!cv || !cv.getContext) return; const run = ++partyRun;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!partyArt.length) for (let k = 1; k <= 21; k++) { const im = new Image(); im.src = 'art/sw_' + k + '.webp'; partyArt.push(im); }
-    const dpr = Math.min(2, window.devicePixelRatio || 1), W = window.innerWidth, H = window.innerHeight, g = cv.getContext('2d');
-    cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0); cv.style.opacity = 1;
+    loadParty();
+    // v357: the screen size comes from the last resize (reading innerWidth here, the moment the card is revealed, made the browser lay the
+    // whole card out on the spot), and the canvas is only reallocated when that size changed
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = partyView.w, H = partyView.h, g = cv.getContext('2d');
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H); cv.style.opacity = 1;
     const P = [], G = 620;
     const shoot = (left, delay) => {
       const ang = (left ? -62 : -118) + (Math.random() - 0.5) * 46, sp = H * (1.05 + Math.random() * 0.75), a = ang * Math.PI / 180;
@@ -1920,7 +1931,7 @@
         const drag = Math.pow(0.16, dt); p.vx *= drag; p.vy = p.vy * drag + G * dt; if (p.vy > 240) p.vy = 240;
         p.x += p.vx * dt + Math.sin(p.fp + p.life * p.sf) * p.sway * dt * (p.vy > 0 ? 1 : 0.2); p.y += p.vy * dt; p.r += p.vr * dt; p.vr *= Math.pow(0.6, dt);
         if (p.y - p.sz > H && p.vy > 0) { P.splice(n, 1); continue; }
-        const im = partyArt[p.i]; if (!im.complete || !im.naturalWidth) continue;
+        const im = partyBmp[p.i] || partyArt[p.i]; if (!partyBmp[p.i] && (!im.complete || !im.naturalWidth)) continue;
         const sx = Math.cos(p.fp + p.life * p.flip), fade = clock > 5.4 ? Math.max(0, 1 - (clock - 5.4) / 1.4) : 1;
         g.globalAlpha = fade; g.save(); g.translate(p.x, p.y); g.rotate(p.r); const pu = 1 + sx * 0.06; g.scale(pu, pu); g.drawImage(im, -p.sz / 2, -p.sz / 2, p.sz, p.sz); g.restore();   // solid 3D sweets spin, they do not flip like paper
       }
@@ -2294,7 +2305,8 @@
       const k = (o.candies || []).findIndex((c) => c[0] === y && c[1] === x);
       hh += '<i class="tc' + ((o.candies || []).some((c) => c[0] === y && c[1] === x) ? ' tcandy' : '') + (has(o.hi, y, x) ? ' hi' : '') + (has(o.red, y, x) ? ' red' : '') + '" data-p="' + y + x + '" style="--c:' + TCOL[TREG[y][x]] + '">' + (k >= 0 ? '<svg style="animation-delay:' + (0.15 + k * 0.18) + 's"><use href="#c' + ((o.ids || [0, 2, 3, 6])[k]) + '"/></svg>' : has(o.xs, y, x) ? '<u></u>' : '') + '</i>';
     }
-    return hh + '</div>' + (o.bad ? '<b class="tmark bad">✗</b>' : o.good ? '<b class="tmark good">✓</b>' : '');
+    // the right / wrong badge sits above the board, centred, never on top of it
+    return (o.bad ? '<b class="tmark bad">✗</b>' : o.good ? '<b class="tmark good">✓</b>' : '') + hh + '</div>';
   }
   const pair = (good, bad) => '<div class="tpair"><div class="tside">' + tutBoard(Object.assign({ good: 1 }, good)) + '</div><div class="tside">' + tutBoard(Object.assign({ bad: 1 }, bad)) + '</div></div>';
   const rowOf = (y) => [0, 1, 2, 3].map((x) => [y, x]), colOf = (x) => [0, 1, 2, 3].map((y) => [y, x]), regOf = (r) => { const o = []; TREG.forEach((rw, y) => rw.forEach((v, x) => { if (v === r) o.push([y, x]); })); return o; };
@@ -2305,7 +2317,20 @@
     { t: 'Rows and columns', d: 'Two candies can never share a row or a column.', h: () => pair({ candies: TSOL, hi: rowOf(0).concat(colOf(1)) }, { candies: [[0, 0], [0, 3]], red: rowOf(0), ids: [0, 2] }) },
     { t: 'One per colour', d: 'Each colour area holds exactly one candy.', h: () => pair({ candies: TSOL, hi: regOf(2) }, { candies: [[1, 1], [3, 0]], red: regOf(2), ids: [3, 6] }) },
     { t: 'No touching!', d: 'Not side by side, and not even corner to corner.', h: () => pair({ candies: TSOL }, { candies: [[1, 1], [2, 2]], red: [[0, 0], [0, 1], [0, 2], [1, 0], [1, 2], [2, 0], [2, 1], [2, 2], [1, 1]], ids: [0, 3] }) },
-    { t: 'Hearts & helpers', d: 'A wrong candy costs a heart. Stuck? The light bulb gives a hint and the wand places a candy for you.', h: () => '<div class="thelp"><span class="thearts"><img src="art/ic_heart.webp" alt=""><img src="art/ic_heart.webp" alt=""><img class="brk" src="art/ic_heart.webp" alt=""></span><span class="ttools"><b class="ttool"><img src="art/tool_hint.webp" alt=""></b><b class="ttool"><img src="art/tool_wand.webp" alt=""></b></span></div>' }
+    { t: 'Hearts', d: 'Every wrong candy costs a heart. Take good care of them!', h: () => '<div class="thelp"><span class="thearts"><img src="art/ic_heart.webp" alt=""><img src="art/ic_heart.webp" alt=""><img class="brk" src="art/ic_heart.webp" alt=""></span></div>' },
+    { t: 'Your helpers', d: '', h: () => '<div class="thlp"><b class="thname" id="thName"></b><div class="tsolo">' + tutBoard({}) + '<img class="tfx" id="tFx" alt=""></div><div class="ticons">' + THELP.map((o, i) => '<button type="button" class="ticon" data-i="' + i + '" aria-label="' + o.n + '"><img src="art/' + o.img + '.webp" alt=""></button>').join('') + '</div></div>', run: tutHelp }
+  ];
+  // every helper of the game, each shown working on the small board in turn (tap an icon to see that one)
+  const THELP = [
+    { k: 'undo', img: 'tool_undo', n: 'Undo', d: 'Takes back your last move.' },
+    { k: 'hint', img: 'tool_hint', n: 'Hint', d: 'Finds a square where an X surely belongs and marks it for you.' },
+    { k: 'wand', img: 'tool_wand', n: 'Magic Wand', d: 'Places one correct candy for you, with no risk.' },
+    { k: 'sweeper', img: 'tool_sweeper', n: 'Sweeper', d: 'Marks an X on every square your candies already rule out.' },
+    { k: 'lens', img: 'tool_lens', n: 'Magnifier', d: 'Tap any square to peek at the truth: a candy or an X.' },
+    { k: 'car', img: 'tool_car', n: 'Gummy Car', d: 'Drives along a whole row and uncovers all of it, the candy too.' },
+    { k: 'rocket', img: 'tool_rocket', n: 'Candy Rocket', d: 'Flies up a whole column and uncovers all of it, the candy too.' },
+    { k: 'shield', img: 'ic_shield', n: 'Heart Shield', d: 'Pick it before a level: your first mistake costs no heart.' },
+    { k: 'double', img: 'ic_double', n: 'Double Points', d: 'Pick it before a level: that level gives double points.' }
   ];
   let tutI = 0, tutT = [];
   function tutHand() {
@@ -2313,7 +2338,7 @@
     const go = (p) => { const c = cell(p), b = box.querySelector('.tsolo').getBoundingClientRect(), r = c.getBoundingClientRect(); box.querySelectorAll('.tc.under').forEach((e) => e.classList.remove('under')); c.classList.add('under'); hand.style.left = (r.left - b.left + r.width / 2) + 'px'; hand.style.top = (r.top - b.top + r.height / 2) + 'px'; };
     const tap = () => { hand.classList.remove('tap'); void hand.offsetWidth; hand.classList.add('tap'); S.tap(); const c = box.querySelector('.tc.under'); if (c) { c.classList.remove('press'); void c.offsetWidth; c.classList.add('press'); } };
     // a double tap is counted out loud for the eye: 1 ... 2
-    const bub = (k) => { const c = box.querySelector('.tc.under'), so = box.querySelector('.tsolo'); if (!c || !so) return; const b0 = so.getBoundingClientRect(), r = c.getBoundingClientRect(), e = document.createElement('b'); e.className = 'tnum'; e.textContent = k; e.style.left = (r.left - b0.left + r.width / 2 + (k === 1 ? -16 : 16)) + 'px'; e.style.top = (r.top - b0.top - 6) + 'px'; so.appendChild(e); setTimeout(() => e.remove(), 900); };
+    const bub = (k) => { const c = box.querySelector('.tc.under'), so = box.querySelector('.tsolo'); if (!c || !so) return; const b0 = so.getBoundingClientRect(), r = c.getBoundingClientRect(), e = document.createElement('b'); e.className = 'tnum'; e.textContent = k; e.style.left = (r.left - b0.left + r.width / 2 + (k === 1 ? -18 : 18)) + 'px'; e.style.top = '-8px'; /* above the board, over the square's column */ so.appendChild(e); setTimeout(() => e.remove(), 900); };
     const loop = () => {
       box.querySelectorAll('.tc').forEach((c) => { c.innerHTML = ''; c.classList.remove('tcandy'); });
       const seq = [[300, () => go('11')], [1000, () => { tap(); cell('11').innerHTML = '<u></u>'; }], [1900, () => go('22')], [2600, () => { tap(); cell('22').innerHTML = '<u></u>'; }],
@@ -2338,6 +2363,43 @@
       seq.forEach((q) => tutT.push(setTimeout(q[1], q[0])));
     };
     loop();
+  }
+  function tutHelp() {
+    const box = $('tutStage'), so = box.querySelector('.tsolo'), fx = $('tFx'); if (!so || !fx) return;
+    const cell = (p) => so.querySelector('.tc[data-p="' + p + '"]');
+    const mid = (p) => { const b = so.getBoundingClientRect(), r = cell(p).getBoundingClientRect(); return [r.left - b.left + r.width / 2, r.top - b.top + r.height / 2]; };
+    const at = (fn, ms) => tutT.push(setTimeout(fn, ms));
+    const pop = (c) => { c.classList.remove('press'); void c.offsetWidth; c.classList.add('press'); };
+    const x = (p) => { const c = cell(p); if (c.querySelector('u')) return; c.innerHTML = '<u></u>'; pop(c); if (S.x) S.x(); else S.tap(); };
+    const candy = (p, id) => { const c = cell(p); c.innerHTML = '<svg><use href="#c' + id + '"/></svg>'; c.classList.add('tcandy'); pop(c); S.candy(0, 3); };
+    // the helper's own picture flies over the board: to a square (p), the middle (null), or along a path with a duration
+    const show = (img, p, cls, side) => { const m = p ? mid(p) : [so.clientWidth / 2, so.clientHeight / 2]; if (side) { const w = cell(p).offsetWidth; m[0] += w * 0.5; m[1] -= w * 0.4; }   // 'side': beside the square, so what happens on the square stays in view
+    fx.style.transition = 'none'; fx.className = 'tfx'; fx.src = 'art/' + img + '.webp'; fx.style.left = m[0] + 'px'; fx.style.top = m[1] + 'px'; void fx.offsetWidth; fx.className = 'tfx on' + (cls ? ' ' + cls : ''); };
+    const fly = (p, ms, dx, dy) => { const m = mid(p); fx.style.transition = 'left ' + ms + 'ms linear,top ' + ms + 'ms linear'; fx.style.left = (m[0] + (dx || 0)) + 'px'; fx.style.top = (m[1] + (dy || 0)) + 'px'; };
+    const hide = () => { fx.className = 'tfx'; };
+    const DEMO = {
+      undo: () => { at(() => x('11'), 250); at(() => x('12'), 750); at(() => show('tool_undo', '12', '', 1), 1400); at(() => { const c = cell('12'); c.classList.add('tgone'); S.tap(); }, 1900); at(() => { cell('12').innerHTML = ''; cell('12').classList.remove('tgone'); }, 2250); at(hide, 2700); },
+      hint: () => { at(() => show('tool_hint', '00', '', 1), 300); at(() => cell('00').classList.add('tglow'), 700); at(() => x('00'), 1300); at(hide, 2300); },
+      wand: () => { at(() => show('tool_wand', '13', 'spin', 1), 300); at(() => candy('13', 2), 1100); at(hide, 2300); },
+      sweeper: () => { at(() => candy('01', 0), 250); at(() => show('tool_sweeper', null), 900); ['00', '02', '10', '11', '12', '03', '21', '31'].forEach((p, i) => at(() => x(p), 1400 + i * 110)); at(hide, 2700); },
+      lens: () => { at(() => show('tool_lens', '00'), 250); at(() => fly('20', 700), 600); at(() => candy('20', 3), 1500); at(hide, 2700); },
+      car: () => { at(() => { show('tool_car', '20'); const m = mid('20'); fx.style.left = (m[0] - so.clientWidth * 0.32) + 'px'; }, 250); at(() => fly('23', 1500, so.clientWidth * 0.32), 450);
+        [['20', 1], ['21', 0], ['22', 0], ['23', 0]].forEach((q, i) => at(() => (q[1] ? candy(q[0], 3) : x(q[0])), 700 + i * 330)); at(hide, 2400); },
+      rocket: () => { at(() => { show('tool_rocket', '32'); const m = mid('32'); fx.style.top = (m[1] + so.clientHeight * 0.3) + 'px'; }, 250); at(() => fly('02', 1500, 0, -so.clientHeight * 0.3), 450);
+        [['32', 1], ['22', 0], ['12', 0], ['02', 0]].forEach((q, i) => at(() => (q[1] ? candy(q[0], 6) : x(q[0])), 700 + i * 330)); at(hide, 2400); },
+      shield: () => { at(() => show('ic_shield', null, 'big'), 250); at(() => { candy('00', 0); cell('00').classList.add('red'); }, 1000); at(() => fx.classList.add('block'), 1150); at(() => { cell('00').innerHTML = ''; cell('00').classList.remove('red', 'tcandy'); }, 2000); at(hide, 2700); },
+      double: () => { at(() => show('ic_double', null, 'big'), 250); at(() => { const e = document.createElement('b'); e.className = 'tpts'; e.textContent = '+100 → +200'; so.appendChild(e); setTimeout(() => e.remove(), 1600); S.tap(); }, 1000); at(hide, 2700); }
+    };
+    let i = 0;
+    const play = (k) => {
+      tutT.forEach(clearTimeout); tutT = []; i = k; const o = THELP[i];
+      so.querySelectorAll('.tc').forEach((c) => { c.innerHTML = ''; c.classList.remove('tcandy', 'red', 'tglow', 'tgone'); }); so.querySelectorAll('.tpts').forEach((e) => e.remove()); hide();
+      box.querySelectorAll('.ticon').forEach((b, j) => b.classList.toggle('on', j === i));
+      $('thName').textContent = o.n; $('tutText').textContent = o.d;
+      DEMO[o.k](); at(() => play((i + 1) % THELP.length), 3300);
+    };
+    box.querySelectorAll('.ticon').forEach((b) => { b.onclick = () => { S.tap(); play(+b.dataset.i); }; });
+    play(0);
   }
   function tutShow() {
     tutT.forEach(clearTimeout); tutT = []; const s = TUT[tutI];
@@ -2457,6 +2519,9 @@
     return cv;
   }
   const JUMPSETS = ['hero', 'chef', 'fire', 'pirate', 'cowboy', 'wizard', 'king', 'ninja'];
+  // v357: the browser loads its built-in media stylesheet (125 KB, ~0.1 s to parse) the first time a <video> is laid out. The win film's video sits
+  // inside the hidden win card, so that happened in the very frame the card appeared. An empty video laid out for a moment at startup moves it here.
+  setTimeout(() => { const w = document.createElement('video'); w.muted = true; w.setAttribute('aria-hidden', 'true'); w.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none'; document.body.appendChild(w); requestAnimationFrame(() => requestAnimationFrame(() => w.remove())); }, 2500);
   function applyLook() {
     if (passed() < outfitOf(outfit).at) outfit = 'hero'; if (passed() < frameOf(frame).at) frame = 'cream';
     if (passed() < bearColorOf(bearColor).at) bearColor = 'pink';
