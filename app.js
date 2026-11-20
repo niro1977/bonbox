@@ -687,7 +687,7 @@
   }
   function makeGame(board, label, meta, tier) {
     const n = board.n;
-    cur = { n, regions: board.regions, solution: board.solution, state: [], history: [], hearts: MAX_HEARTS, done: false, hints: 0, label, meta, tier, maybeMode: false, foundPrev: new Set(), wrongMarks: new Set(), penalized: new Set() };
+    cur = { n, regions: board.regions, solution: board.solution, state: [], history: [], hearts: MAX_HEARTS, done: false, lastMove: Date.now(), hints: 0, label, meta, tier, maybeMode: false, foundPrev: new Set(), wrongMarks: new Set(), penalized: new Set() };
     cur.cmap = candyMapFor(board);
     if (V && V.newBoard) V.newBoard();   // every board starts with all the narrator's words fresh
     updateHintUi();
@@ -699,7 +699,7 @@
     $('game').classList.toggle('hardtier', tier !== 'normal');   // Hard / Very Hard / Extreme levels keep their own layout
     bd.style.setProperty('--n', n);
     bd.classList.toggle('n8', n === 8); bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9); $('game').classList.toggle('full', n >= 10); document.body.classList.toggle('full10', n >= 10);
-    $('maybeBtn').setAttribute('aria-pressed', 'false');
+    $('maybeBtn').setAttribute('aria-pressed', 'false'); $('board').classList.remove('lens'); ['lensBtn', 'carBtn', 'rocketBtn'].forEach((id) => { const b = $(id); if (b) b.classList.remove('armed'); });   // no tool stays armed into a new level
     $('lose').hidden = true; $('win').hidden = true; hideToast();
     buildBoard(); drawHearts(); drawFound();
   }
@@ -1206,7 +1206,18 @@
     }
     drawFound();
   }
-  function snapshot() { cur.history.push(cur.state.map((r) => r.slice())); if (cur.history.length > 200) cur.history.shift(); }
+  /* ---------- stuck? a player who stops moving for a while, or loses a second heart, is shown the hint and the wand ---------- */
+  const STUCK_MS = 40000;
+  function stuckNudge(why) {
+    if (!cur || cur.done || $('game').hidden || document.hidden || document.body.classList.contains('ov-open') || cur.lensArmed || cur.vehicleArmed) return;
+    if ((cur.nudges || 0) >= 2 || Date.now() - (cur.nudgedAt || 0) < 60000) return;
+    cur.nudges = (cur.nudges || 0) + 1; cur.nudgedAt = Date.now(); cur.lastMove = Date.now();
+    ['hintBtn', 'wandBtn'].forEach((id, k) => { const b = $(id); if (!b) return; b.classList.remove('nudge'); void b.offsetWidth; b.style.animationDelay = (k * 0.15) + 's'; b.classList.add('nudge'); setTimeout(() => b.classList.remove('nudge'), 6500); });
+    toast('Stuck? Tap the light bulb for a hint, or the magic wand to place a candy!'); S.hint && S.hint();
+  }
+  setInterval(() => { if (!cur || cur.done) return; if ($('game').hidden || document.body.classList.contains('ov-open')) { cur.lastMove = Date.now(); return; } if (Date.now() - (cur.lastMove || Date.now()) > STUCK_MS) stuckNudge('idle'); }, 5000);   // time in a window or off the level does not count
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && cur) cur.lastMove = Date.now(); });   // time away from the app is not being stuck
+  function snapshot() { if (cur) cur.lastMove = Date.now(); cur.history.push(cur.state.map((r) => r.slice())); if (cur.history.length > 200) cur.history.shift(); }
 
   /* ---------- effects ---------- */
   const PRAISE = ['Sweet!', 'Yummy!', 'Tasty!', 'Nice!', 'Delicious!', 'Super!', 'Great!'];
@@ -1244,6 +1255,7 @@
   }
   function tap(y, x, maybe, candy) {
     if (cur.done) return;
+    cur.lastMove = Date.now();
     if (cur.lensArmed) { lensPeek(y, x); return; }
     if (cur.vehicleArmed) { useVehicle(cur.vehicleArmed, y, x); return; }
     S.unlock();
@@ -1283,7 +1295,7 @@
   function mistake(y, x) {
     if (infOn()) { toast('♾️ Unlimited hearts: no heart lost!'); S.x(); buzz(20); bearReact('happy'); return; }
     if (cur.shield) { cur.shield = false; toast('🛡 The shield saved your heart!'); S.hint(); buzz([20, 20]); bearReact('happy'); saveGame(); return; }
-    cur.hearts--; buzz([40, 30, 40]); S.wrong(); if (foeKind()) bossMiss();
+    cur.hearts--; cur.misses = (cur.misses || 0) + 1; if (cur.misses === 2) setTimeout(() => stuckNudge('miss'), 1800); buzz([40, 30, 40]); S.wrong(); if (foeKind()) bossMiss();
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
@@ -1304,7 +1316,7 @@
   function hideToast() { clearTimeout(toastTimer); const t = $('toast'); if (t) t.classList.remove('show', 'sticky'); }
   setTimeout(() => { const bd = $('board'); if (bd) bd.addEventListener('pointerdown', () => { if ($('toast').classList.contains('sticky')) hideToast(); }, true); }, 0);
   function toast(text, sticky) {
-    const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.toggle('sticky', !!sticky); if (sticky) { const x = document.createElement('button'); x.type = 'button'; x.className = 'tx'; x.textContent = '✕'; x.setAttribute('aria-label', 'Close'); x.onclick = (e) => { e.stopPropagation(); hideToast(); }; t.appendChild(x); } { const tl = document.querySelector('#game .tools'), r = !$('game').hidden && tl ? tl.getBoundingClientRect() : null; t.style.fontSize = ''; if (r && r.width) { t.style.bottom = 'auto'; t.style.top = Math.max(r.bottom + 16, 0) + 'px';
+    const t = $('toast'); if (t.parentElement !== document.body) { const gap = document.createElement('div'); gap.className = 'toast-gap'; t.parentElement.insertBefore(gap, t); document.body.appendChild(t); t.classList.add('gtoast'); } t.textContent = text; t.classList.toggle('sticky', !!sticky); if (sticky) { const x = document.createElement('button'); x.type = 'button'; x.className = 'tx'; x.textContent = '✕'; x.setAttribute('aria-label', 'Close'); x.onclick = (e) => { e.stopPropagation(); if (cur && (cur.lensArmed || cur.vehicleArmed)) disarmTool(); else hideToast(); }; /* closing an armed tool's message cancels the tool too */ t.appendChild(x); } { const tl = document.querySelector('#game .tools'), r = !$('game').hidden && tl ? tl.getBoundingClientRect() : null; t.style.fontSize = ''; if (r && r.width) { t.style.bottom = 'auto'; t.style.top = Math.max(r.bottom + 16, 0) + 'px';
       // when there is little room under the helpers the text gets a little smaller, so the whole message always stays on the screen
       let fs = parseFloat(getComputedStyle(t).fontSize) || 15; while (r.bottom + 4 + t.offsetHeight > innerHeight - 4 && fs > 11.5) { fs -= 0.5; t.style.fontSize = fs + 'px'; }
       const hh = t.offsetHeight; if (r.bottom + 16 + hh > innerHeight - 4) t.style.top = Math.max(innerHeight - hh - 4, r.bottom + 4) + 'px'; } else { t.style.top = ''; t.style.bottom = ''; } } t.classList.add('show');
@@ -1395,7 +1407,7 @@
     if (m[1] === 'hop') window.CandokuDebug.hop(3, 4); else if (m[1] === 'coins') { show('home'); window.scrollTo(0, 0); window.CandokuDebug.flyCoins(40); }
     const at = location.search.match(/at=([\d.]+)/); if (at) setTimeout(() => document.getAnimations().forEach((x) => { const e = x.effect && x.effect.target; if (e && e.closest && e.closest('.hopper,.hopshadow,#fx')) { x.pause(); x.currentTime = +at[1]; } }), 80);
   }, 1500);
-  if (location.search.includes('dbg')) window.CandokuDebug = { cur: () => cur, items: (o) => { Object.assign(items, o); saveWallet(); updateHintUi(); return items; }, cakeBuild: (n) => cakeBuild(n, $('medCake')), bonus9: () => openBonus(), plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) winSoon(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
+  if (location.search.includes('dbg')) window.CandokuDebug = { cur: () => cur, start: (lv) => startLevel(lv), items: (o) => { Object.assign(items, o); saveWallet(); updateHintUi(); return items; }, cakeBuild: (n) => cakeBuild(n, $('medCake')), bonus9: () => openBonus(), plan: (lv) => { const p = boardPlan(lv); return { n: p.n, seeds: p.seeds, rate: p.rate, tier: tierOf(lv), key: POOL_KEY(lv), idx: POOL_IDX[lv], pool: POOL_KEY(lv) ? ((SEEDS[POOL_KEY(lv)] || {})[p.n] || []).length : 0 }; }, lgprev: (pts, daysAgo) => { const d = new Date(); d.setDate(d.getDate() - (daysAgo || 1)); store.set('lgprev', { day: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'), pts, chase: null }); maybeLeagueResult(() => {}); }, prizes: () => openLeaguePrizes(), bump: (p) => leagueBump(p), chase: () => chase, chaseAge: (min) => { chase.t = Date.now() - min * 60000; }, league: (from) => { if (cur) cur.leagueFrom = from; openLeague(() => {}); }, leagueList: (p) => leagueList(p).map((e) => e.name + ':' + e.points), setPts: (p) => { freshScore(); score.points = p; store.set('score', score); }, boardMs: (lv) => { const t = performance.now(); makeBoard(lv); return Math.round(performance.now() - t); }, cached: () => Object.keys(savedBoards), waiting: () => Object.keys(boardWait), worker: () => !!bWorker, toast: (t) => toast(t, true), chalLeft: (ms) => { if (cur && cur.timed) cur.left = ms; return cur && cur.left; }, bonus: () => startCart(() => {}), bonusAt: (b) => bonusLevelOf(b), hop: (f, t) => { mascotAt = f; renderHome(); show('home'); scrollToLevel(f); return hopTo(f, t); }, flyCoins: (n) => { coins += n; saveWallet(); flyCoins([...document.querySelectorAll('.mascot,#board')].find((e) => e.getBoundingClientRect().width) || document.body, n, 0); } , fail: () => { let k = 9; while (cur && !cur.done && k--) mistake(0, 0); }, solve: () => { const n = cur.n; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = cur.solution[y]; cur.state[y][x] = (Array.isArray(v) ? v[x] : v === x) ? 2 : 0; } paint(); if (solved()) winSoon(); return solved(); }, state: () => ({ lives: livesNow(), next: nextLifeIn(), coins, level, hearts: cur && cur.hearts, done: cur && cur.done }), rate: () => { rate = { done: false, asked: 0 }; openRate(); }, party: () => candyParty(), mischief: () => mischief(), blow: () => foeBlow(), ending: () => showEnding(), storm: (n) => { storm = { start: Date.now(), hits: n || 0, cl: [] }; store.set('storm', storm); }, bossEnter: () => bossEnter(), miss: () => mistake(0, 0), setLives: (n) => { lives.n = n; lives.t = Date.now(); store.set('lives', lives); } };
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
@@ -1491,10 +1503,14 @@
   }
   function armVehicle(kind) {
     if (!cur || cur.done || !(items[kind] > 0)) return;
-    cur.vehicleArmed = kind; $('board').classList.add('lens'); toast(kind === 'car' ? '🚗 Tap a square: the car uncovers its whole row' : '🚀 Tap a square: the rocket uncovers its whole column', true);
+    cur.vehicleArmed = kind; armUi(kind); toast(kind === 'car' ? '🚗 Tap a square: the car uncovers its whole row (tap the car again to cancel)' : '🚀 Tap a square: the rocket uncovers its whole column (tap the rocket again to cancel)', true);
   }
+  // an armed tool: the board's squares pulse and the tool's button glows, so it is clear it waits for a tap (and can be tapped again to cancel)
+  const TOOLBTN = { lens: 'lensBtn', car: 'carBtn', rocket: 'rocketBtn' };
+  function armUi(kind) { const bd = $('board'); bd.classList.remove('lens'); if (kind === 'lens') { void bd.offsetWidth; bd.classList.add('lens'); }   /* only the magnifier makes the squares pulse; the car and rocket do not */ Object.entries(TOOLBTN).forEach(([k, id]) => { const b = $(id); if (b) b.classList.toggle('armed', k === kind); }); }
+  function disarmTool() { if (!cur) return; cur.lensArmed = false; cur.vehicleArmed = null; $('board').classList.remove('lens'); Object.values(TOOLBTN).forEach((id) => { const b = $(id); if (b) b.classList.remove('armed'); }); hideToast(); }
   function useVehicle(kind, y, x) {
-    cur.vehicleArmed = null; $('board').classList.remove('lens'); hideToast();
+    disarmTool();
     items[kind]--; saveWallet(); updateHintUi(); snapshot();
     const n = cur.n, line = []; for (let i = 0; i < n; i++) line.push(kind === 'car' ? [y, i] : [n - 1 - i, x]);   // the car drives left to right, the rocket flies from the bottom up
     // the car / rocket is big and slow enough to be seen crossing the whole line, the line lights up first, and it leaves a sparkly trail
@@ -1535,10 +1551,10 @@
   }
   function armLens() {
     if (!cur || cur.done || items.lens <= 0) return;
-    cur.lensArmed = true; $('board').classList.add('lens'); toast('🔍 Tap a square to peek at the truth', true);
+    cur.lensArmed = true; armUi('lens'); toast('🔍 Tap a square to peek at the truth (tap the magnifier again to cancel)', true);
   }
   function lensPeek(y, x) {
-    cur.lensArmed = false; $('board').classList.remove('lens');
+    disarmTool();
     items.lens--; saveWallet(); updateHintUi(); snapshot(); const k = y + ',' + x;
     if (cur.solution[y] === x) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); paint(); toast('✅ Yes! A candy goes right here', true); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc); if (solved()) winSoon(); }
     else { cur.state[y][x] = 1; cur.wrongMarks.delete(k); paint(); toast('❌ Not here. Marked with an X', true); S.x(); }
@@ -2210,7 +2226,10 @@
   $('hintBtn').onclick = () => openItemInfo('hint');
   $('wandBtn').onclick = () => openItemInfo('wand');
   $('sweepBtn').onclick = () => openItemInfo('sweeper');
-  $('lensBtn').onclick = () => openItemInfo('lens'); $('carBtn').onclick = () => openItemInfo('car'); $('rocketBtn').onclick = () => openItemInfo('rocket');
+  // the magnifier, car and rocket wait for a square to be tapped: tapping the same button again cancels it (tapping another one switches)
+  const armedKind = () => (cur && (cur.lensArmed ? 'lens' : cur.vehicleArmed)) || null;
+  const toolPress = (kind) => { const a = armedKind(); if (a) { disarmTool(); if (a === kind) { S.tap(); toast(T('Cancelled')); return; } } openItemInfo(kind); };
+  $('lensBtn').onclick = () => toolPress('lens'); $('carBtn').onclick = () => toolPress('car'); $('rocketBtn').onclick = () => toolPress('rocket');
   $('rwOk').onclick = () => { S.tap(); flyReward(curReward); $('reward').hidden = true; setTimeout(nextReward, 220); };
   $('hintUse').onclick = onItemButton;
   $('walletCoins').onclick = openShop;
