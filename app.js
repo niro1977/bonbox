@@ -1207,7 +1207,8 @@
     drawFound();
   }
   /* ---------- stuck? a player who stops moving for a while, or loses a second heart, is shown the hint and the wand ---------- */
-  const STUCK_MS = 40000;
+  // how long without a move counts as stuck: 30 s in the first 20 levels (new players), 40 s later, 50 s on hard / very hard / boss levels
+  const stuckMs = () => (cur && cur.tier && cur.tier !== 'normal' ? 50000 : cur && cur.meta && cur.meta.kind === 'level' && cur.meta.level <= 20 ? 30000 : 40000);
   function stuckNudge(why) {
     if (!cur || cur.done || $('game').hidden || document.hidden || document.body.classList.contains('ov-open') || cur.lensArmed || cur.vehicleArmed) return;
     if ((cur.nudges || 0) >= 2 || Date.now() - (cur.nudgedAt || 0) < 60000) return;
@@ -1215,7 +1216,7 @@
     ['hintBtn', 'wandBtn'].forEach((id, k) => { const b = $(id); if (!b) return; b.classList.remove('nudge'); void b.offsetWidth; b.style.animationDelay = (k * 0.15) + 's'; b.classList.add('nudge'); setTimeout(() => b.classList.remove('nudge'), 6500); });
     toast('Stuck? Tap the light bulb for a hint, or the magic wand to place a candy!'); S.hint && S.hint();
   }
-  setInterval(() => { if (!cur || cur.done) return; if ($('game').hidden || document.body.classList.contains('ov-open')) { cur.lastMove = Date.now(); return; } if (Date.now() - (cur.lastMove || Date.now()) > STUCK_MS) stuckNudge('idle'); }, 5000);   // time in a window or off the level does not count
+  setInterval(() => { if (!cur || cur.done) return; if ($('game').hidden || document.body.classList.contains('ov-open')) { cur.lastMove = Date.now(); return; } if (Date.now() - (cur.lastMove || Date.now()) > stuckMs()) stuckNudge('idle'); }, 5000);   // time in a window or off the level does not count
   document.addEventListener('visibilitychange', () => { if (!document.hidden && cur) cur.lastMove = Date.now(); });   // time away from the app is not being stuck
   function snapshot() { if (cur) cur.lastMove = Date.now(); cur.history.push(cur.state.map((r) => r.slice())); if (cur.history.length > 200) cur.history.shift(); }
 
