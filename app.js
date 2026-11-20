@@ -2542,6 +2542,12 @@
   // v357: the browser loads its built-in media stylesheet (125 KB, ~0.1 s to parse) the first time a <video> is laid out. The win film's video sits
   // inside the hidden win card, so that happened in the very frame the card appeared. An empty video laid out for a moment at startup moves it here.
   setTimeout(() => { const w = document.createElement('video'); w.muted = true; w.setAttribute('aria-hidden', 'true'); w.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none'; document.body.appendChild(w); requestAnimationFrame(() => requestAnimationFrame(() => w.remove())); }, 2500);
+  // v361: the first emoji on screen (the ⚡ of Coin Rush, the ⏳ on an event, a 🔒 ...) made the browser load the emoji font and shape the text:
+  // ~0.3 s frozen in the middle of opening a window. Every symbol the game uses is laid out once, invisibly, while the app is idle after starting.
+  setTimeout(() => { const w = document.createElement('div'); w.setAttribute('aria-hidden', 'true'); w.style.cssText = 'position:fixed;left:0;top:0;width:300px;opacity:0;pointer-events:none;z-index:-1;white-space:normal';
+    const txt = '⏱️⏳ⓘ▶️☀️♾️⚑⚡✅✓✕✗✨❌❤️🍬🎁🎂🎟️🎡🏁🏆👑💀🔍🔒🔥🚀🚗🛡️🧗🧹🪄…→∞▼';
+    w.innerHTML = '<span style="font:900 15px Nunito,system-ui,sans-serif">' + txt + '</span><span style="font:800 15px var(--display)">' + txt + '</span><span class="toast">' + txt + '</span>';
+    document.body.appendChild(w); void w.offsetHeight; requestAnimationFrame(() => requestAnimationFrame(() => w.remove())); }, 3500);
   function applyLook() {
     if (passed() < outfitOf(outfit).at) outfit = 'hero'; if (passed() < frameOf(frame).at) frame = 'cream';
     if (passed() < bearColorOf(bearColor).at) bearColor = 'pink';
@@ -2937,17 +2943,18 @@
     const R = 90, P = (r, a) => (110 + r * Math.cos(a)).toFixed(1) + ' ' + (110 + r * Math.sin(a)).toFixed(1);
     for (let i = 0; i < 8; i++) {
       const a0 = (i * 45 - 90) * Math.PI / 180, a1 = ((i + 1) * 45 - 90) * Math.PI / 180;
-      s += '<path d="M110 110 L' + P(R, a0) + ' A' + R + ' ' + R + ' 0 0 1 ' + P(R, a1) + ' Z" fill="url(#wg' + i + ')"/>';
+      s += '<path class="wsl" d="M110 110 L' + P(R, a0) + ' A' + R + ' ' + R + ' 0 0 1 ' + P(R, a1) + ' Z" fill="url(#wg' + i + ')"/>';
     }
+    s += '<g class="wdv">';
     for (let i = 0; i < 8; i++) {   // bevelled dividers: a dark groove with a bright edge beside it
       const a = (i * 45 - 90) * Math.PI / 180, b = a + 0.018;
       s += '<path d="M110 110 L' + P(R, a) + '" stroke="rgba(60,0,70,.55)" stroke-width="2.6" stroke-linecap="round"/><path d="M110 110 L' + P(R, b) + '" stroke="rgba(255,255,255,.75)" stroke-width="1.1" stroke-linecap="round"/>';
     }
-    s += '<circle cx="110" cy="110" r="' + R + '" fill="url(#wrim)"/><circle cx="110" cy="110" r="34" fill="url(#whubsh)"/>';
+    s += '<circle cx="110" cy="110" r="' + R + '" fill="url(#wrim)"/><circle cx="110" cy="110" r="34" fill="url(#whubsh)"/></g>';
     for (let i = 0; i < 8; i++) {
       const am = (i * 45 + 22.5 - 90) * Math.PI / 180, g = WSEG[i], rr = 55, x = 110 + rr * Math.cos(am), y = 110 + rr * Math.sin(am), rot = i * 45 + 22.5, top = g.c ? -19 : -14;   // kept clear of the gold rim and of the hub
-      s += '<g filter="url(#wsh)" transform="rotate(' + rot + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"><image href="art/' + ICON(g) + '.webp" x="' + (x - 14).toFixed(1) + '" y="' + (y + top).toFixed(1) + '" width="28" height="28"/>' +
-        (g.c ? '<text x="' + x.toFixed(1) + '" y="' + (y + 21).toFixed(1) + '" text-anchor="middle" font-size="14" font-weight="900" fill="#fff" stroke="#3a0a4a" stroke-width="3" paint-order="stroke" style="font-family:Nunito,sans-serif">' + g.c + '</text>' : '') + '</g>';
+      s += '<g class="wic"><g filter="url(#wsh)" transform="rotate(' + rot + ' ' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"><image href="art/' + ICON(g) + '.webp" x="' + (x - 14).toFixed(1) + '" y="' + (y + top).toFixed(1) + '" width="28" height="28"/>' +
+        (g.c ? '<text x="' + x.toFixed(1) + '" y="' + (y + 21).toFixed(1) + '" text-anchor="middle" font-size="14" font-weight="900" fill="#fff" stroke="#3a0a4a" stroke-width="3" paint-order="stroke" style="font-family:Nunito,sans-serif">' + g.c + '</text>' : '') + '</g></g>';
     }
     s += '</g>';
     // the glass highlight does not turn with the wheel: the light stays where it is
@@ -2960,9 +2967,35 @@
     $('wheelBtn').disabled = spinning || !(free || extra > 0);
     $('wheelBtn').textContent = free ? 'Spin (free!)' : extra > 0 ? 'Spin (' + extra + ' bonus)' : 'Come back tomorrow';
     $('wheelMsg').textContent = free || extra > 0 ? 'Spin the wheel for a prize!' : 'Finish the daily quests for an extra spin.';
-    $('wheel').hidden = false;
+    $('wheel').hidden = false; wheelIntro();
   }
+  // the wheel is put together in front of the player: the gold ring opens, the eight slices land one after another (tak tak tak, like the
+  // bonus cards), each prize pops onto its slice, then the hub and finally the pointer drops in. A spin during it finishes it at once.
+  let wheelAnims = [];
+  function wheelIntro() {
+    wheelAnims.forEach((a) => a.finish()); wheelAnims = [];
+    if (!document.body.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const box = $('wheelBox'), A = (el, kf, o) => { if (el) wheelAnims.push(el.animate(kf, Object.assign({ fill: 'backwards' }, o))); };
+    const STEP = 75, T0 = 260, sl = box.querySelectorAll('.wsl'), ic = box.querySelectorAll('.wic');
+    A(box.querySelector('.wring'), [{ transform: 'scale(.55) rotate(-40deg)', opacity: 0 }, { transform: 'scale(1.05) rotate(4deg)', opacity: 1, offset: 0.7 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    sl.forEach((p, i) => {
+      p.style.transformBox = 'view-box'; p.style.transformOrigin = '110px 110px';
+      A(p, [{ transform: 'scale(.15)', opacity: 0 }, { transform: 'scale(1.07)', opacity: 1, offset: 0.65 }, { transform: 'none', opacity: 1 }], { duration: 300, delay: T0 + i * STEP, easing: 'cubic-bezier(.2,.8,.3,1.15)' });
+      wheelAnims.push({ finish: ((t) => () => clearTimeout(t))(setTimeout(() => S.ui('flip', 1.1 + i * 0.05, 0.7), T0 + i * STEP)) });
+    });
+    ic.forEach((g, i) => { g.style.transformBox = 'fill-box'; g.style.transformOrigin = '50% 50%';
+      A(g, [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.25)', opacity: 1, offset: 0.6 }, { transform: 'none', opacity: 1 }], { duration: 300, delay: T0 + 140 + i * STEP, easing: 'cubic-bezier(.2,.8,.3,1.2)' }); });
+    const end = T0 + 8 * STEP;
+    A(box.querySelector('.wdv'), [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: end - 150 });
+    A(box.querySelector('.whub'), [{ transform: 'translate(-50%,-50%) scale(0) rotate(-120deg)' }, { transform: 'translate(-50%,-50%) scale(1.18) rotate(8deg)', offset: 0.65 }, { transform: 'translate(-50%,-50%)' }], { duration: 380, delay: end + 80, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    A(box.querySelector('.wptr'), [{ transform: 'translateX(-50%) translateY(-60px)', opacity: 0 }, { transform: 'translateX(-50%) translateY(4px)', opacity: 1, offset: 0.6 }, { transform: 'translateX(-50%) translateY(-3px)', offset: 0.8 }, { transform: 'translateX(-50%)', opacity: 1 }], { duration: 420, delay: end + 300, easing: 'ease-out' });
+    wheelAnims.push({ finish: ((t) => () => clearTimeout(t))(setTimeout(() => { S.ui('flip', 0.8, 0.8); }, end + 520)) });
+    A($('wheelBtn'), [{ transform: 'translateY(14px) scale(.9)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 300, delay: end + 420, easing: 'cubic-bezier(.2,.8,.3,1.2)' });
+  }
+  // the wheel and its pictures are ready before the first tap, so it never opens in pieces
+  setTimeout(() => { try { if (!$('wheelRot')) buildWheel(); ['wheel_ring', 'wheel_hub', 'wheel_pointer'].forEach((n) => { const im = new Image(); im.src = 'art/' + n + '.webp'; }); } catch (e) {} }, 7000);
   function spinWheel() {
+    wheelAnims.forEach((a) => a.finish()); wheelAnims = [];
     freshDay();
     const free = wheel.date !== today();
     if (spinning || !(free || wheel.extra > 0)) return;
@@ -3338,7 +3371,7 @@
       o.el.querySelector('em').textContent = o.tag(); o.el.classList.toggle('hot', !!o.hot()); o.el.classList.toggle('dot', !!o.hot()); o.el.classList.toggle('dim', !!(o.dim && o.dim()));
     });
   }
-  function openEvents() { setTimeout(() => { loadArc(); loadHoop(); }, 600); S.unlock(); S.tap(); closeAll(); renderEvents(); $('events').hidden = false; }
+  function openEvents() { setTimeout(() => { loadArc(); loadHoop(); loadToss(); }, 600); S.unlock(); S.tap(); closeAll(); renderEvents(); $('events').hidden = false; }
 
   /* ---------- canvas helpers shared by the new arcade mini-games ---------- */
   let quickKey = null;
@@ -3348,6 +3381,7 @@
     const body = $('quickBody'); body.innerHTML = '<canvas class="qcv" width="' + 300 * K + '" height="' + H * K + '"></canvas>'; const cv = body.firstChild;
     const xy = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * 300 / r.width, (e.clientY - r.top) * H / r.height]; };
     const g = cv.getContext('2d'); g.setTransform(K, 0, 0, K, 0, 0); g.imageSmoothingQuality = 'high';
+    { const di = g.drawImage.bind(g); g.drawImage = (im, ...a) => di((im && im.__bmp) || im, ...a); }   // a picture decoded ahead of time is drawn from its ready bitmap
     return { cv, g, xy, K };
   }
   const rr = (g, x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
@@ -3359,7 +3393,9 @@
 
   // artwork for the arcade mini-games (made in Overchat)
   const arcArt = {};
-  function loadArc() { if (arcArt.coin) return; [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg', 'cart_bg2'], ['cart_rock', 'webp'], ['cart_bear', 'webp', 'cart_bear2'], ['cart_rival', 'webp', 'cart_rival2']].forEach((f) => { const im = new Image(); im.src = 'art/' + (f[2] || f[0]) + '.' + f[1]; arcArt[f[0]] = im; }); const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
+  // pictures for the canvas games are decoded off the main thread right after they load (a first drawImage would decode them in the frame)
+  const preDecode = (im) => { if (im.decode) im.decode().then(() => (window.createImageBitmap ? createImageBitmap(im) : null)).then((b) => { if (b) im.__bmp = b; }).catch(() => {}); };
+  function loadArc() { if (arcArt.coin) return; [['shoot_bg', 'jpg'], ['shoot_cannon', 'webp'], ['shoot_ball', 'webp'], ['shoot_ball_y', 'webp'], ['shoot_ball_b', 'webp'], ['shoot_ball_g', 'webp'], ['shoot_hole', 'webp'], ['cart_bg', 'jpg', 'cart_bg2'], ['cart_rock', 'webp'], ['cart_bear', 'webp', 'cart_bear2'], ['cart_rival', 'webp', 'cart_rival2']].forEach((f) => { const im = new Image(); im.src = 'art/' + (f[2] || f[0]) + '.' + f[1]; preDecode(im); arcArt[f[0]] = im; }); const im = new Image(); im.src = 'art/ic_coin.webp'; arcArt.coin = im; }
   /* ---------- Candy Shooter: a Zuma-style chain of gumdrops; shoot matching colours to pop them ---------- */
   function startShoot() {
     loadArc();
@@ -3446,7 +3482,7 @@
   /* ---------- Hoop Shot: an arcade machine with a 4x4 board of hoops. Pull the ball back like a slingshot, aim with the
      dotted path, let go. Fill hoops; a full line of four is a bonus. 12 balls. ---------- */
   const hoopArt = {};
-  function loadHoop() { if (hoopArt.hoop_ring) return; ['hoop_machine.jpg', 'hoop_ring.webp', 'hoop_ball_g.webp', 'hoop_ball_r.webp'].forEach((f) => { const im = new Image(); im.src = 'art/' + f; hoopArt[f.split('.')[0]] = im; }); }
+  function loadHoop() { if (hoopArt.hoop_ring) return; ['hoop_machine.jpg', 'hoop_ring.webp', 'hoop_ball_g.webp', 'hoop_ball_r.webp'].forEach((f) => { const im = new Image(); im.src = 'art/' + f; preDecode(im); hoopArt[f.split('.')[0]] = im; }); }
   function startHoop() {
     loadHoop();
     freshDay(); if ((plays.hoop || 0) >= MAX_PLAYS) return; plays.hoop = (plays.hoop || 0) + 1; store.set('plays', plays); updateSides();
@@ -3657,8 +3693,8 @@
   const tossArt = {};
   function loadToss() {
     if (tossArt.bg) return;
-    [['bg', 'toss_bg.jpg'], ['jar', 'toss_jar.webp'], ['stand', 'toss_stand.webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + f[1]; tossArt[f[0]] = im; });
-    tossArt.c = ['lollipop', 'candy', 'doughnut', 'cupcake', 'cookie', 'cherries', 'shortcake', 'dango'].map((n) => { const im = new Image(); im.src = 'art/cd_' + n + '.webp'; return im; });
+    [['bg', 'toss_bg.jpg'], ['jar', 'toss_jar.webp'], ['stand', 'toss_stand.webp']].forEach((f) => { const im = new Image(); im.src = 'art/' + f[1]; preDecode(im); tossArt[f[0]] = im; });
+    tossArt.c = ['lollipop', 'candy', 'doughnut', 'cupcake', 'cookie', 'cherries', 'shortcake', 'dango'].map((n) => { const im = new Image(); im.src = 'art/cd_' + n + '.webp'; preDecode(im); return im; });
   }
   function startToss() {
     loadToss();

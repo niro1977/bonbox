@@ -2332,3 +2332,10 @@ body.noads #shopFree,body.noads #shopAds,body.noads .shoph.adsonly,body.noads #l
 #tutorial .tpair{gap:8px;width:calc(100% + 6px);margin:0 -3px}
 #tutorial .tsolo{width:min(270px,70vw)}
 #tutorial .tb{gap:3px;padding:5px}
+
+/* v361: while a window is open, the map's looping animations behind it rest (they are dimmed anyway), so opening and using windows has the device to itself */
+body.ov-open #home *{animation-play-state:paused!important}
+/* v361: the Events screen and every event window opens with a short, quick pop (was a 0.4 s spin from nothing) */
+#events .card,#pass .card,#chest .card,#wheel .card,#storm .card,#quick .card,#memory .card,#toss .card,#climb .card{animation:evcardin .24s cubic-bezier(.2,.9,.3,1.12) both}
+@keyframes evcardin{from{opacity:0;transform:scale(.86) translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#events .card,#pass .card,#chest .card,#wheel .card,#storm .card,#quick .card,#memory .card,#toss .card,#climb .card{animation:none}}
