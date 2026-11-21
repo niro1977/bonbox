@@ -234,6 +234,31 @@
   };
   // keep playing (2026-11-21)
   Object.assign(D, {
+    '🔥 Super Hard': '🔥 Súper difícil', 'SUPER HARD': 'SÚPER DIFÍCIL', '🔥 Super Hard level!': '🔥 ¡Nivel súper difícil!', 'Super Hard beaten!': '¡Venciste un nivel súper difícil!',
+    'One of the hardest boards in the game, and': 'Uno de los tableros más difíciles del juego, y', 'only 2 hearts': 'solo 2 corazones',
+    'Use your helpers! Win it for a big prize.': '¡Usa tus ayudas! Gánalo y llévate un gran premio.',
+    'Some squares are frozen: you cannot tap them.': 'Algunas casillas están congeladas: no puedes tocarlas.',
+    'Find the candy in its row or in its column': 'Encuentra el dulce de su fila o de su columna',
+    'and the ice melts. Some ice cubes hide a treasure!': 'y el hielo se derrite. ¡Algunos cubos de hielo esconden un tesoro!',
+    '❄️ Frozen! Find the candy in its row or column to melt it': '❄️ ¡Congelada! Encuentra el dulce de su fila o columna para derretirla',
+    '🧊 Treasure in the ice: +1 sticker pack!': '🧊 Tesoro en el hielo: ¡+1 sobre de calcomanías!',
+    'Sweet Pass': 'Pase Dulce', 'Free': 'Gratis', 'Free prize!': '¡Premio gratis!', 'Sweet Pass!': '¡Pase Dulce!', 'Active ✓': 'Activo ✓',
+    'Win levels in a row to grow the multiplier!': '¡Gana niveles seguidos para subir el multiplicador!',
+    'Season complete! A new Sweet Pass starts next month.': '¡Temporada completa! Un nuevo Pase Dulce empieza el mes que viene.',
+    '🍬 Sweet Pass active! Claim your prizes.': '🍬 ¡Pase Dulce activo! Reclama tus premios.', 'Sweet Pass Gold': 'Oro del Pase Dulce',
+    'Surprise box!': '¡Caja sorpresa!', 'FREE': 'GRATIS',
+    'A 48-hour challenge. Press Start, then play the normal levels: every win lifts the bear one floor to a new prize. 20 floors, a big chest on top!': 'Un reto de 48 horas. Pulsa Empezar y juega los niveles normales: cada victoria sube al osito un piso hacia un premio nuevo. ¡20 pisos y un gran cofre en la cima!',
+    'Collect stickers! You get a free sticker pack every 3 wins.': '¡Colecciona calcomanías! Recibes un sobre gratis cada 3 victorias.',
+    'Fill a set of 9 for a prize, and the whole album for a big one!': 'Completa una colección de 9 para ganar un premio, ¡y el álbum entero para uno enorme!',
+    'Every win drops 3 coins into the jar.': 'Cada victoria echa 3 monedas en el frasco.',
+    'When it holds 150 coins or more, break it open and keep them all!': 'Cuando tenga 150 monedas o más, ¡rómpelo y quédate con todas!',
+    'Race 4 other players: the first to win 8 levels wins.': 'Compite con 4 jugadores: el primero en ganar 8 niveles gana.',
+    'Places 1 to 3 get prizes!': '¡Los puestos 1 a 3 reciben premios!',
+    'Win 7 levels in a row within 24 hours to reach the top.': 'Gana 7 niveles seguidos en 24 horas para llegar a la cima.',
+    'Lose a level and you fall! Everyone at the top shares 500 coins.': '¡Si pierdes un nivel, te caes! Todos los que llegan arriba se reparten 500 monedas.',
+    'A new door opens every day from December 1 to 24.': 'Cada día se abre una puerta nueva, del 1 al 24 de diciembre.',
+    "Open today's door for a gift. Day 24 has the biggest prize!": 'Abre la puerta de hoy para recibir un regalo. ¡El día 24 tiene el premio más grande!',
+    "Let's go!": '¡Vamos!', 'NEW!': '¡NUEVO!',
     "Sugar Sea Shore": "Orilla del Mar de Azúcar",
     "Coral Candy Reef": "Arrecife de Coral Dulce",
     "Sunken Bonbon Ship": "Barco de Bombones Hundido",
@@ -380,8 +405,8 @@
 
   // prize lists: "3 coins and 1 magic wand"
   const PZ = { 'gummy car': ['auto de gomita', 'autos de gomita'], 'candy rocket': ['cohete de dulce', 'cohetes de dulce'], 'life': ['vida', 'vidas'], 'coin': ['moneda', 'monedas'], 'hint': ['pista', 'pistas'], 'magic wand': ['varita mágica', 'varitas mágicas'], 'heart shield': ['escudo de corazón', 'escudos de corazón'],
-    'double-points booster': ['potenciador de puntos dobles', 'potenciadores de puntos dobles'], 'sweeper': ['escoba', 'escobas'], 'magnifier': ['lupa', 'lupas'], 'min of unlimited heart': ['min de corazones ilimitados', 'min de corazones ilimitados'], 'sticker pack': ['sobre de calcomanías', 'sobres de calcomanías'] };
-  const PZ_RE = /^(\d+) (coin|hint|magic wand|heart shield|double-points booster|sweeper|magnifier|gummy car|candy rocket|sticker pack|min of unlimited heart)s?$/;
+    'double-points booster': ['potenciador de puntos dobles', 'potenciadores de puntos dobles'], 'sweeper': ['escoba', 'escobas'], 'magnifier': ['lupa', 'lupas'], 'min of unlimited heart': ['min de corazones ilimitados', 'min de corazones ilimitados'], 'min of free hint': ['min de pistas gratis', 'min de pistas gratis'], 'min of free magic wand': ['min de varitas mágicas gratis', 'min de varitas mágicas gratis'], 'surprise gift': ['regalo sorpresa', 'regalos sorpresa'], 'Sweet Pass board frame': ['marco del Pase Dulce', 'marcos del Pase Dulce'], 'sticker pack': ['sobre de calcomanías', 'sobres de calcomanías'] };
+  const PZ_RE = /^(\d+) (coin|hint|magic wand|heart shield|double-points booster|sweeper|magnifier|gummy car|candy rocket|sticker pack|min of unlimited heart|min of free hint|min of free magic wand|surprise gift|Sweet Pass board frame)s?$/;
   function prize(s) {
     const parts = s.split(' and '), out = [];
     for (const p of parts) { const m = p.match(PZ_RE); if (!m) return null; out.push(m[1] + ' ' + PZ[m[2]][+m[1] === 1 ? 0 : 1]); }
@@ -405,7 +430,7 @@
     [/^Claim (\d+)$/, 'Reclamar $1'], [/^#(\d)!$/, '#$1!'], [/^The race is over\. You finished #(\d)\. Win faster next time!$/, 'La carrera terminó. Quedaste #$1. ¡Gana más rápido la próxima vez!'],
     [/^Break it open · (.+)$/, 'Rómpelo · $1'], [/^🎄 This door opens on December (\d+)$/, '🎄 Esta puerta se abre el $1 de diciembre'],
     [/^Ready to break! Or keep winning to fill it up to (\d+)\.$/, '¡Listo para romper! O sigue ganando para llenarlo hasta $1.'],
-    [/^Level (\d+)$/, 'Nivel $1'], [/^Top players today\. Resets every day at midnight \((GMT[+-]\d+)\)\.$/, 'Los mejores jugadores de hoy. Se reinicia cada día a la medianoche ($1).'], [/^(\d+) hits$/, '$1 golpes'], [/^Vinegar stole this world's sticker! Beat him on level (\d+) to win it back!$/, '¡Vinagre robó la calcomanía de este mundo! ¡Véncelo en el nivel $1 para recuperarla!'], [/^WORLD (\d+)$/, 'MUNDO $1'], [/^(\d+) NEW$/, (m) => m[1] + (+m[1] === 1 ? ' NUEVO' : ' NUEVOS')],
+    [/^NEW: (.+)!$/, (m) => '¡NUEVO: ' + (D[m[1]] || m[1]) + '!'], [/^Activate · (.+)$/, 'Activar · $1'], [/^The (.+) frame is on the last step of the Sweet Pass$/, (m) => 'El marco ' + (D[m[1]] || m[1]) + ' está en el último paso del Pase Dulce'], [/^Level (\d+)$/, 'Nivel $1'], [/^Top players today\. Resets every day at midnight \((GMT[+-]\d+)\)\.$/, 'Los mejores jugadores de hoy. Se reinicia cada día a la medianoche ($1).'], [/^(\d+) hits$/, '$1 golpes'], [/^Vinegar stole this world's sticker! Beat him on level (\d+) to win it back!$/, '¡Vinagre robó la calcomanía de este mundo! ¡Véncelo en el nivel $1 para recuperarla!'], [/^WORLD (\d+)$/, 'MUNDO $1'], [/^(\d+) NEW$/, (m) => m[1] + (+m[1] === 1 ? ' NUEVO' : ' NUEVOS')],
     [/^You are #(\d+) of (\d+) today with (\d+) pts$/, 'Eres el #$1 de $2 hoy con $3 pts'], [/^(\d+) pts to (.+)$/, (m) => 'Faltan ' + m[1] + ' pts para ' + tr(m[2])],
     [/^next board ×(\d+)$/, 'próximo tablero ×$1'], [/^🎂 Cake gift: (\d) bombs? on the board · points ×(\d)$/, (m) => '🎂 Regalo del pastel: ' + m[1] + (m[1] === '1' ? ' bomba' : ' bombas') + ' en el tablero · puntos ×' + m[2]],
     [/^🎂 Cake gift: (\d) bombs on the board \+ a heart shield · points ×(\d)$/, '🎂 Regalo del pastel: $1 bombas en el tablero + un escudo · puntos ×$2'], [/^❤️ \+1 heart · (\d+)$/, '❤️ +1 corazón · $1'], [/^Cake ×(\d)$/, 'Pastel ×$1'],

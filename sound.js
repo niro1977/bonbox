@@ -120,8 +120,10 @@
 
   // a sound played the moment the finger lands (pre) is not played a second time when the click itself fires
   const preAt = {};
+  // one tap = one sound: a window opened or closed by a tap stays silent (the tap was its sound); only windows that open by themselves swish
+  let tapAt = -1e9; const justTapped = () => performance.now() - tapAt < 450;
   const S = {
-    pre(name) { if (!on || !S[name]) return; S[name](); preAt[name] = performance.now(); },
+    pre(name) { if (!on || !S[name]) return; if (name === 'tap') tapAt = -1e9; S[name](); preAt[name] = performance.now(); },   // a new finger press always sounds (fast taps on the board too)
     unlock() { if (on) init(); },   // a tap on the loading screen still wakes the sound up for later, silently
     // build the sound engine and the reverb ahead of time, when the phone is idle (they took about 0.2 s and 0.15 s on a phone, on the first tap and the first window)
     warm() { if (!on) return; const idle = window.requestIdleCallback || ((f) => setTimeout(f, 200)); idle(() => { if (!init()) return; idle(() => { try { reverb(); } catch (e) {} }, { timeout: 4000 }); }, { timeout: 3000 }); },
@@ -141,7 +143,8 @@
     },
     x() { if (preAt.x && performance.now() - preAt.x < 380) { preAt.x = 0; return; } if (!ready()) return; const t = ctx.currentTime, f = pickV('x', [520, 494, 554, 466]) * jit(); pluck(f, t, 0.07, 0.16); noise(t, 0.035, 0.12, 3000 + Math.random() * 600, 2); },
     // one soft, round click (a single voice: no second layer)
-    tap() { if (preAt.tap && performance.now() - preAt.tap < 380) { preAt.tap = 0; return; } if (!ready()) return; const t = ctx.currentTime, f = pickV('tap', [620, 587, 660]) * jit(); osc('sine', f, t, 0.085, 0.2, f * 0.72); },
+    tap() { if (performance.now() - tapAt < 380) return; if (!ready()) return; tapAt = performance.now();   // one tap sound per press, however many handlers ask for it
+      const t = ctx.currentTime, f = pickV('tap', [620, 587, 660]) * jit(); osc('sine', f, t, 0.085, 0.2, f * 0.72); },
     // a coin drops into the purse: two bright metal pings and a tiny jingle
     coin() { if (!ready()) return; const t = ctx.currentTime, k = pickV('coin', [1, 1.06, 0.95]) * jit(); bell(1568 * k, t, 0.22, 0.13, 0.15); bell(2093 * k, t + 0.055, 0.3, 0.11, 0.2); noise(t, 0.03, 0.05, 7000, 3); },
     // hearts: a warm double thump, lub-dub
@@ -228,10 +231,43 @@
       if (!ready()) return;
       if (sample(voice ? (window.LANG === 'es' ? 'first_es' : 'first_en') : 'first_bells', 1, 1)) return;
       if (voice && sample('first_bells', 1, 1)) return;
-      S.fanfare();
+      S.reward();
     },
     // the event win screen narrator (voice Orus): 'win' You win!, 'good' Well done!, 'try' Nice try!
     evSay(kind) { if (!ready()) return false; return sample('ew_' + kind + '_' + (window.LANG === 'es' ? 'es' : 'en'), 1, 1); },
+    // the Lucky Wheel: one crisp peg click each time a divider passes the pointer's tip (v = wheel speed 0..1: lighter and higher when fast),
+    // and a soft settle when it stops
+    wtick(v, later) { if (!ready()) return; const t = ctx.currentTime + (later || 0), k = 0.94 + Math.random() * 0.12, g = 0.55 + 0.45 * (1 - v);
+      noise(t, 0.022, 0.16 * g, 4200 * k, 1.4); osc('square', 1900 * k, t, 0.018, 0.035 * g, 1200 * k); osc('sine', 950 * k, t, 0.04, 0.11 * g, 620 * k); },
+    wstop() { if (!ready()) return; const t = ctx.currentTime; noise(t, 0.05, 0.08, 1800, 1); osc('sine', 520, t, 0.09, 0.12, 380); },
+    // the bonus cart rolling on asphalt: a low tyre rumble and a fine grit hiss, both louder and brighter with speed (set 0..1);
+    // it fades out by itself if the game stops sending speed (the window was closed)
+    roll() {
+      if (!ready()) return null;
+      const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0); let b = 0;
+      for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; b = (b + 0.04 * w) / 1.04; d[i] = b * 3.2 + w * 0.12; }   // brown-ish noise: road rumble with a little grit
+      const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+      const lo = ctx.createBiquadFilter(); lo.type = 'lowpass'; lo.frequency.value = 300; lo.Q.value = 0.8;
+      const hi = ctx.createBiquadFilter(); hi.type = 'bandpass'; hi.frequency.value = 2600; hi.Q.value = 0.6;
+      const gLo = ctx.createGain(), gHi = ctx.createGain(); gLo.gain.value = 0.0001; gHi.gain.value = 0.0001;
+      src.connect(lo); lo.connect(gLo); gLo.connect(master); src.connect(hi); hi.connect(gHi); gHi.connect(master); src.start();
+      let lastSet = performance.now(), dead = false;
+      const stop = () => { if (dead) return; dead = true; const t = ctx.currentTime; [gLo, gHi].forEach((g) => { g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0.0001, t, 0.12); }); try { src.stop(t + 0.6); } catch (e) {} clearInterval(wd); };
+      const wd = setInterval(() => { if (performance.now() - lastSet > 350) stop(); }, 200);
+      return {
+        set(v) { if (dead) return; lastSet = performance.now(); const t = ctx.currentTime, s = Math.max(0, Math.min(1, v)), wob = 1 + 0.08 * Math.sin(t * 23) * s;
+          lo.frequency.setTargetAtTime(160 + 520 * s, t, 0.08); gLo.gain.setTargetAtTime((0.05 + 0.33 * s) * wob, t, 0.06);
+          hi.frequency.setTargetAtTime(1800 + 1600 * s, t, 0.1); gHi.gain.setTargetAtTime(0.004 + 0.03 * s, t, 0.06); src.playbackRate.setTargetAtTime(0.85 + 0.35 * s, t, 0.1); },
+        bump() { if (dead) return; const t = ctx.currentTime; osc('sine', 90, t, 0.18, 0.25, 50); noise(t, 0.12, 0.12, 500, 0.8); },
+        stop
+      };
+    },
+    // every prize that is not a board win (events, chests, league, mini-games): a short bright 'ta-da' (about 0.6 s). The fanfare is kept for winning a board only.
+    reward(gain) {
+      if (!ready()) return; const g = gain == null ? 1 : gain, t = ctx.currentTime, r = pickV('reward', [0, 2, -2]); reverb();
+      [0, 4, 7, 12].forEach((x, k) => bell(hz(12 + x + r), t + k * 0.06, 0.55, 0.12 * g, 0.25));
+      bell(hz(28 + r), t + 0.26, 0.7, 0.07 * g, 0.35); sparkle(t + 0.22, 0.05 * g);
+    },
     fanfare(gain) {
       if (!ready()) return;
       const t = ctx.currentTime;
@@ -246,8 +282,8 @@
     press() {},   // silent: the click itself is the only sound of a press
     release() {},
     // a window pops in (rising swish + soft chime) and out (falling swish)
-    popIn() { if (!ready()) return; const t = ctx.currentTime, k = pickV('pin', [1, 1.12, 0.9]); noise(t, 0.16, 0.07, 1400 * k, 0.7); osc('sine', 330 * k, t, 0.16, 0.09, 660 * k); bell(1320 * k, t + 0.09, 0.35, 0.05, 0.3); },
-    popOut() { if (!ready()) return; const t = ctx.currentTime, k = pickV('pout', [1, 1.1, 0.92]); noise(t, 0.12, 0.05, 1100 * k, 0.7); osc('sine', 520 * k, t, 0.12, 0.07, 260 * k); },
+    popIn() { if (!ready() || justTapped()) return; const t = ctx.currentTime, k = pickV('pin', [1, 1.12, 0.9]); noise(t, 0.16, 0.07, 1400 * k, 0.7); osc('sine', 330 * k, t, 0.16, 0.09, 660 * k); bell(1320 * k, t + 0.09, 0.35, 0.05, 0.3); },
+    popOut() { if (!ready() || justTapped()) return; const t = ctx.currentTime, k = pickV('pout', [1, 1.1, 0.92]); noise(t, 0.12, 0.05, 1100 * k, 0.7); osc('sine', 520 * k, t, 0.12, 0.07, 260 * k); },
     // a star stamps onto a level button on the map
     stamp(i) { if (!ready()) return; const t = ctx.currentTime; reverb(); osc('sine', 150, t, 0.1, 0.2, 70); bell(hz(12 + [0, 4, 7][i % 3]), t, 0.7, 0.15); sparkle(t + 0.02, 0.05); },
     unlock2() { if (!ready()) return; const t = ctx.currentTime; reverb(); [0, 7, 12].forEach((x, n) => bell(hz(12 + x), t + n * 0.07, 0.8, 0.13)); sparkle(t + 0.1, 0.08); },

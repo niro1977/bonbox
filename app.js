@@ -8,6 +8,7 @@
   const NAMES = ['Lollipop', 'Wrapped Candy', 'Chocolate Bar', 'Glazed Donut', 'Cupcake', 'Choc Chip Cookie', 'Cherries', 'Soft Serve', 'Shortcake', 'Candy Dango'];
   const starSvg = (on) => '<img class="star ' + (on ? '' : 'off') + '" src="art/star_' + (on ? 'gold' : 'grey') + '.webp" alt="" draggable="false">';
   const MAX_HEARTS = 3;
+  const fullHearts = () => !!cur && cur.hearts >= (cur.maxH || MAX_HEARTS);   // no heart lost (a Super Hard level has only 2)
   const $ = (id) => document.getElementById(id);
   // inside the Android app (Capacitor). Native plugins (App: back button, Share) are called through window.Capacitor.Plugins, no bundler needed
   const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -213,7 +214,7 @@
       else S.tap();
       setTimeout(() => { $('lgRes').hidden = true; const t = lgResThen; lgResThen = null; if (t) t(); }, prize ? 1500 : 0);
     };
-    if (r.rank <= 3 && S.fanfare) setTimeout(() => S.fanfare(), 400);
+    if (r.rank <= 3 && S.reward) setTimeout(() => S.reward(), 400);
     $('lgRes').hidden = false; fitPodNames($('lgrPodium'));
   }
   // ?dbg=1&demo=podium : shows the prizes podium, then yesterday's result as 1st, 2nd and 7th, again and again (a demonstration, test mode only)
@@ -258,7 +259,7 @@
       rows.forEach((row) => { const b = row.querySelector('.lrk'); if (b) b.outerHTML = rankBadge(row._new + 1); });
       const me = rows.find((r) => r._e.me); if (me) { me.classList.remove('climb'); me.classList.add('landed'); }
       $('leagueMsg').classList.remove('lwait'); $('leagueZone').classList.remove('lwait');
-      if (ni === 0) { if (S.first) S.first(!!(V && V.isEnabled())); else if (S.fanfare) S.fanfare(); }   // its own first-place sound, not the win tune again else if (up) S.praise && S.praise(1);
+      if (ni === 0) { if (S.first) S.first(!!(V && V.isEnabled())); else if (S.reward) S.reward(); }   // its own first-place sound, not the win tune again else if (up) S.praise && S.praise(1);
     }, 550 + 1000));
   }
   // ?dbg=1&demo=lose : level 12 with a two-layer cake and 100 coins, lost on purpose, so the out-of-hearts screen can be seen (test mode only)
@@ -336,14 +337,18 @@
   // from level 21 the boards are 10x10, with a hard 9x9 or 8x8 mixed in now and then (never on Hard/Very Hard/Extreme levels)
   const varietySize = (lv) => { if (lv < 21 || lv % 5 === 0) return 0; const h = Math.imul(lv, 2654435761) >>> 0; const r = (h >>> 8) % 100; return r < 16 ? 9 : r < 30 ? 8 : 0; };
   const LAST_LEVEL = 1000, ULTRA_FROM = 301, STORY_END = 500;   // 301-1000: only the hardest boards; the story's ending is shown after level 500, worlds 51-100 go on from there
-  const sizeFor = (lv) => (lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
+  const sizeFor = (lv) => (isSuperLv(lv) ? 10 : lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
   // the first eighteen levels are all plain. The first Hard level is 19, and level 20 is the first Extremely Hard one (with Vinegar);
   // from there on it is the usual rhythm: Hard on every 5th level, Extremely Hard at the end of every world.
   const isBossLv = (lv) => lv % 10 === 0 && lv > 10;
+  // Super Hard (his request): from level 200 on, once in every 10 levels - level 207, 217, 227 ... 997. Never a boss, a world's first level or a Hard level.
+  const isSuperLv = (lv) => lv >= 207 && lv % 10 === 7;
   const isHardLv = (lv) => (lv <= 20 ? lv === 19 : lv % 5 === 0 && lv % 10 !== 0);
-  const tierOf = (lv) => (isBossLv(lv) ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : isHardLv(lv) ? 'hard' : 'normal');
+  const tierOf = (lv) => (isSuperLv(lv) ? 'super' : isBossLv(lv) ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : isHardLv(lv) ? 'hard' : 'normal');
   const dailySize = () => [5, 6, 7, 5, 6, 7, 6][new Date().getDay()];   // the daily challenge is a small board (5x5, 6x6 or 7x7): never the same size two days in a row, and the board itself is new every day
-  const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard' };
+  const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard', super: '🔥 Super Hard' };
+  // a Super Hard level wears the Extremely Hard look (black board, big button) plus its own purple flame
+  const tierCls = (t) => (t === 'super' ? 'extreme super' : t);
 
   function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -387,8 +392,12 @@
   function watchOverlays() {
     const quiet = { wipe: 1, coach: 1 }; let lastPop = 0;
     document.querySelectorAll('.overlay').forEach((ov) => {
+      let was = ov.hidden;
       new MutationObserver(() => {
         document.body.classList.toggle('ov-open', anyOverlay());
+        // closeAll() sets hidden on windows that are already closed: that is no change, so no sound (it played a closing swish on every opening)
+        if (ov.hidden === was) return; was = ov.hidden;
+        if (ov.hidden && ov.id !== 'climb' && typeof climbPop === 'function') try { if (climb.moved > 0) climbPop(0); } catch (e) {}   // a window closed on the map: the bear's step up can show now
         const now = performance.now(), card = ov.querySelector('.card');
         if (!ov.hidden) {
           // started with the Web Animations API: restarting the CSS classes forced the whole page to be measured twice on every window
@@ -594,13 +603,14 @@
     for (let lv = 1; lv <= g.count; lv++) {
       const p = g.pos(lv), tier = tierOf(lv), n = sizeFor(lv);
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tier) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
+      b.type = 'button'; b.className = 'node ' + (tier === 'normal' ? '' : tierCls(tier)) + (lv > level ? ' locked' : '') + (lv === level ? ' current' : '');
       b.dataset.lv = lv; if (isBossLv(lv)) b.classList.add('bossn', lv < level ? 'beaten' : 'waiting'); else if (lv >= ULTRA_FROM) b.classList.add('ultra');
       b.style.left = p.x + 'px'; b.style.top = p.y + 'px';
       { const hue = WORLD_HUES[Math.floor((lv - 1) / 10) % 10]; b.style.setProperty('--nimg', 'url(art/node_w' + (Math.floor((lv - 1) / 10) % 10) + '.webp)'); if (tier === 'normal') { b.style.setProperty('--c', 'hsl(' + hue + ',78%,50%)'); b.style.setProperty('--cb', 'hsl(' + hue + ',85%,88%)'); } }   // every button of a world wears the colour of that world's ribbon
       // the glint on the level you are on is a real element moved by transform (a background-position animation redrew the whole map every frame)
-      let html = (lv === level && tier !== 'veryhard' && tier !== 'extreme' ? '<i class="nglint" aria-hidden="true"><b></b></i>' : '') + lv;
-      if (tier !== 'normal') html += '<span class="badge">' + (tier === 'hard' ? 'HARD' : tier === 'extreme' ? 'EXTREME' : 'VERY HARD') + '</span>';
+      let html = (lv === level && tier !== 'veryhard' && tier !== 'extreme' && tier !== 'super' ? '<i class="nglint" aria-hidden="true"><b></b></i>' : '') + lv;
+      if (tier !== 'normal') html += '<span class="badge">' + (tier === 'hard' ? 'HARD' : tier === 'extreme' ? 'EXTREME' : tier === 'super' ? 'SUPER HARD' : 'VERY HARD') + '</span>';
+      if (tier === 'super') html += '<img class="sflame" src="art/ic_flame.webp" alt="" draggable="false">';
       if (lv < level && stars[lv]) { b.classList.add('hasst'); html += '<span class="st">'; for (let i = 1; i <= 3; i++) html += starSvg(i <= stars[lv]); html += '</span>'; }
       b.innerHTML = html;
       b.onclick = () => { S.unlock(); S.tap(); openPrelevel(lv); };
@@ -671,7 +681,7 @@
 
   /* ---------- boards ---------- */
   // every Hard / Very Hard / Extreme level (and the mixed-in hard 9x9 / 8x8 boards) takes its own board from the pool: no level repeats an earlier one
-  const POOL_KEY = (lv) => (lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : isBossLv(lv) ? 'veryhard' : isHardLv(lv) || varietySize(lv) ? 'hard' : null);
+  const POOL_KEY = (lv) => (isSuperLv(lv) ? 'super' : lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : isBossLv(lv) ? 'veryhard' : isHardLv(lv) || varietySize(lv) ? 'hard' : null);
   const POOL_IDX = (() => { const c = {}, o = {}; for (let lv = 1; lv <= LAST_LEVEL; lv++) { const k = POOL_KEY(lv); if (!k) continue; const id = k + sizeFor(lv); o[lv] = c[id] || 0; c[id] = o[lv] + 1; } return o; })();
   /* Boards are made in the BACKGROUND (a worker), ahead of time: when the app opens, when a level is won and when the level card
      is shown. A big board can take seconds to make on a phone; done this way the screen never freezes and Play opens at once.
@@ -730,21 +740,26 @@
     let h = 2166136261; const str = board.regions.map((r) => r.join('')).join('');
     for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
     let a = h >>> 0; const rnd = () => { a = (a + 0x6D2B79F5) >>> 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    const ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    // 31 candy designs (#c0-c9 the desserts, #c10-c30 the hard candies sw_1-21): every board gets its own random set, the same board always the same.
+    // Look-alikes never share a board: one lollipop, one bunch of cherries, one wrapped sweet.
+    const ids = Array.from({ length: 31 }, (_, i) => i), GROUP = { 0: 'pop', 17: 'pop', 6: 'cherry', 23: 'cherry', 1: 'wrap', 11: 'wrap', 12: 'wrap', 21: 'wrap', 25: 'wrap', 14: 'bean', 15: 'bean' };   // (and one jelly bean)
+    ids.splice(ids.indexOf(16), 1);   // no lemon (sw_7): he does not want it on the boards
     for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-    return ids;
+    const used = {}, out = [];
+    for (const id of ids) { const g = GROUP[id]; if (g && used[g]) continue; if (g) used[g] = 1; out.push(id); if (out.length === 10) break; }
+    return out;
   }
   function makeGame(board, label, meta, tier) {
     const n = board.n;
-    cur = { n, regions: board.regions, solution: board.solution, state: [], history: [], hearts: MAX_HEARTS, done: false, lastMove: Date.now(), hints: 0, label, meta, tier, maybeMode: false, foundPrev: new Set(), wrongMarks: new Set(), penalized: new Set() };
+    cur = { n, regions: board.regions, solution: board.solution, state: [], history: [], hearts: tier === 'super' ? 2 : MAX_HEARTS, maxH: tier === 'super' ? 2 : MAX_HEARTS, done: false, lastMove: Date.now(), hints: 0, label, meta, tier, maybeMode: false, foundPrev: new Set(), wrongMarks: new Set(), penalized: new Set() };
     cur.cmap = candyMapFor(board);
     if (V && V.newBoard) V.newBoard();   // every board starts with all the narrator's words fresh
     updateHintUi();
     for (let y = 0; y < n; y++) cur.state.push(new Array(n).fill(0)); // 0 empty, 1 X, 2 candy, 3 ?
     $('gTitle').textContent = label; chalStop(); $('chalTimer').hidden = true; leaguePending = false;
     const t = $('tier');
-    t.hidden = tier === 'normal'; t.className = 'tier ' + tier; t.textContent = tierLabel[tier] || '';
-    const bd = $('board'); bd.className = 'board ' + (tier === 'normal' ? '' : tier);
+    t.hidden = tier === 'normal'; t.className = 'tier ' + tierCls(tier); t.textContent = tierLabel[tier] || '';
+    const bd = $('board'); bd.className = 'board ' + (tier === 'normal' ? '' : tierCls(tier));
     $('game').classList.toggle('hardtier', tier !== 'normal');   // Hard / Very Hard / Extreme levels keep their own layout
     bd.style.setProperty('--n', n);
     bd.classList.toggle('n8', n === 8); bd.classList.toggle('n10', n >= 9); bd.parentElement.classList.toggle('n10', n >= 9); $('game').classList.toggle('n10', n >= 9); $('game').classList.toggle('full', n >= 10); document.body.classList.toggle('full10', n >= 10);
@@ -780,13 +795,13 @@
   function saveGame() {
     try {
       if (!cur || cur.done || !cur.meta) { store.set('game', null); return; }
-      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints, cake: cur.cake || 0, bombs: cur.bombs ? [...cur.bombs] : [], free: cur.free || {}, ice: cur.ice ? [...cur.ice] : [],
+      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints, cake: cur.cake || 0, bombs: cur.bombs ? [...cur.bombs] : [], free: cur.free || {}, ice: cur.ice ? [...cur.ice] : [], iceGift: cur.iceGift || {},
         wrong: [...cur.wrongMarks], pen: [...cur.penalized], saved: Date.now() });
     } catch (e) {}
   }
   function applySaved(g) {
     if (!g || g.n !== cur.n || !Array.isArray(g.state) || g.state.length !== cur.n) return false;
-    cur.shield = !!g.shield; cur.double = !!g.double; cur.cake = g.cake || 0; cur.bombs = new Set(g.bombs || []); cur.free = g.free || {}; cur.ice = new Set(g.ice || []);
+    cur.shield = !!g.shield; cur.double = !!g.double; cur.cake = g.cake || 0; cur.bombs = new Set(g.bombs || []); cur.free = g.free || {}; cur.ice = new Set(g.ice || []); cur.iceGift = (g.iceGift && typeof g.iceGift === 'object') ? g.iceGift : {};
     cur.state = g.state.map((r) => r.slice()); cur.hearts = g.hearts; cur.hints = g.hints || 0;
     cur.wrongMarks = new Set(g.wrong || []); cur.penalized = new Set(g.pen || []);
     cur.foundPrev = new Set(); for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 2) cur.foundPrev.add(cur.regions[y][x]);
@@ -800,8 +815,8 @@
      Sugar Stars: a new level won without losing a heart gives a star; 10 stars open a surprise prize.
      First win of the day: the first level won each day pays double coins. ---------- */
   let cake = store.get('cake', { n: 0 }), sugar = store.get('sugar', { n: 0 });
-  ['a', 'b', 'c'].forEach((v) => { const pre = new Image(); pre.src = 'art/ic_gift_' + v + '.webp'; });   // the cake's surprise boxes are ready before the first one lands
-  const giftImg = (y, x) => 'art/ic_gift_' + 'abc'[(y * 7 + x * 5) % 3] + '.webp';   // three box designs: pink, blue, purple
+  { const pre = new Image(); pre.src = 'art/ic_gift_b.webp'; }   // the cake's surprise boxes are ready before the first one lands
+  const giftImg = (y, x) => 'art/ic_gift_b.webp';   // one box design: light blue (his pick)
   const CAKE_MAX = 3, SUGAR_AT = 10, CAKE_FROM = 10;   // Gumi's Cake opens at level 10: wins before it build nothing
   const cakeOpen = () => level >= CAKE_FROM;
   const cakeReveal = (k, size) => Math.min(k, Math.max(1, size - 3));   // at least three candies are always left to find
@@ -960,11 +975,11 @@
     if (webGate() && lv > WEB_FREE) { openWebGate(); return; }
     const n = sizeFor(lv), tier = tierOf(lv), best = stars[lv] || 0, resume = !!savedFor({ kind: 'level', level: lv });
     $('plTitle').textContent = 'Level ' + lv;
-    const t = $('plTier'), boss = isBossLv(lv); t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'extreme boss' : tier); t.textContent = tierLabel[tier] || '';
+    const t = $('plTier'), boss = isBossLv(lv); t.hidden = tier === 'normal' && !boss; t.className = 'pl-tier ' + (boss ? 'extreme boss' : tierCls(tier)); t.textContent = tierLabel[tier] || '';
     $('plBoss').hidden = !boss;
     $('plStars').innerHTML = [1, 2, 3].map((i) => '<span class="slot"><img class="star ' + (i <= best ? '' : 'off') + '" src="art/star_' + (i <= best ? 'gold' : 'grey') + '.webp" alt="" draggable="false"></span>').join('');
     $('plInfo').textContent = n + '×' + n + ' board · ' + n + ' candies to find' + (best ? '' : ' · first time!');
-    $('plRow').innerHTML = '<span class="chip"><img src="art/ic_heart.webp" alt="" draggable="false"><b>' + MAX_HEARTS + '</b></span><span class="chip"><img src="art/ic_hint.webp" alt="" draggable="false"><b>' + hintsLeft + '</b></span><span class="chip"><img src="art/ic_wand.webp" alt="" draggable="false"><b>' + wands + '</b></span>';
+    $('plRow').innerHTML = '<span class="chip"><img src="art/ic_heart.webp" alt="" draggable="false"><b>' + (tier === 'super' ? 2 : MAX_HEARTS) + '</b></span><span class="chip"><img src="art/ic_hint.webp" alt="" draggable="false"><b>' + hintsLeft + '</b></span><span class="chip"><img src="art/ic_wand.webp" alt="" draggable="false"><b>' + wands + '</b></span>';
     $('plPlay').textContent = resume ? 'Continue' : 'Play';
     const pick = { shield: false, double: false }, bx = $('plBoost');
     const drawBoost = () => { bx.innerHTML = resume ? '' : ['shield', 'double'].map((k) => '<button type="button" class="bst' + (pick[k] ? ' on' : '') + (items[k] > 0 ? '' : ' none') + '" data-k="' + k + '"><img src="art/ic_' + k + '.webp" alt="" draggable="false"><span>' + (k === 'shield' ? 'Shield' : 'x2 Points') + '</span><i>' + items[k] + '</i></button>').join('');
@@ -983,11 +998,13 @@
     if (!resumed && pendingBoost) { if (pendingBoost.shield) { items.shield--; cur.shield = true; } if (pendingBoost.double) { items.double--; cur.double = true; } saveWallet(); updateHintUi(); }
     pendingBoost = null;
     if (!resumed) { iceStart(lv); hotStart(lv); paint(); }
+    if (isSuperLv(lv) && !store.get('superSeen', false)) { const intro = () => { if (!cur || cur.done || cur.meta.level !== lv) return; if (document.querySelector('.overlay:not([hidden])')) { setTimeout(intro, 700); return; } store.set('superSeen', true);
+      $('ciTitle').textContent = '🔥 Super Hard level!'; $('ciBody').innerHTML = '<div class="ice-intro"><img class="sflame-big" src="art/ic_flame.webp" alt="" draggable="false"></div><p>One of the hardest boards in the game, and <b>only 2 hearts</b>.</p><p>Use your helpers! Win it for a big prize.</p>'; $('cakeInfo').hidden = false; }; setTimeout(intro, 1300); }
     if (!resumed) { cur.cake = lv >= CAKE_FROM ? cake.n : 0; if (cake.n) setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) cakeGift(); }, 1500); }
     show('game');
     preSpoken = false;
     // the narrator names a Hard / Very Hard / Extremely Hard level as it opens (not when a saved game is resumed)
-    if (V && !resumed && tierOf(lv) !== 'normal') setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) V.start(lv, tierOf(lv)); }, 400);
+    if (V && !resumed && tierOf(lv) !== 'normal') setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) V.start(lv, tierOf(lv) === 'super' ? 'extreme' : tierOf(lv)); }, 400);
     if (isBossLv(lv) && !resumed) setTimeout(bossEnter, 1000);
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     if (foeKind()) blowT = setTimeout(foeBlow, 26000 + Math.random() * 14000);
@@ -1053,7 +1070,7 @@
   }
   function drawHearts() {
     const h = $('hearts'); h.innerHTML = '';
-    for (let i = 0; i < MAX_HEARTS; i++) h.insertAdjacentHTML('beforeend', '<img class="' + (i < cur.hearts ? '' : 'off') + '" src="art/ic_' + (i < cur.hearts ? 'heart' : 'heart_off') + '.webp" alt="" draggable="false">');
+    for (let i = 0; i < (cur.maxH || MAX_HEARTS); i++) h.insertAdjacentHTML('beforeend', '<img class="' + (i < cur.hearts ? '' : 'off') + '" src="art/ic_' + (i < cur.hearts ? 'heart' : 'heart_off') + '.webp" alt="" draggable="false">');
   }
   function drawFound() {
     const f = $('found'), have = new Set();
@@ -1270,7 +1287,7 @@
       el.classList.toggle('has', s === 2);
       if (el.dataset.k === key) continue;      // leave unchanged squares alone so animations don't replay
       el.dataset.k = key;
-      if (ic) el.innerHTML = '<img class="cice" src="art/ic_ice.webp" alt="" draggable="false">';
+      if (ic) { const g = cur.iceGift && cur.iceGift[y + ',' + x]; el.innerHTML = (g ? '<img class="cgift" src="art/ic_' + (g.coins ? 'coin' : 'pack') + '.webp" alt="" draggable="false">' : '') + '<img class="cice" src="art/ic_ice.webp" alt="" draggable="false">'; }
       else if (s === 2) el.innerHTML = '<svg class="candy" style="--idur:' + (3 + Math.random() * 2.5).toFixed(1) + 's;--idelay:' + (0.4 + Math.random() * 1.6).toFixed(1) + 's"><use href="#c' + cur.cmap[cur.regions[y][x]] + '"/></svg>';
       else if (s === 1) el.innerHTML = '<span class="x' + (wrongX ? ' bad' : '') + '"></span>';
       else if (s === 3) el.innerHTML = QMARK;
@@ -1334,7 +1351,7 @@
     if (cur.vehicleArmed) { useVehicle(cur.vehicleArmed, y, x); return; }
     S.unlock();
     if (cur.bombs && cur.bombs.has(y + ',' + x) && cur.state[y][x] === 0) { explodeBomb(y, x); return; }
-    if (iced(y, x)) { const el = cellEl(y, x); el.classList.remove('icehit'); void el.offsetWidth; el.classList.add('icehit'); buzz(12); if (S.crack) S.crack(true); if (!cur.iceTold) { cur.iceTold = true; toast('❄️ Frozen! Mark a square next to it to melt the ice'); } return; }
+    if (iced(y, x)) { const el = cellEl(y, x); el.classList.remove('icehit'); void el.offsetWidth; el.classList.add('icehit'); buzz(12); if (S.crack) S.crack(true); if (!cur.iceTold) { cur.iceTold = true; toast('❄️ Frozen! Find the candy in its row or column to melt it'); } return; }
     const s = cur.state[y][x];
     if (maybe || cur.maybeMode) {
       if (s === 2) return;
@@ -1409,7 +1426,7 @@
     const g = $('infTag'); if (g) { g.hidden = !on; if (on) g.textContent = '∞ ' + fmtMS(infUntil - Date.now()); }
   }
   setInterval(infTick, 1000);
-  function give(p, noHold) { if (p.life) addLives(p.life); if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens', 'car', 'rocket'].forEach((k) => { items[k] = (items[k] || 0) + (p[k] || 0); }); if (p.packs) addPacks(p.packs); saveWallet(); updateHintUi(); }
+  function give(p, noHold) { if (p.life) addLives(p.life); if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens', 'car', 'rocket'].forEach((k) => { items[k] = (items[k] || 0) + (p[k] || 0); }); if (p.packs) addPacks(p.packs); if (p.tHint) tfreeAdd('hints', p.tHint); if (p.tWand) tfreeAdd('wands', p.tWand); if (p.gift) for (let i = 0; i < p.gift; i++) give(giftRoll(), noHold); if (p.frame) store.set('framePass', true); saveWallet(); updateHintUi(); }
   const coinSvg = '<img class="ico" src="art/ic_coin.webp" alt="" draggable="false">';
   /* coins you win fly into the main wallet (the top chip, or a floating bank on the game screen) and the counter ticks up as each lands */
   let coinHold = 0, bankT = 0;
@@ -1486,19 +1503,20 @@
   function saveWallet() { store.set('coins', coins); store.set('wands', wands); store.set('hints', hintsLeft); store.set('items', items); }
   function updateHintUi() {
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
-    set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : 5)); set('hintBadge', hintsLeft); set('shieldN', items.shield || 0); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
-    $('hintBtn').classList.toggle('empty', hintsLeft <= 0); $('wandBtn').classList.toggle('empty', wands <= 0);
+    set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : 5)); set('hintBadge', hintsLeft + freeOf('hints')); set('shieldN', items.shield || 0); set('wandBadge', wands + freeOf('wands')); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
+    $('hintBtn').classList.toggle('empty', hintsLeft + freeOf('hints') <= 0); $('wandBtn').classList.toggle('empty', wands + freeOf('wands') <= 0);
+    $('hintBtn').classList.toggle('free', freeOf('hints') > 0); $('wandBtn').classList.toggle('free', freeOf('wands') > 0); tfreeBar();
     // helpers given free by the win streak count on the badge too, and the button shows a FREE tag
     [['sweeper', 'sweepBtn'], ['lens', 'lensBtn'], ['car', 'carBtn'], ['rocket', 'rocketBtn']].forEach(([k, id]) => { const f = freeOf(k), n = (items[k] || 0) + f; set(id + 'Badge', n); $(id).classList.toggle('empty', n <= 0); $(id).classList.toggle('free', f > 0); });
   }
   const ITEMS = {
     hint: { name: 'Hint', icon: 'hint', price: 30,
       desc: 'A hint finds a square where an X surely belongs and marks it for you, and tells you why. It places a candy only when that is the last choice left.',
-      count: () => hintsLeft, add: (n) => { hintsLeft += n; }, run: () => hint(),
+      count: () => hintsLeft + freeOf('hints'), add: (n) => { hintsLeft += n; }, run: () => hint(),
       earn: () => { const t = HINT_EVERY - (cleared % HINT_EVERY); return 'You win 1 free hint for every ' + HINT_EVERY + ' levels you pass (' + t + ' more to go), and in the Daily Bonus.'; } },
     wand: { name: 'Magic Wand', icon: 'wand', price: 60,
       desc: 'The wand puts one correct candy on the board for you, with no risk. Use it when you are really stuck.',
-      count: () => wands, add: (n) => { wands += n; }, run: () => useWand(),
+      count: () => wands + freeOf('wands'), add: (n) => { wands += n; }, run: () => useWand(),
       earn: () => { const t = WAND_EVERY - (cleared % WAND_EVERY); return 'You win a free wand every ' + WAND_EVERY + ' levels you pass (' + t + ' more to go), in the Daily Bonus, or buy one with coins.'; } }
   };
   ITEMS.shield = { name: 'Heart Shield', icon: 'shield', price: 90, count: () => items.shield, add: (n) => { items.shield += n; },
@@ -1547,11 +1565,11 @@
     spotT = setTimeout(() => { b.classList.remove('spot'); b.querySelectorAll('.cell.lit').forEach((e) => e.classList.remove('lit')); }, ms || 2600);
   }
   function hint() {
-    if (!cur || cur.done || hintsLeft <= 0) return;
+    if (!cur || cur.done || hintsLeft + freeOf('hints') <= 0) return;
     S.unlock();
     const h = H.next(cur.n, cur.regions, cur.state, cur.solution);
     if (!h) { toast("Nothing left to hint. You're almost there!"); return; }   // nothing is spent
-    hintsLeft--; saveWallet(); updateHintUi();
+    if (freeOf('hints') > 0) { cur.free.hints--; saveGame(); } else hintsLeft--; saveWallet(); updateHintUi();
     snapshot(); cur.hints++;
     for (const [y, x] of h.cells) { cur.state[y][x] = h.type === 'candy' ? 2 : 1; cur.wrongMarks.delete(y + ',' + x); }
     paint();
@@ -1636,11 +1654,11 @@
     spotlight([[y, x]], 3000); buzz(16);
   }
   function useWand() {
-    if (!cur || cur.done || wands <= 0) return;
+    if (!cur || cur.done || wands + freeOf('wands') <= 0) return;
     const rows = []; for (let y = 0; y < cur.n; y++) if (cur.state[y][cur.solution[y]] !== 2) rows.push(y);
     if (!rows.length) { toast('Every candy is already placed!'); return; }   // nothing is spent
     const y = rows[Math.floor(Math.random() * rows.length)], x = cur.solution[y];
-    wands--; saveWallet(); updateHintUi();
+    if (freeOf('wands') > 0) { cur.free.wands--; saveGame(); } else wands--; saveWallet(); updateHintUi();
     snapshot(); cur.hints++;
     cur.state[y][x] = 2; cur.wrongMarks.delete(y + ',' + x);
     paint();
@@ -1661,11 +1679,13 @@
     for (let i = 0; i < list.length; i++) { r -= wt[i]; if (r <= 0) return list[i]; }
     return list[0];
   }
-  const PICO = { inf: 'heart', life: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens', car: 'car', rocket: 'rocket', packs: 'pack' };
-  const PNAME = { inf: 'min of unlimited hearts', life: 'life', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier', car: 'gummy car', rocket: 'candy rocket', packs: 'sticker pack' };
+  const PICO = { inf: 'heart', life: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens', car: 'car', rocket: 'rocket', packs: 'pack', tHint: 'hint', tWand: 'wand', gift: 'gift_b', frame: 'pass_frame' };
+  // prizes counted in minutes: unlimited hearts, and a helper that is free once in every level for that long
+  const isMin = (k) => k === 'inf' || k === 'tHint' || k === 'tWand', minTxt = (k, v, long) => (k === 'inf' ? '∞ ' : '⏱ ') + v + (long ? ' min' : 'm');
+  const PNAME = { inf: 'min of unlimited hearts', life: 'life', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier', car: 'gummy car', rocket: 'candy rocket', packs: 'sticker pack', tHint: 'min of free hint', tWand: 'min of free magic wand', gift: 'surprise gift', frame: 'Sweet Pass board frame' };
   const prizeKeys = (p) => Object.keys(PICO).filter((k) => p[k]);
   function prizeHtml(p) {
-    return prizeKeys(p).map((k) => '<span class="pz"><img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + p[k] + 'm' : '+' + p[k]) + '</b></span>').join('');
+    return prizeKeys(p).map((k) => '<span class="pz"><img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (isMin(k) ? minTxt(k, p[k]) : '+' + p[k]) + '</b></span>').join('');
   }
   function prizeText(p) { return prizeKeys(p).map((k) => p[k] + ' ' + PNAME[k] + (p[k] > 1 && k !== 'coins' && k !== 'inf' ? 's' : '') + (k === 'coins' && p[k] > 1 ? 's' : '')).join(' and '); }
   /* every prize pops up with a message and the narrator, one after another */
@@ -1681,7 +1701,7 @@
     rewardOpen = true;
     $('rwTitle').textContent = r.title || 'You got a prize!';
     const kk = prizeKeys(r.p);
-    $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + r.p[k] + ' min' : '+' + r.p[k]) + '</b></div>').join('');
+    $('rwItems').innerHTML = (r.html || '') + kk.map((k, n) => '<div class="rw-it" style="animation-delay:' + (0.25 + n * 0.18) + 's"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (isMin(k) ? minTxt(k, r.p[k], 1) : '+' + r.p[k]) + '</b></div>').join('');
     $('rwItems').classList.toggle('many', $('rwItems').children.length > 4);
     $('rwText').textContent = kk.length ? 'Your ' + prizeText(r.p) + ' will be added to your bag.' : (r.html ? 'Find it in My Collection (Profile).' : '');
     $('reward').hidden = false; if (!r.voice) S.prize(); buzz([25, 30, 45]);   // the big card of a world's last level opens while the win fanfare still plays: no second tune over it
@@ -1697,10 +1717,10 @@
   // a card's prize, big: the helper's own icon in large, with the number only where it says something (10 coins, 15 min, x2)
   function bigPrize(p) {
     return prizeKeys(p).map((k) => { const v = p[k];
-      return '<span class="pz bp k-' + k + '"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false">' + (k === 'coins' ? '<b>' + v + '</b>' : k === 'inf' ? '<b>' + v + ' min</b>' : v > 1 ? '<b>×' + v + '</b>' : '') + '</span>'; }).join('');
+      return '<span class="pz bp k-' + k + '"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false">' + (k === 'coins' ? '<b>' + v + '</b>' : isMin(k) ? '<b>' + minTxt(k, v, 1) + '</b>' : v > 1 ? '<b>×' + v + '</b>' : '') + '</span>'; }).join('');
   }
   // the daily bonus: apart from coins (and the minutes of unlimited hearts) every prize is exactly ONE item
-  const oneEach = (p) => { const o = {}; Object.keys(p).forEach((k) => { o[k] = k === 'coins' || k === 'inf' || typeof p[k] !== 'number' ? p[k] : 1; }); return o; };
+  const oneEach = (p) => { const o = {}; Object.keys(p).forEach((k) => { o[k] = k === 'coins' || isMin(k) || typeof p[k] !== 'number' ? p[k] : 1; }); return o; };
   function openBonus() {
     const grid = $('bonusGrid'); grid.innerHTML = ''; $('bonusClaim').hidden = true; $('bonusStreak').textContent = '';
     $('bonusMsg').textContent = 'Pick a card to get your reward!';
@@ -1809,8 +1829,8 @@
     const fumed = !!foeKind(); if (fumed) bossDefeat();
     clearTimeout(mischiefT); clearTimeout(blowT); clearFog();
     // the narrator's win line; when it is "Perfect!" (no heart lost) the word shows on the screen at that same moment, not before
-    if (!isBoss()) setTimeout(() => { if (V) V.win(cur.hearts); if (cur.hearts >= MAX_HEARTS) praiseWord('Perfect!', true); }, 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
-    const m = cur.meta, earned = Math.max(1, cur.hearts);
+    if (!isBoss()) setTimeout(() => { if (V) V.win(cur.hearts); if (fullHearts()) praiseWord('Perfect!', true); }, 3100);   // on a world's last level the narrator announces the defeat and then the big prize instead   // after the three stars have landed
+    const m = cur.meta, earned = Math.max(1, cur.hearts + MAX_HEARTS - (cur.maxH || MAX_HEARTS));
     let reward = false, wandReward = false;
     freshScore();
     // the timed Daily Challenge (the round "Play" button on the map) pays only its two prizes: no points, no league
@@ -1820,7 +1840,7 @@
     if (!chal) { score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
       store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true; leagueBump(score.points); }
     const firstWin = !!(cur.meta && cur.meta.kind === 'level') && store.get('fwin', '') !== today(); if (firstWin) store.set('fwin', today());
-    const earnedCoins = chal ? 0 : (2 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // the Daily Challenge pays no coins either   // coins: 2 per win, 3 without losing a heart (raised 2026-11-21)
+    const earnedCoins = chal ? 0 : (2 + (fullHearts() ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // the Daily Challenge pays no coins either   // coins: 2 per win, 3 without losing a heart (raised 2026-11-21)
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
     const winWait = !fumed ? 450 : isBoss() ? 1200 : 700;   // the win card: 0.45 s after the last candy; after Vinegar 1.2 s, after his minion 0.7 s
@@ -1836,7 +1856,7 @@
       if (level === m.level) {
         level = m.level + 1; store.set('level', level); pendingHop = level > LAST_LEVEL ? null : { from: m.level, to: level };
         if (m.level >= CAKE_FROM) setCake(cake.n + 1); if (m.level >= CAKE_FROM) $('winGain').insertAdjacentHTML('beforeend', '<small class="wcake new"><img src="art/3d_cake_' + cake.n + '.webp?2" alt="" draggable="false">' + (cake.n >= CAKE_MAX ? 'Cake complete!' : 'New cake layer!') + '</small>');
-        if (cur.hearts >= MAX_HEARTS) {
+        if (fullHearts()) {
           sugar.n++; if (sugar.n >= SUGAR_AT) { sugar.n = 0; const sp = chestLoot('med'); give(sp); soon(() => announce(sp, 'Sugar Stars complete!', true), 4800); }
           store.set('sugar', sugar); updateCakeMeds();
           $('winGain').insertAdjacentHTML('beforeend', '<small class="wstar"><img src="art/ic_sugarstar.webp" alt="" draggable="false">' + (sugar.n || SUGAR_AT) + ' / ' + SUGAR_AT + '</small>');
@@ -1870,7 +1890,7 @@
     else wr.hidden = true;
     if (cur.chalWon) { wr.hidden = false; wr.innerHTML = '⏱ Challenge prize: <b>+1 hint and +1 magnifier</b>'; }
     if (m.kind === 'level' && isBossLv(m.level)) {
-      const flawless = cur.hearts >= MAX_HEARTS, bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
+      const flawless = fullHearts(), bp = { coins: flawless ? 10 : 5, hints: flawless ? 1 : 0, shield: flawless ? 1 : 0 };
       give(bp);
       const all = merge || []; merge = null; const sum = {}; let more = '', album = false;
       [{ p: bp }].concat(all).forEach((e) => { for (const k in (e.p || {})) if (e.p[k]) sum[k] = (sum[k] || 0) + e.p[k]; if (e.title === 'Album prize ready!') album = true; else more += e.html || ''; });
@@ -2235,6 +2255,7 @@
     await transition(() => { renderHome(); show('home'); scrollToLevel(p ? p.from : level); });
     if (p) { await sleep(120); await hopTo(p.from, p.to); }
     if (cur && cur.done && cur.hearts > 0) setTimeout(notifMaybeAsk, 600);
+    if (climb.moved > 0 && climbOn()) climbPop(0);
   }
   /* ---------- "Enjoying Bonbox?": asked only at a happy moment (right after a win), a few times at most, never again once answered ---------- */
   const RATE_AT = [8, 25, 60, 120, 200];
@@ -2261,6 +2282,7 @@
     if (leaguePending) { leaguePending = false; openLeague(() => nextLevel()); return; }
     if (bonusPending) { bonusPending = false; startCart(() => nextLevel()); return; }
     $('win').hidden = true;
+    if (cur.meta.kind === 'level' && climb.moved > 0 && climbOn()) { await toMap(); return; }   // the bear went up a floor: the climb window shows it (opened by toMap)
     if (webGate() && cur.meta.kind === 'level' && cur.meta.level >= WEB_FREE) { await toMap(); openWebGate(); return; }   // the last free level on the web
     if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL || (cur.meta.level === STORY_END && !store.get('seenEnd', false))) { await toMap(); maybeEnding(); return; }
     const from = cur.meta.level, to = level; pendingHop = null;
@@ -2578,6 +2600,7 @@
   let look = { stand: 'art/gumi_hero.webp', win: 'art/gumi_win.webp', air: 'art/gumi_jump.webp' };
   // board frames: one every 10 levels up to level 50 (5 frames), then one every 20 levels up to 990; light and dark colours mixed
   const FRAMES = [{ id: 'cream', name: 'Cream', bg: '#f7f1e5', at: 0 },
+    { id: 'sweetgold', name: 'Sweet Pass Gold', bg: 'linear-gradient(160deg,#fff6b0,#ffc83a 35%,#ff7ab8 70%,#b44bff)', at: 0, pass: true },
     { id: 'mint', name: 'Mint', bg: 'linear-gradient(160deg,#e6fff0,#b9f0d2)', at: 10 },
     { id: 'lime', name: 'Lime', bg: 'linear-gradient(160deg,#f3ffd9,#c6ee8a)', at: 20 },
     { id: 'sky', name: 'Sky', bg: 'linear-gradient(160deg,#e6f4ff,#bcdcfb)', at: 30 },
@@ -2759,9 +2782,9 @@
       note.textContent = 'Start with two bears, and win a new outfit every 15 levels. A new colour comes every 20 levels, from level 10.';
     } else if (colTab === 'frames') {
       FRAMES.forEach((f) => {
-        const open = passed() >= f.at, b = document.createElement('button'); b.type = 'button'; b.className = 'colcell frm' + (frame === f.id ? ' sel' : '') + (open ? '' : ' lock');
-        b.innerHTML = '<div class="swatch" style="background:' + f.bg + '"><u></u><u></u><u></u><u></u></div><span>' + f.name + '</span>' + (open ? '' : '<i>Level ' + f.at + '</i>');
-        b.onclick = () => { if (!open) { toast('Pass ' + f.at + ' levels to unlock the ' + f.name + ' frame'); return; } frame = f.id; store.set('frame', frame); applyLook(); S.tap(); renderCollection(); };
+        const open = f.pass ? !!store.get('framePass', false) : passed() >= f.at, b = document.createElement('button'); b.type = 'button'; b.className = 'colcell frm' + (frame === f.id ? ' sel' : '') + (open ? '' : ' lock');
+        b.innerHTML = '<div class="swatch" style="background:' + f.bg + '"><u></u><u></u><u></u><u></u></div><span>' + f.name + '</span>' + (open ? '' : '<i>' + (f.pass ? 'Sweet Pass' : 'Level ' + f.at) + '</i>');
+        b.onclick = () => { if (!open) { toast(f.pass ? 'The ' + f.name + ' frame is on the last step of the Sweet Pass' : 'Pass ' + f.at + ' levels to unlock the ' + f.name + ' frame'); return; } frame = f.id; store.set('frame', frame); applyLook(); S.tap(); renderCollection(); };
         grid.appendChild(b);
       });
       note.textContent = 'Your board frame, used in every level.';
@@ -2813,7 +2836,7 @@
     { id: 'a10', text: 'Daily Bonus streak of 7 days', goal: 7, get: () => Math.max(bonus.streak || 0, 0), prize: { hints: 1, coins: 10 } }];
   function freshWeek() { const k = weekKey(); if (!weekly || weekly.week !== k) { weekly = { week: k, solved: 0, hard: 0, flawless: 0, claimed: {} }; store.set('weekly', weekly); } }
   function trackSolved() {
-    freshWeek(); const flawless = cur.hearts >= MAX_HEARTS; climbWin(); stormWin();
+    freshWeek(); const flawless = fullHearts(); climbWin(); stormWin();
     stats.solved++; if (flawless) { passAdvance(); stats.flawless++; stats.run++; stats.maxRun = Math.max(stats.maxRun, stats.run); } else stats.run = 0; if (!cur.hints) stats.nohint++;
     if (cur.meta && cur.meta.kind === 'level' && isBossLv(cur.meta.level)) stats.bosses++;
     weekly.solved++; if (cur.tier !== 'normal') weekly.hard++; if (flawless) weekly.flawless++;
@@ -2870,9 +2893,9 @@
   const questReady = () => QDEF.some((q) => quests.p[q.id] >= q.goal && !quests.claimed[q.id]) || anyChallengeReady();
   function onSolved() {
     freshDay(); trackSolved();
-    quests.p.solved++; if (!cur.hints) quests.p.nohint++; if (cur.hearts >= MAX_HEARTS) quests.p.flawless++;
+    quests.p.solved++; if (!cur.hints) quests.p.nohint++; if (fullHearts()) quests.p.flawless++;
     store.set('quests', quests);
-    chest.n = Math.min(CHEST_AT, chest.n + 1); if (cur.hearts >= MAX_HEARTS) chest.fl = (chest.fl || 0) + 1; store.set('chest', chest);
+    chest.n = Math.min(CHEST_AT, chest.n + 1); if (fullHearts()) chest.fl = (chest.fl || 0) + 1; store.set('chest', chest);
     updateSides();
   }
   function updateSides() {
@@ -2886,8 +2909,8 @@
       const ci = document.querySelector('#medChest .disc img'); if (ci) ci.src = chestImg(q ? q.tier : chestTier()); }
     const left = (MAX_PLAYS - plays.memory) + (MAX_PLAYS - plays.toss) + (MAX_PLAYS - (plays.odd || 0)) + (MAX_PLAYS - (plays.jars || 0)) + (MAX_PLAYS - (plays.shoot || 0)) + (MAX_PLAYS - (plays.hoop || 0));
     set('medGamesTag', left + '/' + MAX_PLAYS * 7);
-    const pc = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
-    set('medPassTag', pc ? 'CLAIM' : pass.step + '/' + PASS.length); $('medPass').classList.toggle('ready', pc > 0);
+    const pc = spClaimable();
+    set('medPassTag', pc ? 'CLAIM' : pass.step + '/' + SP_STEPS); $('medPass').classList.toggle('ready', pc > 0);
     updateRushTag();
     { const n = eventsHot(), g = GAMES.filter((x) => x[0] !== 'cart' && (MAX_PLAYS - (plays[x[0]] || 0)) > 0 && gameWait(x[0]) <= 0).length; set('medEventsTag', n ? n + ' NEW' : 'EVENTS'); $('medEvents').classList.toggle('ready', n > 0); $('medEvents').classList.toggle('dot', n + g > 0); }
     { const cc = climbClaim(), on = climbOn(); set('medClimbTag', on ? (cc ? 'CLAIM' : '⏱ ' + fmtClock(climbLeft())) : climb.day === today() ? 'Tomorrow' : 'START');
@@ -3018,7 +3041,7 @@
     setTimeout(() => {
       art.src = 'art/3d_chest_' + tier + '_open.webp'; art.classList.remove('opening'); art.classList.add('opened'); stage.classList.remove('charge'); stage.classList.add('open');
       card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
-      chestStars(art); chestSpill(art, p); S.prize(); if (S.fanfare) setTimeout(() => S.fanfare(), 250); buzz([40, 40, 80]);
+      chestStars(art); chestSpill(art, p); S.prize(); if (S.reward) setTimeout(() => S.reward(), 250); buzz([40, 40, 80]);
       $('chestPrize').innerHTML = '<div class="rwd big pop">' + prizeHtml(p) + '</div>';
       $('chestPrize').querySelectorAll('.pz').forEach((e, i) => { e.style.setProperty('--i', i); setTimeout(() => { S.ui && S.ui('item'); buzz(8); }, 450 + i * 240); });
       $('chestMsg').textContent = CHEST_NAME[tier] + '!';
@@ -3156,9 +3179,30 @@
     const target = (360 - (idx * 45 + 22.5) + 360) % 360, cur0 = wheelRot % 360;
     wheelRot += 360 * 5 + ((target - cur0 + 360) % 360);
     spinning = true; $('wheelBtn').disabled = true; $('wheelMsg').textContent = 'Good luck…';
-    const el = $('wheelRot'); el.style.transition = 'transform 4s cubic-bezier(.15,.7,.1,1)'; el.style.transformOrigin = '110px 110px'; el.style.transformBox = 'view-box'; el.style.transform = 'rotate(' + wheelRot + 'deg)';
-    let ticks = 0; const tick = setInterval(() => { S.tap(); if (++ticks > 16) clearInterval(tick); }, 220);
-    setTimeout(() => { spinning = false; $('wheelMsg').textContent = 'You won ' + prizeText(prize) + '!'; buzz([30, 40, 60]); openWheelState(); announce(prize, 'Lucky Wheel!', !!(prize.wands || prize.double || prize.coins >= 50)); }, 4200);
+    // the wheel is turned frame by frame (not a CSS transition) so every tick is heard exactly when a divider passes the pointer's tip,
+    // and the pointer flicks on each one: fast rattle at first, then slower and slower ticks until it stops
+    const el = $('wheelRot'), ptr = document.querySelector('#wheelBox .wptr'), from = wheelRot - (360 * 5 + ((target - cur0 + 360) % 360)), dist = wheelRot - from, DUR = 4600;
+    el.style.transition = 'none'; el.style.transformOrigin = '110px 110px'; el.style.transformBox = 'view-box';
+    const ease = (x) => { const u = Math.min(1, x / 0.07); return x < 0.07 ? 0.035 * u * u : 0.0175 + 0.9825 * (1 - Math.pow(1 - (x - 0.07) / 0.93, 3.2)); };   // a short push, then a long glide down
+    let t0 = 0, lastPeg = Math.floor(from / 45), lastSnd = -1e9, sched = 0;
+    const flick = (v) => { if (ptr && ptr.animate) ptr.animate([{ transform: 'translateX(-50%) rotate(' + (-10 - 14 * v) + 'deg)' }, { transform: 'translateX(-50%) rotate(0deg)' }], { duration: 70 + 160 * (1 - v), easing: 'cubic-bezier(.3,1.6,.5,1)' }); };
+    const rotAt = (ms) => from + dist * ease(Math.min(1, ms / DUR));
+    const turn = (now) => {
+      if (!t0) t0 = now; const el0 = now - t0, x = Math.min(1, el0 / DUR); el.style.transform = 'rotate(' + rotAt(el0) + 'deg)';
+      // the next 40 ms are worked out ahead, 1 ms at a time: each divider crossing gets its click scheduled on the sound clock at that exact moment
+      // (a frame is 16 ms, and at full speed the wheel turns about 20 degrees in one frame, so clicks played on frames would land late)
+      for (let ms = sched; ms <= Math.min(DUR, el0 + 40); ms++) {
+        const pg = Math.floor(rotAt(ms) / 45); if (pg === lastPeg) continue; lastPeg = pg;
+        if (ms < el0 - 2) continue;   // after a stall (the phone was busy) the dividers already passed are skipped, never played late in a burst
+        const v = Math.min(1, (rotAt(ms + 5) - rotAt(ms)) / 5 * 1000 / 1400), d = Math.max(0, ms - el0);
+        if (ms - lastSnd > 26) { lastSnd = ms; S.wtick && S.wtick(v, d / 1000, rotAt(ms)); }
+        setTimeout(() => flick(v), d);
+      }
+      sched = Math.floor(Math.min(DUR, el0 + 40)) + 1;
+      if (x < 1) requestAnimationFrame(turn); else { el.style.transform = 'rotate(' + wheelRot + 'deg)'; S.wstop && S.wstop(); }
+    };
+    requestAnimationFrame(turn);
+    setTimeout(() => { spinning = false; $('wheelMsg').textContent = 'You won ' + prizeText(prize) + '!'; buzz([30, 40, 60]); openWheelState(); announce(prize, 'Lucky Wheel!', !!(prize.wands || prize.double || prize.coins >= 50)); }, 4900);
   }
   function openWheelState() {
     const free = wheel.date !== today(), extra = wheel.extra;
@@ -3181,36 +3225,72 @@
     $('games').hidden = false;
   }
 
-  /* ---------- Candy Pass: a vertical track of prizes; every level won without losing a heart climbs one step ---------- */
-  const PASS = [{ coins: 2 }, { coins: 3 }, { hints: 1 }, { coins: 4 }, { coins: 5 }, { coins: 5, sweeper: 1 }, { inf: 15 }, { coins: 6 }, { lens: 1 }, { coins: 15, wands: 1 }];
-  let pass = Object.assign({ step: 0, cl: [], round: 1 }, store.get('pass', {}));
-  function passAdvance() {
-    if (pass.step >= PASS.length) return;
-    pass.step++; store.set('pass', pass); updateSides();
+  /* ---------- Sweet Pass: a monthly season of 30 steps with two tracks (his request, after the pass in another game he showed).
+     Every level won gives pass points; wins in a row grow the multiplier (x1 x2 x3 x4 x5), a lost level drops it back to x1.
+     The free track is for everyone; the Sweet Pass track (bought once per season) has bigger prizes and, on the last step,
+     a board frame no one else can get. ---------- */
+  const SP_STEPS = 30, SP_MULT = [1, 2, 3, 4, 5], SP_PRICE = '$4.99';
+  const spNeed = (i) => (i < 10 ? 3 : i < 20 ? 4 : 5);   // points for step i+1: 120 in all
+  const SP_FREE = [{ coins: 5 }, { hints: 1 }, { coins: 5 }, { sweeper: 1 }, { gift: 1 }, { coins: 6 }, { inf: 15 }, { lens: 1 }, { coins: 8 }, { packs: 1 },
+    { tHint: 15 }, { coins: 8 }, { double: 1 }, { hints: 1 }, { gift: 1 }, { coins: 10 }, { shield: 1 }, { inf: 30 }, { coins: 10 }, { wands: 1 },
+    { packs: 1 }, { coins: 12 }, { tWand: 15 }, { sweeper: 1, lens: 1 }, { gift: 1 }, { coins: 15 }, { car: 1 }, { hints: 2 }, { inf: 30 }, { coins: 30, wands: 1, gift: 1 }];
+  const SP_GOLD = [{ coins: 20, hints: 1 }, { tHint: 30 }, { packs: 2 }, { inf: 30 }, { coins: 30, wands: 1 }, { lens: 2 }, { double: 2 }, { gift: 2 }, { rocket: 1, packs: 1 }, { coins: 60, car: 1 },
+    { tWand: 30 }, { hints: 3 }, { inf: 60 }, { sweeper: 2, lens: 2 }, { coins: 50, gift: 2 }, { shield: 2 }, { packs: 3 }, { wands: 2 }, { tHint: 60 }, { coins: 100, car: 2 },
+    { gift: 3 }, { rocket: 2 }, { inf: 120 }, { hints: 5 }, { coins: 80, packs: 2 }, { tWand: 60 }, { double: 3, shield: 2 }, { wands: 3 }, { gift: 3, packs: 3 }, { frame: 1, coins: 200, wands: 3, hints: 5, inf: 180 }];
+  const spFrame = () => FRAMES.find((f) => f.id === 'sweetgold') || FRAMES[0];
+  const spSeason = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1); };
+  const spBlank = () => ({ season: spSeason(), pts: 0, step: 0, cl: [], gcl: [], gold: false, ms: 0 });
+  let pass = store.get('spass', null); if (!pass || typeof pass !== 'object' || !(pass.step >= 0) || !Array.isArray(pass.cl) || !Array.isArray(pass.gcl)) pass = spBlank();
+  function spFresh() { if (pass.season !== spSeason()) { pass = spBlank(); store.set('spass', pass); } }
+  const spLeftMs = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 1) - d; };
+  const spLeftTxt = () => { const m = spLeftMs(), dd = Math.floor(m / 864e5), hh = Math.floor((m % 864e5) / 36e5); return dd ? dd + 'd ' + hh + 'h' : hh + 'h ' + Math.floor((m % 36e5) / 6e4) + 'm'; };
+  const spMult = () => SP_MULT[Math.min(SP_MULT.length - 1, pass.ms || 0)];
+  function spClaimable() { spFresh(); let n = 0; for (let i = 0; i < pass.step; i++) { if (!pass.cl[i]) n++; if (pass.gold && !pass.gcl[i]) n++; } return n; }
+  // a level won: points by the multiplier, then the multiplier grows. Returns the points given (for the win card).
+  function spWin() {
+    spFresh(); if (pass.step >= SP_STEPS) { pass.ms = Math.min(SP_MULT.length - 1, (pass.ms || 0) + 1); store.set('spass', pass); return 0; }
+    const g = spMult(); pass.pts += g;
+    while (pass.step < SP_STEPS && pass.pts >= spNeed(pass.step)) { pass.pts -= spNeed(pass.step); pass.step++; }
+    if (pass.step >= SP_STEPS) pass.pts = 0;
+    pass.ms = Math.min(SP_MULT.length - 1, (pass.ms || 0) + 1); store.set('spass', pass); updateSides(); return g;
   }
-  function openPass() {
-    S.unlock(); S.tap(); closeAll(); renderPass(); $('pass').hidden = false;
+  function spLose() { if (pass.ms) { cur.spDrop = pass.ms; pass.ms = 0; store.set('spass', pass); } }
+  function spRevive() { if (cur.spDrop) { pass.ms = cur.spDrop; cur.spDrop = 0; store.set('spass', pass); } }
+  function passAdvance() {}   // the old Candy Pass hook (flawless wins only): the Sweet Pass counts every win in spWin()
+  function spClaim(i, gold, btn) {
+    const P = (gold ? SP_GOLD : SP_FREE)[i], arr = gold ? pass.gcl : pass.cl; if (arr[i] || i >= pass.step || (gold && !pass.gold)) return;
+    arr[i] = true; store.set('spass', pass);
+    const p = giftOpen(P, btn); giveReward(p, gold ? 'Sweet Pass!' : P.gift ? 'Surprise box!' : 'Free prize!', gold || i === SP_STEPS - 1);
+    renderPass(); updateSides();
   }
-  function renderPass() {
-    const list = $('passList'); list.innerHTML = '';
-    for (let i = PASS.length - 1; i >= 0; i--) {
-      const reached = i < pass.step, done = !!pass.cl[i], r = document.createElement('div');
-      r.className = 'stkrow passrow' + (reached ? '' : ' lock') + (i === pass.step - 1 ? ' now' : '');
-      r.innerHTML = '<i class="pnum' + (reached ? ' on' : '') + '">' + (i + 1) + '</i><span>' + prizeChipsHtml(PASS[i]) + '</span>';
-      const bt = document.createElement('button'); bt.type = 'button'; bt.className = 'btn main stkbtn claim';
-      bt.textContent = done ? '✓' : reached ? 'Claim' : '🔒'; bt.disabled = done || !reached;
-      bt.onclick = () => { pass.cl[i] = true; store.set('pass', pass); giveReward(PASS[i], 'Candy Pass!', i === PASS.length - 1); renderPass(); updateSides(); };
-      r.appendChild(bt); list.appendChild(r);
+  function openPass() { S.unlock(); S.tap(); closeAll(); spFresh(); $('pass').hidden = false; renderPass(true); }
+  // one prize tile: big icons with their numbers (timed ones carry an infinity badge), the exclusive frame as a swatch
+  function spTile(P, gold, i) {
+    const got = (gold ? pass.gcl : pass.cl)[i], reached = i < pass.step, locked = gold && !pass.gold, ks = Object.keys(P).filter((k) => P[k] && (PICO[k] || k === 'frame'));
+    let h = '<div class="sp-tile' + (gold ? ' gold' : '') + (reached ? ' on' : '') + (got ? ' done' : '') + (ks.length > 2 ? ' many' : '') + '">';
+    h += ks.map((k) => k === 'frame' ? '<span class="ct-it sp-fr"><i style="background:' + spFrame().bg + '"></i></span>'
+      : '<span class="ct-it' + (isMin(k) && k !== 'inf' ? ' timed' : '') + '"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (isMin(k) ? P[k] + 'm' : k === 'coins' ? P[k] : '×' + P[k]) + '</b></span>').join('');
+    if (got) h += '<i class="ct-ok">✓</i>'; else if (locked) h += '<i class="ct-lock">🔒</i>';
+    if (reached && !got && !locked) h += '<button type="button" class="btn main sp-claim" data-i="' + i + '" data-g="' + (gold ? 1 : 0) + '">Claim</button>';
+    return h + '</div>';
+  }
+  function renderPass(scroll) {
+    spFresh();
+    $('spTime').textContent = '⏱ ' + spLeftTxt();
+    $('spMult').innerHTML = SP_MULT.map((m, k) => '<i class="' + (k === (pass.ms || 0) ? 'on' : k < (pass.ms || 0) ? 'past' : '') + '">x' + m + '</i>').join('');
+    const act = $('spBuy'); act.textContent = pass.gold ? 'Active ✓' : 'Activate · ' + SP_PRICE; act.disabled = !!pass.gold; act.classList.toggle('owned', !!pass.gold);
+    const list = $('passList'); let h = '';
+    for (let i = 0; i < SP_STEPS; i++) {
+      // the progress bar sits between the last step reached and the next one
+      if (i === pass.step) h += '<div class="sp-bar"><u style="width:' + Math.round(100 * pass.pts / spNeed(i)) + '%"></u><b>' + pass.pts + ' / ' + spNeed(i) + '</b></div>';
+      h += '<div class="sp-row' + (i < pass.step ? ' on' : '') + (i === pass.step - 1 ? ' now' : '') + '" data-i="' + i + '">' + spTile(SP_FREE[i], false, i) + '<b class="sp-num" data-n="' + (i + 1) + '"></b>' + spTile(SP_GOLD[i], true, i) + '</div>';
     }
-    const all = pass.step >= PASS.length && PASS.every((x, i) => pass.cl[i]);
-    $('passInfo').textContent = all ? 'Pass complete! Start a fresh one.' : 'Win levels without losing a heart to climb · ' + pass.step + ' / ' + PASS.length;
-    if (all) {
-      const nb = document.createElement('button'); nb.type = 'button'; nb.className = 'btn main wide'; nb.textContent = 'Start a new pass';
-      nb.onclick = () => { pass = { step: 0, cl: [], round: pass.round + 1 }; store.set('pass', pass); renderPass(); updateSides(); };
-      list.prepend(nb);
-    }
+    list.innerHTML = h;
+    list.querySelectorAll('.sp-claim').forEach((b) => { b.onclick = () => { S.tap(); spClaim(+b.dataset.i, b.dataset.g === '1', b); }; });
+    $('passInfo').textContent = pass.step >= SP_STEPS ? 'Season complete! A new Sweet Pass starts next month.' : 'Win levels in a row to grow the multiplier!';
+    if (scroll) { const at = list.querySelector('.sp-bar') || list.querySelector('.sp-row.now'); if (at) setTimeout(() => { list.scrollTop = Math.max(0, at.offsetTop - list.clientHeight * 0.45); }, 30); }
   }
-
+  setInterval(() => { if (!$('pass').hidden) $('spTime').textContent = '⏱ ' + spLeftTxt(); }, 30000);
 
 
   /* ====================== LIVES, VIDEO REWARDS AND THE REAL-MONEY STORE ======================
@@ -3263,7 +3343,8 @@
     { id: 'inf2h', name: 'Unlimited Lives', price: '$1.99', img: 'ic_heart', tag: '2 HOURS', give: { inf: 120 } },
     { id: 'helpers', name: 'Helper Pack', price: '$3.99', img: 'ic_wand', give: { hints: 10, wands: 5, shield: 3, sweeper: 3, lens: 3, double: 3 } },
     { id: 'noads', name: 'No Ads', price: '$9.99', img: 'ic_shield', once: true, give: {}, noads: true },
-    { id: 'jar', name: 'Candy Jar', price: '$1.99', img: 'ev_jar', hidden: true, give: {} }
+    { id: 'jar', name: 'Candy Jar', price: '$1.99', img: 'ev_jar', hidden: true, give: {} },
+    { id: 'sweetpass', name: 'Sweet Pass', price: SP_PRICE, img: 'ev_pass', hidden: true, give: {} }
   ];
   let owned = store.get('owned', {});
   // called after a purchase is confirmed (by the native app, or by the test mode)
@@ -3272,6 +3353,7 @@
     if (p.once) { if (owned[id]) return false; owned[id] = true; store.set('owned', owned); }
     if (p.lives) { addLives(MAX_LIVES); toast('❤️ Lives refilled!'); if (!$('lives').hidden) renderLives(); }
     if (p.noads) { adsOff = true; store.set('adsOff', true); toast('Ads removed. Thank you!'); }
+    if (p.id === 'sweetpass') { spFresh(); pass.gold = true; store.set('spass', pass); toast('🍬 Sweet Pass active! Claim your prizes.'); if (!$('pass').hidden) renderPass(); updateSides(); }
     if (p.id === 'jar') { const c = jar.c; jar.c = 0; store.set('jar', jar); if (c) giveReward({ coins: c }, 'Candy Jar!', true); if (!$('jarOv').hidden) renderJar(); }
     if (prizeKeys(p.give).length) giveReward(p.give, p.name + '!', true);
     updateHintUi(); if (!$('shop').hidden) openShop();
@@ -3314,7 +3396,10 @@
 
   /* ---------- Candy Climb: a timed challenge. Press Start and you have 24 hours: every level you win lifts the bear one
      platform, every level you lose drops him one. Each platform holds a bigger prize; a golden chest waits on top. Once a day. ---------- */
-  const CLIMB = [{ coins: 3, hints: 1 }, { coins: 4, lens: 1 }, { coins: 5, sweeper: 1 }, { coins: 6, double: 1 }, { coins: 8, shield: 1 }, { coins: 10, rocket: 1 }, { coins: 15, car: 1, wands: 1 }], CLIMB_MS = 24 * 3600e3;
+  // 20 floors (he asked for more than 7): every floor its own kind of prize, the top one a big chest with many
+  const CLIMB = [{ coins: 3, hints: 1 }, { coins: 4, lens: 1 }, { packs: 1 }, { inf: 15 }, { coins: 6, sweeper: 1 }, { tHint: 15 }, { gift: 1 }, { coins: 8, double: 1 }, { shield: 1, packs: 1 }, { coins: 10, wands: 1 },
+    { tWand: 15 }, { coins: 12, rocket: 1 }, { gift: 1, packs: 1 }, { inf: 30, hints: 2 }, { coins: 15, car: 1 }, { tHint: 30, packs: 1 }, { gift: 2 }, { coins: 20, wands: 1 }, { tWand: 30, inf: 30 },
+    { coins: 60, wands: 2, hints: 3, packs: 3, gift: 1, inf: 60 }], CLIMB_MS = 48 * 3600e3;   // 20 wins take longer than a day: 48 hours
   let climb = Object.assign({ start: 0, step: 0, cl: [], day: '' }, store.get('climb', {}));
   const climbOn = () => climb.start > 0 && Date.now() < climb.start + CLIMB_MS;
   const climbLeft = () => Math.max(0, climb.start + CLIMB_MS - Date.now());
@@ -3328,14 +3413,20 @@
   }
   function renderClimb() {
     const box = $('climbTrack'), on = climbOn(), n = CLIMB.length; box.innerHTML = '';
-    const H = 74, top = 96, W = box.clientWidth || 270, px = (i) => W / 2 + (i % 2 ? 1 : -1) * W * 0.17, py = (i) => top + (n - 1 - i) * H + 40;
+    const H = 96, top = 110, W = box.clientWidth || 270, px = (i) => W / 2 + (i % 2 ? 1 : -1) * W * 0.17, py = (i) => top + (n - 1 - i) * H + 40;
     box.style.height = (top + n * H + 60) + 'px';
     box.insertAdjacentHTML('beforeend', '<img class="cl-chest" src="art/3d_chest_large.webp" alt="" draggable="false" style="left:' + W / 2 + 'px;top:8px">');
     for (let i = 0; i < n; i++) {
       const reached = i < climb.step, done = !!climb.cl[i], d = document.createElement('div'); d.className = 'cl-plat' + (reached ? ' on' : '') + (done ? ' done' : ''); d.style.left = px(i) + 'px'; d.style.top = py(i) + 'px'; d.style.setProperty('--d', (i * 0.37 % 1.6).toFixed(2) + 's');
-      d.innerHTML = '<img src="art/climb_plat.webp" alt="" draggable="false"><i>' + (i + 1) + '</i><span class="cl-prize">' + (done ? '✓' : prizeChipsHtml(CLIMB[i])) + '</span>';
-      if (reached && !done) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main cl-claim claim'; b.textContent = 'Claim'; b.onclick = () => { climb.cl[i] = true; store.set('climb', climb); giveReward(CLIMB[i], i === n - 1 ? 'Top of the climb!' : 'Candy Climb!', i === n - 1); renderClimb(); updateSides(); }; d.appendChild(b); }
-      box.appendChild(d);
+      if (i === n - 1) d.classList.add('top');
+      d.innerHTML = '<img src="art/climb_plat.webp" alt="" draggable="false"><i>' + (i + 1) + '</i>';
+      // the floor's prize as a big tile on the other side (like a pass): large icons with their numbers, a tick once claimed
+      const tile = document.createElement('div'), ks = prizeKeys(CLIMB[i]);
+      tile.className = 'cl-tile' + (reached ? ' on' : '') + (done ? ' done' : '') + (i === n - 1 ? ' top' : '') + (ks.length > 2 ? ' many' : '');
+      tile.style.left = (W / 2 + (i % 2 ? -1 : 1) * W * 0.3) + 'px'; tile.style.top = py(i) + 'px';
+      tile.innerHTML = ks.map((k) => { const v = CLIMB[i][k]; return '<span class="ct-it' + (isMin(k) && k !== 'inf' ? ' timed' : '') + '"><img src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (isMin(k) ? v + 'm' : k === 'coins' ? v : '×' + v) + '</b></span>'; }).join('') + (done ? '<i class="ct-ok">✓</i>' : reached ? '' : '<i class="ct-lock">🔒</i>');
+      if (reached && !done) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main cl-claim claim'; b.textContent = 'Claim'; b.onclick = () => { climb.cl[i] = true; store.set('climb', climb); const p = giftOpen(CLIMB[i], b); giveReward(p, i === n - 1 ? 'Top of the climb!' : CLIMB[i].gift ? 'Surprise box!' : 'Candy Climb!', i === n - 1 || !!CLIMB[i].gift); renderClimb(); updateSides(); }; tile.appendChild(b); }
+      box.appendChild(d); box.appendChild(tile);
     }
     // the bear stands on the platform he reached (on the ground before the first one)
     const st = climb.step, bx = st ? px(st - 1) : W / 2, by = st ? py(st - 1) - 26 : top + n * H + 28, bear = document.createElement('img');
@@ -3348,11 +3439,13 @@
       climb.moved = 0; store.set('climb', climb);
     }
     $('climbInfo').innerHTML = on ? 'Play the normal levels on the map. <b>Every level you win</b> lifts the bear one platform, <b>every level you lose</b> drops him one. Come back here to claim the prizes. <b>' + st + ' / ' + n + '</b>'
-      : climb.day === today() ? 'Today is over. A new climb opens tomorrow.' : 'A 24-hour challenge. Press Start, then play the normal levels: every win lifts the bear one platform to a bigger prize!';
+      : climb.day === today() ? 'Today is over. A new climb opens tomorrow.' : 'A 48-hour challenge. Press Start, then play the normal levels: every win lifts the bear one floor to a new prize. 20 floors, a big chest on top!';
     { const pb = $('climbPlay'); pb.hidden = !on; pb.textContent = 'Play level ' + level; }
     const b = $('climbStart'); b.hidden = on || climb.day === today(); $('climbTimer').hidden = !on; if (on) $('climbTimer').textContent = '⏱ ' + fmtClock(climbLeft());
     const sc = $('climbScroll'); if (sc) sc.scrollTop = Math.max(0, by - sc.clientHeight * 0.6);
   }
+  // after a win that lifted the bear, the climb window opens on the map as soon as nothing else is showing (league, rating, a prize card...)
+  function climbPop(n) { setTimeout(() => { if (!(climb.moved > 0 && climbOn()) || $('home').hidden) return; if (anyOverlay() || !$('intro').hidden) { if (n < 25) climbPop(n + 1); return; } openClimb(); }, n ? 400 : 600); }
   function openClimb() { S.unlock(); S.tap(); closeAll(); $('climb').hidden = false; renderClimb(); }
 
   /* ---------- Sour Storm: every few days the Baron attacks for 24 hours; each level you win is a hit on him ---------- */
@@ -3421,7 +3514,7 @@
   function hotWin() { hot.n = Math.min(99, hot.n + 1); store.set('hot', hot); }
   const TOOLNAME = { sweeper: 'sweeper', lens: 'magnifier', car: 'gummy car' };
   function hotStart(lv) {
-    cur.free = {}; if (lv < HOT_FROM || !hot.n) return;
+    cur.free = {}; tfreeApply(); if (lv < HOT_FROM || !hot.n) return;
     const g = hotGifts(hot.n); g.forEach((k) => { cur.free[k] = 1; }); updateHintUi();
     setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv) { toast('🔥 Win streak ×' + hot.n + ': free ' + g.map((k) => TOOLNAME[k]).join(' + ') + '!');
       g.forEach((k, i) => { const b = $(TOOLBTN[k] || 'sweepBtn'); if (b) { b.classList.remove('nudge'); void b.offsetWidth; b.style.animationDelay = (i * 0.15) + 's'; b.classList.add('nudge'); setTimeout(() => b.classList.remove('nudge'), 3500); } }); } }, cur.cake ? 3300 : 900);
@@ -3730,35 +3823,40 @@
     notif.asked = Date.now(); store.set('notif', notif); $('notifAsk').hidden = false;
   }
 
-  /* ---------- 9. Frozen squares (from level 51): ice hides a square's colour; mark a square next to it to melt it ---------- */
+  /* ---------- 9. Frozen squares (from level 51; his pick, option A): a frozen square is LOCKED, its colour still shows through the ice.
+     It melts when the candy of its row or of its column is found. Some ice cubes hold a treasure (coins or a sticker pack) that is
+     collected when the ice melts. Ice is never put on a candy's own square (that row could never be finished). ---------- */
   const ICE_FROM = 51;
   const iceLevel = (lv) => lv >= ICE_FROM && (tierOf(lv) === 'normal' || (lv > STORY_END && tierOf(lv) === 'veryhard')) && !isBossLv(lv) && lv % 3 === 1 && lv % 10 !== 1;   // never the first level of a world (Vinegar steals its sticker there)
   function iceStart(lv) {
-    cur.ice = new Set(); if (!iceLevel(lv)) return;
-    const r = srand(hash('ice' + lv)), n = cur.n, cells = []; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) cells.push([y, x]);
+    cur.ice = new Set(); cur.iceGift = {}; if (!iceLevel(lv)) return;
+    const r = srand(hash('ice' + lv)), n = cur.n, cells = []; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (cur.solution[y] !== x) cells.push([y, x]);
     for (let i = cells.length - 1; i > 0; i--) { const k = Math.floor(r() * (i + 1)); [cells[i], cells[k]] = [cells[k], cells[i]]; }
-    const want = Math.max(3, n - 3), got = [];
+    const want = Math.max(4, n - 2), got = [];
     for (const [y, x] of cells) { if (got.length >= want) break; if (got.every(([yy, xx]) => Math.max(Math.abs(yy - y), Math.abs(xx - x)) >= 2)) got.push([y, x]); }
-    got.forEach(([y, x]) => cur.ice.add(y + ',' + x));
-    if (!store.get('iceSeen', false)) { const intro = () => { if (!cur || cur.done || !cur.ice || !cur.ice.size) return; if (document.querySelector('.overlay:not([hidden])')) { setTimeout(intro, 700); return; } store.set('iceSeen', true);
+    got.forEach(([y, x], i) => { const k = y + ',' + x; cur.ice.add(k); if (i < 2) cur.iceGift[k] = i === 1 && r() < 0.5 ? { packs: 1 } : { coins: 3 + Math.floor(r() * 4) }; });
+    if (!store.get('iceSeen2', false)) { const intro = () => { if (!cur || cur.done || !cur.ice || !cur.ice.size) return; if (document.querySelector('.overlay:not([hidden])')) { setTimeout(intro, 700); return; } store.set('iceSeen2', true);
       $('ciTitle').textContent = 'New: Frozen squares!';
-      $('ciBody').innerHTML = '<div class="ice-intro"><img src="art/ic_ice.webp" alt="" draggable="false"></div><p>Some squares are frozen: the ice hides their color.</p><p><b>Mark an X (or a candy) on a square next to it</b> and the ice melts. Then you can see its color.</p>';
+      $('ciBody').innerHTML = '<div class="ice-intro"><img src="art/ic_ice.webp" alt="" draggable="false"></div><p>Some squares are frozen: you cannot tap them.</p><p><b>Find the candy in its row or in its column</b> and the ice melts. Some ice cubes hide a treasure!</p>';
       $('cakeInfo').hidden = false; }; setTimeout(intro, 1100); }
   }
   function iced(y, x) { return !!(cur && cur.ice && cur.ice.has(y + ',' + x)); }
-  // ice melts when its own square or any square around it gets an X or a candy (helpers can melt it too)
+  // the candy of this row, or of this column, is on the board
+  function iceFree(y, x) { const n = cur.n; if (cur.state[y][cur.solution[y]] === 2) return true; for (let r = 0; r < n; r++) if (cur.solution[r] === x) return cur.state[r][x] === 2; return false; }
   function thawIce() {
     if (!cur || !cur.ice || !cur.ice.size) return;
-    const n = cur.n, melted = [];
-    cur.ice.forEach((k) => { const [y, x] = k.split(',').map(Number); let go = cur.state[y][x] !== 0;
-      for (let yy = y - 1; yy <= y + 1 && !go; yy++) for (let xx = x - 1; xx <= x + 1; xx++) { if (yy < 0 || xx < 0 || yy >= n || xx >= n) continue; const s = cur.state[yy][xx]; if (s === 1 || s === 2) { go = true; break; } }
-      if (go) melted.push(k); });
+    const melted = []; cur.ice.forEach((k) => { const [y, x] = k.split(',').map(Number); if (iceFree(y, x)) melted.push(k); });
     melted.forEach((k) => cur.ice.delete(k));
     if (melted.length) setTimeout(() => melted.forEach((k, i) => { const [y, x] = k.split(',').map(Number), el = cellEl(y, x); if (!el) return;
       const r = el.getBoundingClientRect(), L = fxLayer();
-      for (let q = 0; q < 10; q++) { const p = document.createElement('i'), a = Math.random() * 6.283, d = r.width * (0.4 + Math.random() * 0.6); p.className = 'ice-shard'; p.style.left = (r.left + r.width / 2) + 'px'; p.style.top = (r.top + r.height / 2) + 'px'; L.appendChild(p);
+      for (let q = 0; q < 12; q++) { const p = document.createElement('i'), a = Math.random() * 6.283, d = r.width * (0.4 + Math.random() * 0.6); p.className = 'ice-shard'; p.style.left = (r.left + r.width / 2) + 'px'; p.style.top = (r.top + r.height / 2) + 'px'; L.appendChild(p);
         p.animate([{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + Math.cos(a) * d + 'px),calc(-50% + ' + (Math.sin(a) * d + r.width * 0.5) + 'px)) rotate(' + (Math.random() * 400) + 'deg)', opacity: 0 }], { duration: 600, easing: 'ease-out', fill: 'forwards' }).onfinish = () => p.remove(); }
-      if (i === 0 && S.crack) S.crack(); }), 0);
+      if (i === 0 && S.crack) S.crack();
+      // a treasure was frozen in this cube: it is yours now
+      const g = cur.iceGift && cur.iceGift[k];
+      if (g) { delete cur.iceGift[k]; give(g, true); saveGame();
+        if (g.coins) { flyCoins(el, g.coins, 120, true); if (S.coin) setTimeout(() => S.coin(), 150); }
+        else { plusText(r.left + r.width / 2, r.top, '+1'); toast('🧊 Treasure in the ice: +1 sticker pack!'); if (S.prize) S.prize(); } } }), 0);
   }
 
   /* ---------- the win of a level feeds every event; the result shows in one small line on the win card ---------- */
@@ -3766,6 +3864,8 @@
     const out = [];
     if (!isLevelWin()) return out;
     const lv = cur.meta.level;
+    if (isNew && isSuperLv(lv)) soon(() => giveReward({ coins: 30, wands: 1, packs: 1 }, 'Super Hard beaten!', true), 900);   // the big prize of a Super Hard level
+    { const g = spWin(); if (g) out.push('<span><img src="art/ev_pass.webp" alt="">+' + g + (spMult() > 1 ? ' · x' + spMult() : '') + '</span>'); }
     if (isNew && lv >= HOT_FROM) { hotWin(); out.push('<span><img src="art/ic_flame.webp" alt="">' + T('Streak') + ' ' + hot.n + '</span>'); }
     { const was = towerState(); towerWin(); if (was === 'on') out.push('<span><img src="art/ev_tower.webp" alt="">' + tower.step + '/' + TOWER_STEPS + '</span>'); }
     if (race && !race.claimed && !raceOver()) { raceWin(); out.push('<span><img src="art/ev_race.webp" alt="">' + race.me + '/' + RACE_GOAL + '</span>'); }
@@ -3776,13 +3876,14 @@
   // a lost level: the streak and the tower are lost (a revive gives them back)
   function retentionLose() {
     if (!isLevelWin()) return;
-    cur.hotDrop = hot.n; if (hot.n) { hot.n = 0; store.set('hot', hot); }
+    cur.hotDrop = hot.n; if (hot.n) { hot.n = 0; store.set('hot', hot); } spLose();
     cur.towerFell = towerFall();
     const lh = $('loseHot'); if (lh) { lh.hidden = !(cur.hotDrop || cur.towerFell); lh.textContent = (cur.hotDrop ? '🔥 Your win streak of ' + cur.hotDrop + ' is lost' : '') + (cur.hotDrop && cur.towerFell ? ' · ' : '') + (cur.towerFell ? '🏰 You fell off the Sugar Tower' : '') + '. Keep playing to save it!'; }
   }
   function retentionRevive() {
     if (cur.hotDrop) { hot.n = cur.hotDrop; store.set('hot', hot); cur.hotDrop = 0; }
     if (cur.towerFell) { tower.fell = false; store.set('tower', tower); cur.towerFell = false; }
+    spRevive();
   }
   // event cards on the Events screen
   function retentionCards() {
@@ -3796,6 +3897,114 @@
   }
   const retentionHot = () => retentionCards().filter((o) => o.hot()).length;
   if (location.search.includes('dbg')) Object.assign(window.CandokuDebug || {}, { hot: (n) => { hot.n = n; store.set('hot', hot); }, packs: (n) => addPacks(n), album: () => alb(), tower: () => tower, race: () => race, jar: (c) => { jar.c = c; store.set('jar', jar); }, iceAt: (lv) => iceLevel(lv), level: (n) => { level = n; store.set('level', n); }, notifPlan: () => notifPlan() });
+
+  /* ---------- something new opens up: a hand points the way (map -> Events -> its card), a short card says what it is,
+     then the hand shows the first button to press inside. Each feature is explained once. ---------- */
+  var featSeen = store.get('seenFeat', {}); if (!featSeen || typeof featSeen !== 'object' || Array.isArray(featSeen)) featSeen = {};
+  var featInside = null, ciThen = null;   // ciThen: what the info card's button does next (used by the feature intro)
+  function featList() {
+    return [
+      { id: 'album', from: ALB_FROM, card: 'Sticker Album', img: 'ev_album', win: 'album', btn: '#albPack', go: openAlbum,
+        d: ['Collect stickers! You get a free sticker pack every 3 wins.', 'Fill a set of 9 for a prize, and the whole album for a big one!'] },
+      { id: 'jar', from: JAR_FROM, card: 'Candy Jar', img: 'ev_jar', win: 'jarOv', btn: null, go: openJar,
+        d: ['Every win drops 3 coins into the jar.', 'When it holds 150 coins or more, break it open and keep them all!'] },
+      { id: 'race', from: RACE_FROM, card: 'Candy Race', img: 'ev_race', win: 'race', btn: '#raceGo', go: openRace,
+        d: ['Race 4 other players: the first to win 8 levels wins.', 'Places 1 to 3 get prizes!'] },
+      { id: 'tower', from: TOWER_FROM, card: 'Sugar Tower', img: 'ev_tower', win: 'tower', btn: '#towerGo', go: openTower,
+        d: ['Win 7 levels in a row within 24 hours to reach the top.', 'Lose a level and you fall! Everyone at the top shares 500 coins.'] },
+      { id: 'advent', from: 1, on: advOn, card: 'Advent Calendar', img: 'ev_advent', win: 'advent', btn: '.adv-door.today', go: openAdvent,
+        d: ['A new door opens every day from December 1 to 24.', 'Open today\'s door for a gift. Day 24 has the biggest prize!'] }
+    ];
+  }
+  function featNew() { try { return featList().find((f) => level >= f.from && (!f.on || f.on()) && !featSeen[f.id]) || null; } catch (e) { return null; } }
+  // the events window: the new feature's card wears a NEW ribbon and comes into view
+  function featMark() {
+    const f = featNew(); if (!f) return;
+    const L = featList(); (evItems || []).forEach((o) => { const x = L.find((y) => y.card === o.name); if (x && o.el) o.el.dataset.feat = x.id; });
+    const c = document.querySelector('#evGrid .evcard[data-feat="' + f.id + '"]');
+    if (c && !c.querySelector('.fnew')) { c.classList.add('isnew'); c.insertAdjacentHTML('beforeend', '<span class="fnew">NEW!</span>'); setTimeout(() => { try { c.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} }, 250); }
+  }
+  // tapping the new card the first time: what it is (one card), then "Let's go!" opens it and the hand shows the first button
+  function featIntro(o) {
+    const f = featList().find((x) => x.card === o.name); if (!f || featSeen[f.id] || level < f.from) return false;
+    featSeen[f.id] = 1; store.set('seenFeat', featSeen);
+    closeAll(); $('ciTitle').textContent = f.card;
+    $('ciBody').innerHTML = '<div class="ice-intro"><img src="art/' + f.img + '.webp" alt="" draggable="false"></div>' + f.d.map((x) => '<p>' + x + '</p>').join('');
+    $('ciOk').textContent = "Let's go!"; $('cakeInfo').hidden = false;
+    ciThen = () => { f.go(); if (f.btn) featInside = { win: f.win, sel: f.btn, until: Date.now() + 15000 }; };
+    return true;
+  }
+  // the hand: one element on top of everything, it follows its target while it is on screen
+  function featHandEl() {
+    let h = $('featHand'); if (h) return h;
+    h = document.createElement('div'); h.id = 'featHand'; h.hidden = true;
+    h.innerHTML = '<span class="fh-bub"></span><span class="fh-hand">' + HAND3D.replace(/thg/g, 'fhg') + '</span>';
+    document.body.appendChild(h); return h;
+  }
+  function featTarget() {
+    const open = [...document.querySelectorAll('.overlay')].filter((o) => !o.hidden && o.id !== 'wipe');
+    if (featInside) {
+      const w = $(featInside.win), b = w && !w.hidden && w.querySelector(featInside.sel);
+      if (!w || w.hidden || Date.now() > featInside.until) { if (!w || w.hidden) featInside = null; return null; }
+      return b && !b.disabled && b.offsetParent ? { el: b, txt: '' } : null;
+    }
+    const f = featNew(); if (!f) return null;
+    if (open.length === 1 && open[0].id === 'events') { const c = document.querySelector('#evGrid .evcard[data-feat="' + f.id + '"]'); return c ? { el: c, txt: '', clip: open[0] } : null; }
+    if (open.length || !$('game').hidden || !$('intro').hidden || !$('coach').hidden || document.getElementById('splash')) return null;
+    const m = $('medEvents'); return m && m.offsetParent ? { el: m, txt: 'NEW: ' + f.card + '!' } : null;
+  }
+  let featRaf = 0, featKey = '';
+  function featTick() {
+    const h = featHandEl(), t = featTarget();
+    if (!t) { if (!h.hidden) { h.hidden = true; featKey = ''; } return; }
+    const r = t.el.getBoundingClientRect();
+    if (t.clip) { const c = t.clip.getBoundingClientRect(); if (r.bottom < c.top + 40 || r.top > c.bottom - 40) { h.hidden = true; return; } }
+    if (h.hidden) { h.hidden = false; }
+    const key = t.txt; if (key !== featKey) { featKey = key; const bub = h.querySelector('.fh-bub'); bub.textContent = t.txt; bub.hidden = !t.txt; }
+    // the finger tip lands on the middle of the target; on the right half of the screen the bubble sits to the left of the hand
+    h.style.transform = 'translate(' + Math.round(r.left + r.width * 0.5) + 'px,' + Math.round(r.top + r.height * 0.72) + 'px)';
+    h.classList.toggle('left', r.left + r.width / 2 > innerWidth / 2);
+  }
+  // decided 3 times a second (cheap), and followed every frame only while the hand is showing (the events list can scroll under it)
+  setInterval(() => { featTick(); const h = $('featHand'); if (h && !h.hidden && !featRaf) { const loop = () => { featTick(); featRaf = h.hidden ? 0 : requestAnimationFrame(loop); }; featRaf = requestAnimationFrame(loop); } }, 330);
+  // the hand's target was pressed: inside a feature it has done its job
+  document.addEventListener('click', (e) => { if (featInside && e.target.closest && e.target.closest(featInside.sel)) { featInside = null; featTick(); } }, true);
+  if (location.search.includes('dbg')) Object.assign(window.CandokuDebug || {}, { featNew: () => featNew() && featNew().id, featReset: () => { featSeen = {}; store.set('seenFeat', {}); }, climb: (st) => { if (st != null) { climb.step = st; climb.cl = Array(st).fill(true); store.set('climb', climb); } return climb; }, climbPop: () => climbPop(0), cart: () => startCart(), paint: () => paint(), tfree: () => tfreeGet(), hintsLeft: () => hintsLeft, wands: () => wands });
+
+  /* ---------- timed free helpers (a prize): for 15 or 30 minutes the hint (or the wand) is free ONCE in every level ---------- */
+  var tfree = null;   // { hints: until ms, wands: until ms } (var: give() can run before this line during start-up)
+  function tfreeGet() { if (!tfree) { tfree = store.get('tfree', {}); if (!tfree || typeof tfree !== 'object' || Array.isArray(tfree)) tfree = {}; } return tfree; }
+  function tfreeOn(k) { return (tfreeGet()[k] || 0) > Date.now(); }
+  function tfreeAdd(k, min) {
+    const t = tfreeGet(); t[k] = Math.max(Date.now(), t[k] || 0) + min * 60000; store.set('tfree', t);
+    // a level already running gets its free one right away
+    if (typeof cur !== 'undefined' && cur && !cur.done && $('game') && !$('game').hidden) { cur.free = cur.free || {}; if (!cur.free[k]) { cur.free[k] = 1; updateHintUi(); } }
+    tfreeBar();
+  }
+  function tfreeApply() { ['hints', 'wands'].forEach((k) => { if (tfreeOn(k) && cur) { cur.free = cur.free || {}; cur.free[k] = (cur.free[k] || 0) + 1; } }); updateHintUi(); }
+  // a small timer under the top bar while one is running: "💡 FREE 14:32"
+  function tfreeBar() {
+    let b = $('tfreeBar'); const on = ['hints', 'wands'].filter(tfreeOn);
+    if (!on.length) { if (b) b.hidden = true; return; }
+    if (!b) { b = document.createElement('div'); b.id = 'tfreeBar'; document.body.appendChild(b); }
+    b.hidden = $('home').hidden;   // on the map only: in a level the hint button wears its FREE tag
+    b.innerHTML = on.map((k) => '<span><img src="art/ic_' + (k === 'hints' ? 'hint' : 'wand') + '.webp" alt="" draggable="false"><b>FREE</b><em>' + fmtMS(tfreeGet()[k] - Date.now()) + '</em></span>').join('');
+  }
+  setInterval(() => { if ($('tfreeBar') || ['hints', 'wands'].some(tfreeOn)) tfreeBar(); }, 1000);
+
+  /* ---------- the surprise box prize: it bursts open (confetti) and gives one random prize ---------- */
+  function giftRoll() {
+    const L = [[30, () => ({ coins: 15 + Math.floor(Math.random() * 26) })], [14, () => ({ hints: 2 })], [11, () => ({ wands: 1 })], [12, () => ({ packs: 1 })], [10, () => ({ inf: 30 })], [10, () => ({ sweeper: 1, lens: 1 })], [8, () => ({ tHint: 15 })], [5, () => ({ car: 1 })]];
+    let r = Math.random() * L.reduce((a, x) => a + x[0], 0); for (const [w, f] of L) { r -= w; if (r <= 0) return f(); } return L[0][1]();
+  }
+  // a prize with surprise boxes in it: each box is opened now (burst from the button pressed) and its prize takes its place
+  function giftOpen(p, el) {
+    if (!p.gift) return p;
+    let o = Object.assign({}, p); delete o.gift;
+    for (let i = 0; i < p.gift; i++) o = mergePrize(o, giftRoll());
+    if (el) { try { giftPop(el, 'art/ic_gift_b.webp'); } catch (e) {} if (S.popper) S.popper(); }
+    return o;
+  }
 
   /* ---------- prize items fly into the matching counter at the top ---------- */
   function flyItems(r, src) {
@@ -3849,7 +4058,7 @@
     $('evwin').hidden = false; $('evwin').classList.toggle('won', !!o.win);
     // the narrator says it (if the narrator is on in the settings); the win fanfare then plays softer under the voice
     const talk = !!(V && V.isEnabled() && S.isOn() && S.evSay), said = talk && S.evSay(o.win ? 'win' : stars >= 1 ? 'good' : 'try');
-    if (o.win) { S.fanfare(said ? 0.4 : 1); setTimeout(candyParty, 120); } else S.prize();
+    if (o.win) { S.reward(said ? 0.5 : 1); setTimeout(candyParty, 120); }   // the board-win fanfare is for boards only; events get the short ta-da else S.prize();
     st.forEach((e, i) => setTimeout(() => { if (i < stars) { e.className = 'on'; S.star && S.star(i + 1, 1); buzz(12); } else e.className = 'off'; }, 380 + i * 320));
     // the coins count up from 0 to the prize
     const cb = $('ewPrize').querySelector('.k-coins b'); if (cb && reward > 1) { const t0 = performance.now() + 380 + stars * 320, D = Math.min(900, 120 + reward * 60); cb.textContent = '0';
@@ -3933,9 +4142,9 @@
   }
   let evItems = [];
   function buildEventItems() {
-    const passClaim = () => PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
+    const passClaim = () => spClaimable();
     evItems = [
-      { name: 'Candy Pass', img: 'ev_pass', a: '#ff6fb4', b: '#a02a8c', tag: () => passClaim() ? 'CLAIM ' + passClaim() : pass.step + ' / ' + PASS.length + ' steps', hot: () => passClaim() > 0, go: openPass },
+      { name: 'Sweet Pass', img: 'ev_pass', a: '#ff6fb4', b: '#a02a8c', tag: () => passClaim() ? 'CLAIM ' + passClaim() : pass.step + ' / ' + SP_STEPS, hot: () => passClaim() > 0, go: openPass },
       { name: 'Candy Chest', img: () => chestImg(chest.q ? chest.q.tier : chestTier()).replace('art/', '').replace('.webp', ''), a: '#c98a4d', b: '#6b3e17', tag: () => chest.q ? (chestLeft() <= 0 ? 'OPEN!' : '⏳ ' + fmtWait(chestLeft())) : chest.n >= CHEST_AT ? 'START' : chest.n + ' / ' + CHEST_AT, hot: () => chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT, go: openChest },
       { name: 'Lucky Wheel', img: 'ic_wheel', a: '#b58aff', b: '#5a2fb8', tag: () => (wheel.date !== today() || wheel.extra > 0) ? 'FREE SPIN' : 'Soon', hot: () => wheel.date !== today() || wheel.extra > 0, go: openWheel },
       { name: 'Sour Storm', img: 'boss_idle', a: '#8a6cff', b: '#2a1458', tag: () => stormOn() ? (stormClaim() ? 'CLAIM ' + stormClaim() : '⏱ ' + fmtClock(STORM_MS - (Date.now() - storm.start))) : stormClaim() ? 'CLAIM ' + stormClaim() : stormFree() ? 'START' : 'Soon', hot: () => stormClaim() > 0 || stormFree(), go: openStorm },
@@ -3945,16 +4154,16 @@
       hot: () => (MAX_PLAYS - (plays[g[0]] || 0)) > 0 && gameWait(g[0]) <= 0, dim: () => (MAX_PLAYS - (plays[g[0]] || 0)) <= 0 || gameWait(g[0]) > 0, go: () => playGame(g[0]) })));
   }
   function eventsHot() {
-    const passClaim = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
+    const passClaim = spClaimable();
     return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + (stormClaim() > 0 || stormFree() ? 1 : 0) + (() => { try { return retentionHot(); } catch (e) { return 0; } })();
   }
   function renderEvents() {
     freshDay(); buildEventItems(); const grid = $('evGrid'); grid.innerHTML = '';
     evItems.forEach((o) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'evcard'; b.style.setProperty('--a', o.a); b.style.setProperty('--b', o.b);
-      b.innerHTML = '<span class="evart"><img alt="" draggable="false"></span><b>' + o.name + '</b><em></em><i class="evdot"></i>'; o.el = b; b.onclick = () => { S.unlock(); S.tap(); o.go(); }; grid.appendChild(b);
+      b.innerHTML = '<span class="evart"><img alt="" draggable="false"></span><b>' + o.name + '</b><em></em><i class="evdot"></i>'; o.el = b; b.onclick = () => { S.unlock(); S.tap(); if (!featIntro(o)) o.go(); }; grid.appendChild(b);
     });
-    refreshEvents();
+    refreshEvents(); featMark();
   }
   function refreshEvents() {
     evItems.forEach((o) => {
@@ -4100,7 +4309,7 @@
     const checkLines = () => {
       const sets = []; for (let i = 0; i < 4; i++) { sets.push(['r' + i, rings.filter((q) => q.r === i)]); sets.push(['c' + i, rings.filter((q) => q.c === i)]); }
       sets.push(['d0', rings.filter((q) => q.r === q.c)], ['d1', rings.filter((q) => q.r + q.c === 3)]);
-      sets.forEach(([id, qs]) => { if (!doneLines[id] && qs.every((q) => q.ball)) { doneLines[id] = 1; lines++; qs.forEach((q) => { q.glow = 1.6; burst(q.x, q.y, ['#ffe14d', '#fff', '#ffb347'], 8); }); say(T('LINE!'), 150, 150, '#ffe14d', 1); S.fanfare(); buzz([20, 30, 50]); shake = 0.3; } });
+      sets.forEach(([id, qs]) => { if (!doneLines[id] && qs.every((q) => q.ball)) { doneLines[id] = 1; lines++; qs.forEach((q) => { q.glow = 1.6; burst(q.x, q.y, ['#ffe14d', '#fff', '#ffb347'], 8); }); say(T('LINE!'), 150, 150, '#ffe14d', 1); S.reward(); buzz([20, 30, 50]); shake = 0.3; } });
     };
     const finish = () => { if (over) return; over = true; const full = filled >= 16, win = full || lines >= 3;
       quickEnd(pts + ' ' + T('points') + ' · ' + filled + ' ' + T('hoops') + ' · ' + lines + ' ' + T(lines === 1 ? 'line' : 'lines'), Math.floor(pts / 4) + lines, full ? { hints: 1, inf: 15 } : lines >= 3 ? { inf: 15 } : null,
@@ -4164,7 +4373,7 @@
             if (mult > 1) say('+' + mult, best.x + 30, best.y - 6, '#ffb347');
             if (swish) { extraBalls++; left++; if (isGold) say(T('SWISH! +1 ball'), 150, 210, '#fff'); }
             S.candy(filled % 9, Math.min(8, 2 + filled)); buzz([10, 20, 20]); if (isGold) { S.hint(); shake = 0.2; }
-            if (streak === 3 && !fire) { fire = true; say(T('ON FIRE!'), 150, 190, '#ff7a1f', 1); S.fanfare(); buzz([20, 30, 40]); }
+            if (streak === 3 && !fire) { fire = true; say(T('ON FIRE!'), 150, 190, '#ff7a1f', 1); S.reward(); buzz([20, 30, 40]); }
             checkLines(); }
           else { const side = best ? Math.sign(ball.tx - best.x) || 1 : 1, onBoard = ball.ty > TOPY - 6 && ball.ty < BOTY + 14 && Math.abs(ball.tx - 151) < 150; loose.push({ k: ball.k, x: ball.x, y: ball.y, rad: ball.rad, rot: ball.rot, vx: side * (best && bd < 1.5 ? 70 : 20), vy: best && bd < 1.5 ? -150 : -40, life: 0 }); if (best && bd < 1.5) { say(best.ball ? T('Taken!') : T('Rim!'), ball.x, ball.y - 20, '#fff'); S.x(); buzz(14); } else { S.wrong(); } if (!onBoard) loose[loose.length - 1].vy = 60; streak = 0; fire = false; }
           pickGold();
@@ -4187,7 +4396,8 @@
   let bonusPending = false, quickThen = null;
   const bonusSeed = (() => { let s = store.get('bseed', 0); if (!s) { s = 1 + Math.floor(Math.random() * 997); store.set('bseed', s); } return s; })();
   // which level of each block of ten brings the bonus (never the Hard or the Extremely Hard one, and never the same place twice in a row)
-  const bonusLevelOf = (blk) => blk * 10 + (blk === 0 ? [6, 7, 8][bonusSeed % 3] : blk === 1 ? [2, 3, 4, 7, 8][bonusSeed % 5] : [2, 3, 4, 6, 7, 8][(bonusSeed + blk * 5 + blk * blk) % 6]);
+  // the bonus stage comes after level 5 (players who stayed 5 levels get a treat), then every 10 levels: 15, 25, 35, 45... (his choice)
+  const bonusLevelOf = (blk) => blk * 10 + 5;
   function startCart(then) {
     loadArc();
     quickOpen('Bonus: Cart Race', 'Drag the cart. Grab coins, dodge rocks: 3 hits and you are out!');
@@ -4204,7 +4414,7 @@
     quickKey = (e) => { if (e.key === 'ArrowLeft' || e.key === 'a') tx = Math.max(46, tx - 60); if (e.key === 'ArrowRight' || e.key === 'd') tx = Math.min(254, tx + 60); };
     if (location.search.includes('dbg')) window.__cart = () => ({ cx, tx, v, dist, t, hits, got, H, hit: () => { hits = 3; } });
     const finish = (how) => {
-      if (over) return; over = true; quickKey = null; draw();
+      if (over) return; over = true; quickKey = null; draw(); if (roll) roll.stop();
       if (how === 'crash') S.wrong();
       // quickEnd halves the prize of the side games; the bonus stage pays exactly what was collected
       quickEnd(how === 'win' ? 'You won the race!' : how === 'crash' ? 'Crashed! No prize this time' : 'The rival won this time', how === 'crash' ? 0 : (got + (how === 'win' ? 2 : 0)) * 2, how === 'win' ? { sweeper: 1 } : null, { win: how === 'win', key: 'cart', score: got, stars: how === 'win' ? 3 : how === 'crash' ? 0 : got >= 2 ? 2 : 1 });
@@ -4241,14 +4451,14 @@
     }
     const tick = (now) => {
       if (over) return; const dt = Math.min(0.034, Math.max(0, (now - last) / 1000)); last = now; t += dt; shake = Math.max(0, shake - dt); safe = Math.max(0, safe - dt);
-      v += (44 - v) * Math.min(1, dt * 1.4); dist += v * dt; scroll += v * 5 * dt;
+      v += (44 - v) * Math.min(1, dt * 1.4); dist += v * dt; scroll += v * 5 * dt; if (roll) roll.set(v / 44);   // the asphalt rumble follows the speed
       const gap = dist - rival; rival += (33 + 3 * Math.sin(t * 1.3) + (gap > 70 ? -4 : gap < -70 ? 5 : 0)) * dt * Math.min(1, t / 1.5);
       cx += (tx - cx) * Math.min(1, dt * 16);
       if (dist >= nextSpawn) { spawn(); nextSpawn += 20; }
       for (let i = items.length - 1; i >= 0; i--) {
         const it = items[i]; it.y += v * 5 * dt; if (it.y > H + 30) { items.splice(i, 1); continue; }
         if (Math.abs(it.y - CART_Y) < 26 && Math.abs(LANES[it.lane] - cx) < (it.k === 'rock' ? 27 : 30)) {
-          if (it.k === 'rock') { if (safe > 0) continue; hits++; safe = 0.9; v = Math.max(10, v * 0.35); shake = 0.4; S.wrong(); buzz([20, 30]); texts.push({ t: T('Ouch!'), x: cx, y: CART_Y - 70, a: 1, c: '#ff6a6a' }); }
+          if (it.k === 'rock') { if (safe > 0) continue; hits++; safe = 0.9; v = Math.max(10, v * 0.35); shake = 0.4; S.wrong(); if (roll) roll.bump(); buzz([20, 30]); texts.push({ t: T('Ouch!'), x: cx, y: CART_Y - 70, a: 1, c: '#ff6a6a' }); }
           else { got++; S.coin ? S.coin() : S.candy(got % 9, 3); buzz(6); texts.push({ t: '+1', x: cx, y: CART_Y - 70, a: 1, c: '#ffe14d' }); }
           items.splice(i, 1);
         }
@@ -4263,6 +4473,7 @@
       if (rival >= GOAL) return finish('lose');
       quickRaf = requestAnimationFrame(tick);
     };
+    const roll = S.roll ? S.roll() : null;   // tyres on asphalt for the whole ride
     quickRaf = requestAnimationFrame((tt) => { last = tt; tick(tt); });
   }
 
@@ -4377,7 +4588,7 @@
     $('chalGo').onclick = () => { S.tap(); $('chal').hidden = true; if (!canPlay()) { openLives(); return; } transition(() => startDaily()); };
     $('chalClose').onclick = () => { S.tap(); $('chal').hidden = true; };
     $('wgPlay').href = PLAY_URL; $('wgClose').onclick = () => { S.tap(); $('webGate').hidden = true; };
-    $('medCake').onclick = () => openCakeInfo('cake'); $('medStar').onclick = () => openCakeInfo('star'); $('ciOk').onclick = () => { S.tap(); $('cakeInfo').hidden = true; }; updateCakeMeds();
+    $('medCake').onclick = () => openCakeInfo('cake'); $('medStar').onclick = () => openCakeInfo('star'); $('ciOk').onclick = () => { S.tap(); $('cakeInfo').hidden = true; const th = ciThen; ciThen = null; $('ciOk').textContent = 'Got it'; if (th) th(); }; updateCakeMeds();
     $('medClimb').onclick = openClimb;
     $('medWheel').onclick = openWheel; $('medChest').onclick = openChest; $('medGames').onclick = openGames;
     $('navGifts').onclick = openGifts; $('navQuests').onclick = openQuests;
@@ -4391,7 +4602,7 @@
     $('gamesClose').onclick = () => { S.tap(); $('games').hidden = true; };
     $('memClose').onclick = () => { S.tap(); $('memory').hidden = true; updateSides(); };
     $('tossClose').onclick = () => { S.tap(); stopToss(); $('toss').hidden = true; updateSides(); };
-    $('medPass').onclick = openPass; $('passClose').onclick = () => { S.tap(); $('pass').hidden = true; updateSides(); };
+    $('medPass').onclick = openPass; $('spBuy').onclick = () => { S.tap(); buyPack('sweetpass'); }; $('passClose').onclick = () => { S.tap(); $('pass').hidden = true; updateSides(); };
     $('medEvents').onclick = openEvents; $('eventsClose').onclick = () => { S.tap(); $('events').hidden = true; updateSides(); };
     $('livesClose').onclick = () => { S.tap(); $('lives').hidden = true; };
     $('livesAd').onclick = () => { S.tap(); watchAd(() => { addLives(1); renderLives(); toast('❤️ +1 life'); }); };
