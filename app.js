@@ -337,18 +337,21 @@
   // from level 21 the boards are 10x10, with a hard 9x9 or 8x8 mixed in now and then (never on Hard/Very Hard/Extreme levels)
   const varietySize = (lv) => { if (lv < 21 || lv % 5 === 0) return 0; const h = Math.imul(lv, 2654435761) >>> 0; const r = (h >>> 8) % 100; return r < 16 ? 9 : r < 30 ? 8 : 0; };
   const LAST_LEVEL = 1000, ULTRA_FROM = 301, STORY_END = 500;   // 301-1000: only the hardest boards; the story's ending is shown after level 500, worlds 51-100 go on from there
-  const sizeFor = (lv) => (isSuperLv(lv) ? 10 : lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
+  const sizeFor = (lv) => (isSuperLv(lv) || (isVeryLv(lv) && lv < ULTRA_FROM) ? 10 : lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
   // the first eighteen levels are all plain. The first Hard level is 19, and level 20 is the first Extremely Hard one (with Vinegar);
   // from there on it is the usual rhythm: Hard on every 5th level, Extremely Hard at the end of every world.
   const isBossLv = (lv) => lv % 10 === 0 && lv > 10;
   // Super Hard (his request): from level 200 on, once in every 10 levels - level 207, 217, 227 ... 997. Never a boss, a world's first level or a Hard level.
   const isSuperLv = (lv) => lv >= 207 && lv % 10 === 7;
+  // Very Hard (his tier plan): up to level 300 now and then (103, 113 ... 293); from level 301 the middle of every world (305, 315 ...)
+  const isVeryLv = (lv) => (lv < ULTRA_FROM ? lv >= 100 && lv % 10 === 3 : lv % 10 === 5);
   const isHardLv = (lv) => (lv <= 20 ? lv === 19 : lv % 5 === 0 && lv % 10 !== 0);
-  const tierOf = (lv) => (isSuperLv(lv) ? 'super' : isBossLv(lv) ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : isHardLv(lv) ? 'hard' : 'normal');
+  // tiers: Hard (purple) < Very Hard (red) < Super Hard (dark blue) < Extremely Hard (black, every world's last level). From level 301 a plain level is Hard.
+  const tierOf = (lv) => (isSuperLv(lv) ? 'super' : isBossLv(lv) ? 'extreme' : isVeryLv(lv) ? 'veryhard' : lv >= ULTRA_FROM || isHardLv(lv) ? 'hard' : 'normal');
   const dailySize = () => [5, 6, 7, 5, 6, 7, 6][new Date().getDay()];   // the daily challenge is a small board (5x5, 6x6 or 7x7): never the same size two days in a row, and the board itself is new every day
   const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard', super: '🔥 Super Hard' };
   // a Super Hard level wears the Extremely Hard look (black board, big button) plus its own purple flame
-  const tierCls = (t) => (t === 'super' ? 'extreme super' : t);
+  const tierCls = (t) => (t === 'super' ? 'veryhard super' : t);
 
   function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -681,7 +684,7 @@
 
   /* ---------- boards ---------- */
   // every Hard / Very Hard / Extreme level (and the mixed-in hard 9x9 / 8x8 boards) takes its own board from the pool: no level repeats an earlier one
-  const POOL_KEY = (lv) => (isSuperLv(lv) ? 'super' : lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : isBossLv(lv) ? 'veryhard' : isHardLv(lv) || varietySize(lv) ? 'hard' : null);
+  const POOL_KEY = (lv) => (isSuperLv(lv) ? 'super' : lv >= ULTRA_FROM ? 'ultra' : lv % 50 === 0 ? 'extreme' : isBossLv(lv) || isVeryLv(lv) ? 'veryhard' : isHardLv(lv) || varietySize(lv) ? 'hard' : null);
   const POOL_IDX = (() => { const c = {}, o = {}; for (let lv = 1; lv <= LAST_LEVEL; lv++) { const k = POOL_KEY(lv); if (!k) continue; const id = k + sizeFor(lv); o[lv] = c[id] || 0; c[id] = o[lv] + 1; } return o; })();
   /* Boards are made in the BACKGROUND (a worker), ahead of time: when the app opens, when a level is won and when the level card
      is shown. A big board can take seconds to make on a phone; done this way the screen never freezes and Play opens at once.
@@ -3827,7 +3830,7 @@
      It melts when the candy of its row or of its column is found. Some ice cubes hold a treasure (coins or a sticker pack) that is
      collected when the ice melts. Ice is never put on a candy's own square (that row could never be finished). ---------- */
   const ICE_FROM = 51;
-  const iceLevel = (lv) => lv >= ICE_FROM && (tierOf(lv) === 'normal' || (lv > STORY_END && tierOf(lv) === 'veryhard')) && !isBossLv(lv) && lv % 3 === 1 && lv % 10 !== 1;   // never the first level of a world (Vinegar steals its sticker there)
+  const iceLevel = (lv) => lv >= ICE_FROM && (tierOf(lv) === 'normal' || (lv > STORY_END && tierOf(lv) === 'hard')) && !isBossLv(lv) && lv % 3 === 1 && lv % 10 !== 1;   // never the first level of a world (Vinegar steals its sticker there)
   function iceStart(lv) {
     cur.ice = new Set(); cur.iceGift = {}; if (!iceLevel(lv)) return;
     const r = srand(hash('ice' + lv)), n = cur.n, cells = []; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (cur.solution[y] !== x) cells.push([y, x]);

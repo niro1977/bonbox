@@ -2618,3 +2618,20 @@ body.ov-open #home *{animation-play-state:paused!important}
 @keyframes sflame{50%{transform:translateX(-50%) scale(1.12) translateY(-2px)}}
 .node.super.locked .sflame{animation:none;opacity:.8}
 .sflame-big{filter:hue-rotate(250deg) saturate(1.5) drop-shadow(0 4px 6px rgba(60,0,90,.4))!important}
+/* ---------- tier colours (his plan, 2026-11-21): Hard purple, Very Hard red, Super Hard dark blue, Extremely Hard black ---------- */
+.node.hard{--nimg:url(art/node_vhard.webp)!important}
+.node.veryhard{--nimg:url(art/node_hard.webp)!important}
+.node.hard .badge{background:linear-gradient(180deg,#b57bff,#6a22c0)!important;color:#fff!important}
+.node.veryhard .badge{background:linear-gradient(180deg,#ff6a4d,#c0200c)!important;color:#fff!important}
+.node.veryhard::before{content:none!important}
+.node.super{--nimg:url(art/node_super.webp)!important;--nf:none!important;filter:drop-shadow(0 0 8px rgba(60,120,255,.95)) drop-shadow(0 0 3px #fff)!important}
+.node.super .badge{background:linear-gradient(180deg,#3a6aff,#0c2470)!important;color:#fff!important}
+.node.super:not(.locked)::after{box-shadow:0 0 0 3px #5a8aff,0 0 0 5px #ffd84a,0 0 18px 6px rgba(70,120,255,.8)!important;animation:superglowb 1.6s ease-in-out infinite}
+@keyframes superglowb{50%{box-shadow:0 0 0 3px #8ab0ff,0 0 0 5px #ffd84a,0 0 26px 10px rgba(90,140,255,.95)}}
+.node.super .sflame,.sflame-big{filter:hue-rotate(185deg) saturate(1.4) drop-shadow(0 2px 2px rgba(0,0,0,.4))!important}
+.tier.hard,.pl-tier.hard{background:linear-gradient(180deg,#a45cff,#6a22c0)!important;color:#fff!important;border-color:#e9d2ff!important;box-shadow:0 3px 0 #3a1180!important}
+.tier.veryhard,.pl-tier.veryhard{background:linear-gradient(180deg,#ff6a4d,#c0200c)!important;color:#fff!important;border-color:#ffd0c0!important;box-shadow:0 3px 0 #7a1000!important}
+.tier.super,.pl-tier.super{background:linear-gradient(180deg,#3a6aff,#0c2470)!important;color:#fff!important;border-color:#c0d4ff!important;box-shadow:0 3px 0 #061440,0 0 12px rgba(70,120,255,.8)!important}
+.board.super{box-shadow:0 0 0 3px #4a7aff,0 0 24px 6px rgba(60,110,255,.7)!important}
+.node.extreme{--nimg:url(art/node_extreme.webp)!important;--nf:none!important;color:#fff}
+.node.extreme .badge{background:linear-gradient(180deg,#3a3a46,#000)!important;color:#fff!important}
