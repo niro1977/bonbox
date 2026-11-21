@@ -400,7 +400,7 @@
         document.body.classList.toggle('ov-open', anyOverlay());
         // closeAll() sets hidden on windows that are already closed: that is no change, so no sound (it played a closing swish on every opening)
         if (ov.hidden === was) return; was = ov.hidden;
-        if (ov.hidden && ov.id !== 'climb' && typeof climbPop === 'function') try { if (climb.moved > 0) climbPop(0); } catch (e) {}   // a window closed on the map: the bear's step up can show now
+        if (ov.hidden && ov.id !== 'pass' && typeof spPop === 'function') try { if (pass.moved > 0) spPop(0); } catch (e) {}   // a window closed on the map: the new Sweet Pass step can show now
         const now = performance.now(), card = ov.querySelector('.card');
         if (!ov.hidden) {
           // started with the Web Animations API: restarting the CSS classes forced the whole page to be measured twice on every window
@@ -2258,7 +2258,7 @@
     await transition(() => { renderHome(); show('home'); scrollToLevel(p ? p.from : level); });
     if (p) { await sleep(120); await hopTo(p.from, p.to); }
     if (cur && cur.done && cur.hearts > 0) setTimeout(notifMaybeAsk, 600);
-    if (climb.moved > 0 && climbOn()) climbPop(0);
+    if (pass.moved > 0) spPop(0);
   }
   /* ---------- "Enjoying Bonbox?": asked only at a happy moment (right after a win), a few times at most, never again once answered ---------- */
   const RATE_AT = [8, 25, 60, 120, 200];
@@ -2285,7 +2285,7 @@
     if (leaguePending) { leaguePending = false; openLeague(() => nextLevel()); return; }
     if (bonusPending) { bonusPending = false; startCart(() => nextLevel()); return; }
     $('win').hidden = true;
-    if (cur.meta.kind === 'level' && climb.moved > 0 && climbOn()) { await toMap(); return; }   // the bear went up a floor: the climb window shows it (opened by toMap)
+    if (cur.meta.kind === 'level' && pass.moved > 0) { await toMap(); return; }   // a new Sweet Pass step: its window shows it (opened by toMap)
     if (webGate() && cur.meta.kind === 'level' && cur.meta.level >= WEB_FREE) { await toMap(); openWebGate(); return; }   // the last free level on the web
     if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL || (cur.meta.level === STORY_END && !store.get('seenEnd', false))) { await toMap(); maybeEnding(); return; }
     const from = cur.meta.level, to = level; pendingHop = null;
@@ -3252,11 +3252,14 @@
   // a level won: points by the multiplier, then the multiplier grows. Returns the points given (for the win card).
   function spWin() {
     spFresh(); if (pass.step >= SP_STEPS) { pass.ms = Math.min(SP_MULT.length - 1, (pass.ms || 0) + 1); store.set('spass', pass); return 0; }
-    const g = spMult(); pass.pts += g;
+    const g = spMult(), before = pass.step; pass.pts += g;
     while (pass.step < SP_STEPS && pass.pts >= spNeed(pass.step)) { pass.pts -= spNeed(pass.step); pass.step++; }
     if (pass.step >= SP_STEPS) pass.pts = 0;
+    if (pass.step > before) pass.moved = (pass.moved || 0) + pass.step - before;
     pass.ms = Math.min(SP_MULT.length - 1, (pass.ms || 0) + 1); store.set('spass', pass); updateSides(); return g;
   }
+  // after a win that opened a step, the pass opens on the map by itself (as soon as nothing else is showing) with the new prize ready to claim
+  function spPop(n) { setTimeout(() => { if (!(pass.moved > 0) || $('home').hidden) return; if (anyOverlay() || !$('intro').hidden) { if (n < 25) spPop(n + 1); return; } pass.moved = 0; store.set('spass', pass); openPass(); }, n ? 400 : 600); }
   function spLose() { if (pass.ms) { cur.spDrop = pass.ms; pass.ms = 0; store.set('spass', pass); } }
   function spRevive() { if (cur.spDrop) { pass.ms = cur.spDrop; cur.spDrop = 0; store.set('spass', pass); } }
   function passAdvance() {}   // the old Candy Pass hook (flawless wins only): the Sweet Pass counts every win in spWin()
@@ -3266,7 +3269,7 @@
     const p = giftOpen(P, btn); giveReward(p, gold ? 'Sweet Pass!' : P.gift ? 'Surprise box!' : 'Free prize!', gold || i === SP_STEPS - 1);
     renderPass(); updateSides();
   }
-  function openPass() { S.unlock(); S.tap(); closeAll(); spFresh(); $('pass').hidden = false; renderPass(true); }
+  function openPass() { S.unlock(); S.tap(); closeAll(); spFresh(); if (pass.moved) { pass.moved = 0; store.set('spass', pass); } $('pass').hidden = false; renderPass(true); }
   // one prize tile: big icons with their numbers (timed ones carry an infinity badge), the exclusive frame as a swatch
   function spTile(P, gold, i) {
     const got = (gold ? pass.gcl : pass.cl)[i], reached = i < pass.step, locked = gold && !pass.gold, ks = Object.keys(P).filter((k) => P[k] && (PICO[k] || k === 'frame'));
@@ -3291,7 +3294,8 @@
     list.innerHTML = h;
     list.querySelectorAll('.sp-claim').forEach((b) => { b.onclick = () => { S.tap(); spClaim(+b.dataset.i, b.dataset.g === '1', b); }; });
     $('passInfo').textContent = pass.step >= SP_STEPS ? 'Season complete! A new Sweet Pass starts next month.' : 'Win levels in a row to grow the multiplier!';
-    if (scroll) { const at = list.querySelector('.sp-bar') || list.querySelector('.sp-row.now'); if (at) setTimeout(() => { list.scrollTop = Math.max(0, at.offsetTop - list.clientHeight * 0.45); }, 30); }
+    // the newest step reached (with its Claim) in the middle, the progress bar just under it
+    if (scroll) { const at = list.querySelector('.sp-row.now') || list.querySelector('.sp-bar'); if (at) setTimeout(() => { list.scrollTop = Math.max(0, at.offsetTop - list.offsetTop - list.clientHeight * 0.3); }, 30); }
   }
   setInterval(() => { if (!$('pass').hidden) $('spTime').textContent = '⏱ ' + spLeftTxt(); }, 30000);
 
@@ -3449,6 +3453,11 @@
   }
   // after a win that lifted the bear, the climb window opens on the map as soon as nothing else is showing (league, rating, a prize card...)
   function climbPop(n) { setTimeout(() => { if (!(climb.moved > 0 && climbOn()) || $('home').hidden) return; if (anyOverlay() || !$('intro').hidden) { if (n < 25) climbPop(n + 1); return; } openClimb(); }, n ? 400 : 600); }
+  // Candy Climb is retired (2026-11-21, it doubled the Sweet Pass): whoever was climbing gets every prize reached and not yet claimed, once
+  function climbRetire() { if (document.getElementById('splash') || anyOverlay()) { setTimeout(climbRetire, 1500); return; } try { if (!climb.start && !climbClaim()) return; let p = {}; CLIMB.forEach((x, i) => { if (i < climb.step && !climb.cl[i]) p = mergePrize(p, x); });
+    climb = { start: 0, step: 0, cl: [], day: climb.day || '' }; store.set('climb', climb);
+    if (Object.keys(p).length) { p = giftOpen(p); giveReward(p, 'Candy Climb prizes!', true); } updateSides(); } catch (e) {} }
+  setTimeout(climbRetire, 4000);
   function openClimb() { S.unlock(); S.tap(); closeAll(); $('climb').hidden = false; renderClimb(); }
 
   /* ---------- Sour Storm: every few days the Baron attacks for 24 hours; each level you win is a hit on him ---------- */
