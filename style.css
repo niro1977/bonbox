@@ -2635,3 +2635,10 @@ body.ov-open #home *{animation-play-state:paused!important}
 .board.super{box-shadow:0 0 0 3px #4a7aff,0 0 24px 6px rgba(60,110,255,.7)!important}
 .node.extreme{--nimg:url(art/node_extreme.webp)!important;--nf:none!important;color:#fff}
 .node.extreme .badge{background:linear-gradient(180deg,#3a3a46,#000)!important;color:#fff!important}
+/* no in-app purchases (the app is declared without them): the Sweet Pass shows only its free track, no price anywhere */
+body.nopay #spBuy,body.nopay .sp-tile.gold,body.nopay .sp-cols .g{display:none!important}
+body.nopay .sp-row{grid-template-columns:34px 1fr}
+body.nopay .sp-num{order:-1}
+body.nopay .sp-cols{grid-template-columns:1fr}
+body.nopay .sp-cols b{grid-column:1;margin:0 auto;padding:0 28px}
+body.nopay .sp-list{background:linear-gradient(90deg,transparent 13px,#ffd0ec 13px,#ffd0ec 21px,transparent 21px)}

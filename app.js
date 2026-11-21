@@ -3872,7 +3872,7 @@
     if (isNew && lv >= HOT_FROM) { hotWin(); out.push('<span><img src="art/ic_flame.webp" alt="">' + T('Streak') + ' ' + hot.n + '</span>'); }
     { const was = towerState(); towerWin(); if (was === 'on') out.push('<span><img src="art/ev_tower.webp" alt="">' + tower.step + '/' + TOWER_STEPS + '</span>'); }
     if (race && !race.claimed && !raceOver()) { raceWin(); out.push('<span><img src="art/ev_race.webp" alt="">' + race.me + '/' + RACE_GOAL + '</span>'); }
-    { const a = jarAdd(); if (a) out.push('<span><img src="art/ev_jar.webp" alt="">+' + a + '</span>'); }
+    if (payAvailable()) { const a = jarAdd(); if (a) out.push('<span><img src="art/ev_jar.webp" alt="">+' + a + '</span>'); }
     if (lv >= ALB_FROM) { const p = packMeter(); out.push('<span><img src="art/ic_pack.webp" alt="">' + (p ? '+1!' : (alb().meter || 0) + '/3') + '</span>'); }
     return out;
   }
@@ -3895,7 +3895,7 @@
     list.push({ name: 'Sugar Tower', img: 'ev_tower', a: '#ff8ad8', b: '#7a2bb0', tag: () => { const s = towerState(); return level < TOWER_FROM ? '🔒 Lv ' + TOWER_FROM : s === 'on' ? tower.step + ' / ' + TOWER_STEPS + ' · ⏱ ' + fmtClock(towerLeftMs()) : s === 'won' ? 'CLAIM' : 'START'; }, hot: () => level >= TOWER_FROM && towerState() !== 'on', go: openTower });
     list.push({ name: 'Candy Race', img: 'ev_race', a: '#5ad0ff', b: '#1a4fb0', tag: () => level < RACE_FROM ? '🔒 Lv ' + RACE_FROM : !race || race.claimed ? 'START' : raceOver() ? 'CLAIM' : '#' + racePlace() + ' · ' + race.me + ' / ' + RACE_GOAL, hot: () => level >= RACE_FROM && (!race || race.claimed || raceOver()), go: openRace });
     list.push({ name: 'Sticker Album', img: 'ev_album', a: '#c38bff', b: '#55209a', tag: () => level < ALB_FROM ? '🔒 Lv ' + ALB_FROM : alb().packs > 0 ? alb().packs + (alb().packs === 1 ? ' PACK' : ' PACKS') : albCount() + ' / 81', hot: () => level >= ALB_FROM && alb().packs > 0, go: openAlbum });
-    list.push({ name: 'Candy Jar', img: 'ev_jar', a: '#ffd36a', b: '#b8640a', tag: () => level < JAR_FROM ? '🔒 Lv ' + JAR_FROM : jar.c + ' / ' + JAR_MAX, hot: () => jar.c >= JAR_MIN, go: openJar });
+    if (payAvailable()) list.push({ name: 'Candy Jar', img: 'ev_jar', a: '#ffd36a', b: '#b8640a', tag: () => level < JAR_FROM ? '🔒 Lv ' + JAR_FROM : jar.c + ' / ' + JAR_MAX, hot: () => jar.c >= JAR_MIN, go: openJar });
     return list;
   }
   const retentionHot = () => retentionCards().filter((o) => o.hot()).length;
@@ -3909,7 +3909,7 @@
     return [
       { id: 'album', from: ALB_FROM, card: 'Sticker Album', img: 'ev_album', win: 'album', btn: '#albPack', go: openAlbum,
         d: ['Collect stickers! You get a free sticker pack every 3 wins.', 'Fill a set of 9 for a prize, and the whole album for a big one!'] },
-      { id: 'jar', from: JAR_FROM, card: 'Candy Jar', img: 'ev_jar', win: 'jarOv', btn: null, go: openJar,
+      { id: 'jar', from: JAR_FROM, on: () => payAvailable(), card: 'Candy Jar', img: 'ev_jar', win: 'jarOv', btn: null, go: openJar,
         d: ['Every win drops 3 coins into the jar.', 'When it holds 150 coins or more, break it open and keep them all!'] },
       { id: 'race', from: RACE_FROM, card: 'Candy Race', img: 'ev_race', win: 'race', btn: '#raceGo', go: openRace,
         d: ['Race 4 other players: the first to win 8 levels wins.', 'Places 1 to 3 get prizes!'] },
