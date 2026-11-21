@@ -69,7 +69,7 @@
     pending[name] = fetch('audio/sfx/' + name + '.mp3').then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('missing'))))
       .then((ab) => new Promise((res, rej) => ctx.decodeAudioData(ab, res, rej))).then((b) => { bufs[name] = b; }).catch(() => { bufs[name] = null; });
   }
-  function preloadSamples() { ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'fanfare', 'stars', 'cake_layer', 'cake_top', 'cake_fly', 'first_bells', window.LANG === 'es' ? 'first_es' : 'first_en'].forEach(loadSample); }
+  function preloadSamples() { ['n0', 'n1', 'n2', 'n3', 'n4', 'n5', 'n6', 'n7', 'n8', 'fanfare', 'stars', 'cake_layer', 'cake_top', 'cake_fly', 'first_bells', window.LANG === 'es' ? 'first_es' : 'first_en'].concat(['win', 'good', 'try'].map((k) => 'ew_' + k + '_' + (window.LANG === 'es' ? 'es' : 'en'))).forEach(loadSample); }
   // plays a recorded sample; returns false (so the caller can use the synth) when it is not loaded yet
   function sample(name, rate, gain, when) {
     const b = bufs[name]; if (!b || !ctx) return false;
@@ -199,6 +199,20 @@
       s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + 0.55);
       noise(t + 0.02, 0.12, 0.25, 6000, 0.7); noise(t + 0.09, 0.08, 0.15, 4200, 0.9);
     },
+    // a surprise box popping open: a party-popper crack, a rising whistle and a shower of bright chimes and paper rustle
+    popper() {
+      if (!ready()) return; const t = ctx.currentTime; reverb();
+      noise(t, 0.05, 0.55, 2600, 0.9); osc('sine', 220, t, 0.09, 0.35, 90);
+      osc('sine', 600, t + 0.02, 0.22, 0.07, 1800);
+      [0, 4, 7, 12, 16].forEach((x, k) => bell(hz(24 + x), t + 0.06 + k * 0.045, 0.6, 0.09, 0.35));
+      for (let k = 0; k < 7; k++) noise(t + 0.08 + k * 0.05, 0.06, 0.07, 5000 + k * 500, 2.5);
+    },
+    // ice cracking: a glassy tick and a short icy sparkle (soft = a tap on frozen ice that does not break)
+    crack(soft) {
+      if (!ready()) return; const t = ctx.currentTime;
+      noise(t, 0.04, soft ? 0.18 : 0.4, 7000, 1.5); osc('sine', soft ? 1900 : 2400, t, 0.08, soft ? 0.05 : 0.09, soft ? 1500 : 1200);
+      if (!soft) { for (let k = 0; k < 4; k++) bell(hz(31 + k * 3), t + 0.03 + k * 0.035, 0.35, 0.05, 0.3); noise(t + 0.05, 0.12, 0.12, 9000, 2); }
+    },
     starIn() { if (!ready()) return; const t = ctx.currentTime; noise(t, 0.4, 0.18, 2400, 0.8); osc('sine', 280, t, 0.42, 0.1, 1600); },
     star(i, earned) {
       if (!ready()) return;
@@ -216,10 +230,12 @@
       if (voice && sample('first_bells', 1, 1)) return;
       S.fanfare();
     },
-    fanfare() {
+    // the event win screen narrator (voice Orus): 'win' You win!, 'good' Well done!, 'try' Nice try!
+    evSay(kind) { if (!ready()) return false; return sample('ew_' + kind + '_' + (window.LANG === 'es' ? 'es' : 'en'), 1, 1); },
+    fanfare(gain) {
       if (!ready()) return;
       const t = ctx.currentTime;
-      if (sample('fanfare', 1, 1)) return;
+      if (sample('fanfare', 1, gain == null ? 1 : gain)) return;
       [0, 4, 7, 12].forEach((x) => { osc('triangle', hz(x + 12), t, 0.9, 0.22); osc('sawtooth', hz(x), t, 0.7, 0.05); });
       [12, 16, 19, 24, 28, 31, 36].forEach((x, k) => osc('sine', hz(x + 12), t + 0.12 + k * 0.07, 0.4, 0.14));
       noise(t + 0.1, 0.6, 0.12, 6000, 0.8);

@@ -331,15 +331,16 @@
     $('scoreSub').textContent = (next ? (next[0] - score.points) + ' pts to ' + next[1] : 'Top rank reached!') + (score.run ? ' · next board ×' + Math.min(10, score.run + 1) : '') + (score.best ? ' · best day ' + score.best : '');
   }
 
-  const baseSize = (lv) => Math.min(10, 5 + Math.floor((lv - 1) / 4));
+  // levels 1-5: 5x5, 6-10: 6x6 (easy start), 11-14: 7x7, 15-19: 8x8, 20: 9x9 (Vinegar), then 10x10
+  const baseSize = (lv) => (lv <= 5 ? 5 : lv <= 10 ? 6 : lv <= 14 ? 7 : lv <= 19 ? 8 : lv === 20 ? 9 : 10);
   // from level 21 the boards are 10x10, with a hard 9x9 or 8x8 mixed in now and then (never on Hard/Very Hard/Extreme levels)
   const varietySize = (lv) => { if (lv < 21 || lv % 5 === 0) return 0; const h = Math.imul(lv, 2654435761) >>> 0; const r = (h >>> 8) % 100; return r < 16 ? 9 : r < 30 ? 8 : 0; };
-  const LAST_LEVEL = 500, ULTRA_FROM = 301;   // 301-500: only the hardest boards
+  const LAST_LEVEL = 1000, ULTRA_FROM = 301, STORY_END = 500;   // 301-1000: only the hardest boards; the story's ending is shown after level 500, worlds 51-100 go on from there
   const sizeFor = (lv) => (lv >= ULTRA_FROM ? (lv % 5 === 0 || lv % 5 === 2 ? 10 : 9) : varietySize(lv) || baseSize(lv));
-  // the first ten levels are all plain. The first Hard level is 11, then 16, and level 20 is the first Extremely Hard one (with Vinegar);
+  // the first eighteen levels are all plain. The first Hard level is 19, and level 20 is the first Extremely Hard one (with Vinegar);
   // from there on it is the usual rhythm: Hard on every 5th level, Extremely Hard at the end of every world.
   const isBossLv = (lv) => lv % 10 === 0 && lv > 10;
-  const isHardLv = (lv) => (lv <= 20 ? lv === 11 || lv === 16 : lv % 5 === 0 && lv % 10 !== 0);
+  const isHardLv = (lv) => (lv <= 20 ? lv === 19 : lv % 5 === 0 && lv % 10 !== 0);
   const tierOf = (lv) => (isBossLv(lv) ? 'extreme' : lv >= ULTRA_FROM ? 'veryhard' : isHardLv(lv) ? 'hard' : 'normal');
   const dailySize = () => [5, 6, 7, 5, 6, 7, 6][new Date().getDay()];   // the daily challenge is a small board (5x5, 6x6 or 7x7): never the same size two days in a row, and the board itself is new every day
   const tierLabel = { hard: 'Hard', veryhard: '👑 Very Hard', extreme: '💀 Extremely Hard' };
@@ -484,7 +485,58 @@
     { name: 'Licorice Ruins' },
     { name: 'Thundercloud Citadel' },
     { name: 'Sour Storm Summit' },
-    { name: "Vinegar's Castle" }
+    { name: "Vinegar's Castle" },
+    // worlds 51-100 (levels 501-1000): over the sea, the far east gardens, the frozen north, the candy machines and the stars
+    { name: "Sugar Sea Shore" },
+    { name: "Coral Candy Reef" },
+    { name: "Sunken Bonbon Ship" },
+    { name: "Lollipop Lighthouse Isle" },
+    { name: "Fruit Punch Island" },
+    { name: "Coconut Cream Cove" },
+    { name: "Cinnamon Volcano Isle" },
+    { name: "Mango Sunset Bay" },
+    { name: "Toffee Pirate Port" },
+    { name: "Jelly Kraken Depths" },
+    { name: "Mochi Blossom Garden" },
+    { name: "Matcha Bamboo Valley" },
+    { name: "Dragon Fruit Temple" },
+    { name: "Lantern Lychee Town" },
+    { name: "Ramune Rapids" },
+    { name: "Red Bean Bridges" },
+    { name: "Jade Jelly Pagoda" },
+    { name: "Fortune Cookie Cliffs" },
+    { name: "Yuzu Moon Lake" },
+    { name: "Golden Dragon Palace" },
+    { name: "Snow Globe Village" },
+    { name: "Hot Cocoa Springs" },
+    { name: "Frosted Pine Peaks" },
+    { name: "Peppermint Pole" },
+    { name: "Sugarplum Ice Rink" },
+    { name: "Eggnog Igloo Town" },
+    { name: "Aurora Candy Sky" },
+    { name: "Gumdrop Glacier Caves" },
+    { name: "Yogurt Yeti Ridge" },
+    { name: "Crystal Ice Castle" },
+    { name: "Clockwork Candy Factory" },
+    { name: "Cookie Conveyor Works" },
+    { name: "Pudding Steam Pipes" },
+    { name: "Lollipop Robot Lab" },
+    { name: "Neon Gummy City" },
+    { name: "Sugar Arcade Street" },
+    { name: "Donut Hover Highway" },
+    { name: "Laser Licorice Tower" },
+    { name: "Caramel Circuit Core" },
+    { name: "Mega Candy Machine" },
+    { name: "Marshmallow Moon Craters" },
+    { name: "Comet Candy Trail" },
+    { name: "Sorbet Rings of Saturn" },
+    { name: "Nougat Nebula" },
+    { name: "Mint Meteor Field" },
+    { name: "Starfruit Space Station" },
+    { name: "Cupcake Planet" },
+    { name: "Gelato Galaxy Gate" },
+    { name: "Supernova Sugar Storm" },
+    { name: "Sour Star Fortress" }
   ];
   const ASPECT = { 'd-lolly': [0.6, 1], 'd-bush': [1, 0.6], 'd-cane': [0.5, 1], 'd-cloud': [2, 1], 'd-house': [1, 1], 'd-cone': [0.85, 1.15], 'd-choco': [0.8, 1], 'd-star': [1, 1] };
   const zoneOf = (lv) => ZONES[Math.floor((lv - 1) / 10) % ZONES.length];
@@ -728,13 +780,13 @@
   function saveGame() {
     try {
       if (!cur || cur.done || !cur.meta) { store.set('game', null); return; }
-      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints, cake: cur.cake || 0, bombs: cur.bombs ? [...cur.bombs] : [],
+      store.set('game', { shield: !!cur.shield, double: !!cur.double, meta: cur.meta, tier: cur.tier, label: cur.label, n: cur.n, state: cur.state, hearts: cur.hearts, hints: cur.hints, cake: cur.cake || 0, bombs: cur.bombs ? [...cur.bombs] : [], free: cur.free || {}, ice: cur.ice ? [...cur.ice] : [],
         wrong: [...cur.wrongMarks], pen: [...cur.penalized], saved: Date.now() });
     } catch (e) {}
   }
   function applySaved(g) {
     if (!g || g.n !== cur.n || !Array.isArray(g.state) || g.state.length !== cur.n) return false;
-    cur.shield = !!g.shield; cur.double = !!g.double; cur.cake = g.cake || 0; cur.bombs = new Set(g.bombs || []);
+    cur.shield = !!g.shield; cur.double = !!g.double; cur.cake = g.cake || 0; cur.bombs = new Set(g.bombs || []); cur.free = g.free || {}; cur.ice = new Set(g.ice || []);
     cur.state = g.state.map((r) => r.slice()); cur.hearts = g.hearts; cur.hints = g.hints || 0;
     cur.wrongMarks = new Set(g.wrong || []); cur.penalized = new Set(g.pen || []);
     cur.foundPrev = new Set(); for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 2) cur.foundPrev.add(cur.regions[y][x]);
@@ -748,7 +800,8 @@
      Sugar Stars: a new level won without losing a heart gives a star; 10 stars open a surprise prize.
      First win of the day: the first level won each day pays double coins. ---------- */
   let cake = store.get('cake', { n: 0 }), sugar = store.get('sugar', { n: 0 });
-  { const pre = new Image(); pre.src = 'art/ic_bomb.webp?3'; }   // the cake's bomb picture is ready before the first bomb lands
+  ['a', 'b', 'c'].forEach((v) => { const pre = new Image(); pre.src = 'art/ic_gift_' + v + '.webp'; });   // the cake's surprise boxes are ready before the first one lands
+  const giftImg = (y, x) => 'art/ic_gift_' + 'abc'[(y * 7 + x * 5) % 3] + '.webp';   // three box designs: pink, blue, purple
   const CAKE_MAX = 3, SUGAR_AT = 10, CAKE_FROM = 10;   // Gumi's Cake opens at level 10: wins before it build nothing
   const cakeOpen = () => level >= CAKE_FROM;
   const cakeReveal = (k, size) => Math.min(k, Math.max(1, size - 3));   // at least three candies are always left to find
@@ -823,9 +876,9 @@
     }
   }
   function cakeGift() {
-    // one candy bomb per layer, on random empty squares far enough apart that no two blasts cover the same square
+    // one surprise box per layer, on random empty squares far enough apart that no two blasts cover the same square
     const k = cur.cake; if (!k || cur.done) return;
-    const cells = []; for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 0) cells.push([y, x]);
+    const cells = []; for (let y = 0; y < cur.n; y++) for (let x = 0; x < cur.n; x++) if (cur.state[y][x] === 0 && !(cur.ice && cur.ice.has(y + ',' + x))) cells.push([y, x]);
     for (let i = cells.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [cells[i], cells[r]] = [cells[r], cells[i]]; }
     const got = [];
     for (const [y, x] of cells) { if (got.length >= k) break; if (got.every(([yy, xx]) => Math.max(Math.abs(yy - y), Math.abs(xx - x)) >= 3)) got.push([y, x]); }
@@ -833,7 +886,7 @@
     if (k >= CAKE_MAX) cur.shield = true;
     paint(); S.prize(); buzz([20, 30, 20]);
     got.forEach(([y, x], i) => setTimeout(() => { const el = cellEl(y, x); if (el && cur && !cur.done) { el.classList.remove('bombin'); void el.offsetWidth; el.classList.add('bombin'); } }, i * 200));
-    toast('🎂 Cake gift: ' + got.length + (got.length === 1 ? ' bomb' : ' bombs') + ' on the board' + (k >= CAKE_MAX ? ' + a heart shield' : '') + ' · points ×' + (k + 1));
+    toast('🎂 Cake gift: ' + got.length + (got.length === 1 ? ' surprise box' : ' surprise boxes') + ' on the board' + (k >= CAKE_MAX ? ' + a heart shield' : '') + ' · points ×' + (k + 1));
     saveGame();
   }
   const isSolution = (y, x) => { const v = cur.solution[y]; return Array.isArray(v) ? !!v[x] : v === x; };
@@ -846,12 +899,31 @@
       else if (s === 0 || s === 3) cur.state[y][x] = 1; }
     paint(); drawFound();
     const el = cellEl(y, x), bd = $('board');
-    if (el) { const f = document.createElement('i'); f.className = 'bomb-blast'; el.appendChild(f); setTimeout(() => f.remove(), 700); burstAt(el, true); }
-    if (bd && bd.animate) bd.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-4px,2px)' }, { transform: 'translate(4px,-2px)' }, { transform: 'translate(-2px,1px)' }, { transform: 'translate(0,0)' }], { duration: 300 });
-    if (S.boom) S.boom(); else S.whoosh(); buzz([30, 20, 50]);
+    if (el) giftPop(el, giftImg(y, x));
+    if (bd && bd.animate) bd.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.012)' }, { transform: 'scale(1)' }], { duration: 260 });
+    if (S.popper) S.popper(); else S.whoosh(); buzz([18, 25, 30]);
     if (placed) { const pc = placedCount(); S.candy(cur.regions[y][x], pc); sayCandyWord(); }
     saveGame();
     if (solved()) winSoon();
+  }
+  // a surprise box popping open: the box hops and bursts into light, it flies up and fades, and confetti and curly streamers shoot out
+  function giftPop(el, src) {
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, L = fxLayer(), w = r.width;
+    const glow = document.createElement('i'); glow.className = 'gift-glow'; glow.style.cssText = 'left:' + cx + 'px;top:' + cy + 'px;width:' + w * 4 + 'px;height:' + w * 4 + 'px'; L.appendChild(glow); setTimeout(() => glow.remove(), 700);
+    const box = document.createElement('img'); box.src = src; box.className = 'gift-fly'; box.alt = ''; box.style.cssText = 'left:' + cx + 'px;top:' + cy + 'px;width:' + w * 0.98 + 'px'; L.appendChild(box);
+    const an = box.animate([{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: 'translate(-50%,-50%) scale(1.35,.75)', opacity: 1, offset: 0.16 }, { transform: 'translate(-50%,-110%) scale(1.5,1.7)', opacity: 1, offset: 0.4 },
+      { transform: 'translate(-50%,-150%) scale(2.1) rotate(16deg)', opacity: 0 }], { duration: 640, easing: 'ease-out', fill: 'forwards' });
+    an.onfinish = () => box.remove();
+    const cols = ['#ff4fa3', '#ffd21f', '#3fd0ff', '#8cf55a', '#b16cff', '#ff8a3d', '#ffffff'];
+    for (let k = 0; k < 44; k++) {
+      const p = document.createElement('i'), a = -Math.PI / 2 + (Math.random() - 0.5) * 3.4, d = w * (1.6 + Math.random() * 2.6), curl = k % 4 === 0;
+      p.className = curl ? 'gift-curl' : 'gift-bit'; p.style.left = cx + 'px'; p.style.top = (cy - w * 0.2) + 'px'; if (curl) p.style.borderColor = cols[(k + 2) % cols.length]; else p.style.background = cols[k % cols.length];
+      const dx = Math.cos(a) * d, dy = Math.sin(a) * d, rot = (Math.random() - 0.5) * 900;
+      L.appendChild(p);
+      p.animate([{ transform: 'translate(-50%,-50%) rotate(0) scale(.4)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + dx * 0.8 + 'px),calc(-50% + ' + dy * 0.8 + 'px)) rotate(' + rot * 0.6 + 'deg) scale(1)', opacity: 1, offset: 0.45 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px),calc(-50% + ' + (dy + w * 1.1) + 'px)) rotate(' + rot + 'deg) scale(.9)', opacity: 0 }], { duration: 1100 + Math.random() * 600, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' }).onfinish = () => p.remove();
+    }
+    burstAt(el, true);
   }
   function openCakeInfo(kind) {
     S.unlock(); S.tap();
@@ -861,10 +933,10 @@
       $('ciTitle').textContent = "Gumi's Cake";
       // the full cake on top, then two layers, then one: the player sees what he is building toward
       b.innerHTML = '<p class="ci-from">Opens at level ' + CAKE_FROM + '</p><p>From level ' + CAKE_FROM + ' on, every new level you win in a row adds a layer to your cake (up to 3).</p>'
-        + '<p>Each layer gives you a candy bomb on the next level\'s board: tap it and it shows what its square holds. And more points! Lose a level and the top layer falls off.</p>'
+        + '<p>Each layer gives you a surprise box on the next level\'s board: tap it and it pops open to show what its square holds. And more points! Lose a level and the top layer falls off.</p>'
         + '<p class="ci-sub">What your cake gives you at the start of a level:</p>'
         + [3, 2, 1].map((n) => '<div class="ci-row' + (cake.n === n ? ' on' : '') + '"><img src="art/3d_cake_' + n + '.webp?2" alt="" draggable="false"><span><b>' + ['1 layer', '2 layers', '3 layers'][n - 1] + '</b><small>'
-          + ['1 bomb on the board', '2 bombs on the board', '3 bombs on the board + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')
+          + ['1 surprise box on the board', '2 surprise boxes on the board', '3 surprise boxes on the board + a heart shield'][n - 1] + '</small></span><i>' + ['Points ×2', 'Points ×3', 'Points ×4'][n - 1] + '</i></div>').join('')
         + '<p class="ci-tip">☀️ <span>Your first win of each day pays double coins!</span></p>';
     } else {
       $('ciTitle').textContent = 'Sugar Stars';
@@ -878,7 +950,7 @@
   let pendingBoost = null, preSpoken = false;
   // Web taste: only on the site (bonbox.pages.dev and its previews) or with ?web=1, never inside the Android app.
   // Levels 1-10 and the Daily Challenge can be played; any later level shows the "get the app" card.
-  const WEB_FREE = 10, PLAY_URL = 'https://play.google.com/store/apps/details?id=com.bonbox.game';
+  const WEB_FREE = 10, PLAY_URL = 'https://play.google.com/store/apps/details?id=com.bonbox.game', PLAY_URL0 = PLAY_URL;
   const webGate = () => !window.CandokuNative && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
     && (/(^|\.)bonbox\.pages\.dev$/.test(location.hostname) || /[?&]web=1/.test(location.search));
   function openWebGate() {
@@ -910,6 +982,7 @@
     const resumed = applySaved(savedFor(cur.meta));
     if (!resumed && pendingBoost) { if (pendingBoost.shield) { items.shield--; cur.shield = true; } if (pendingBoost.double) { items.double--; cur.double = true; } saveWallet(); updateHintUi(); }
     pendingBoost = null;
+    if (!resumed) { iceStart(lv); hotStart(lv); paint(); }
     if (!resumed) { cur.cake = lv >= CAKE_FROM ? cake.n : 0; if (cake.n) setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv && !$('game').hidden) cakeGift(); }, 1500); }
     show('game');
     preSpoken = false;
@@ -975,7 +1048,7 @@
     S.unlock(); S.tap(); closeAll(); const done = daily.last === today(), n = dailySize();
     $('chalText').textContent = done ? 'Done for today ✓ Come back tomorrow for a new challenge.' : 'Solve today\'s ' + n + '×' + n + ' board before the time runs out.'; $('chalWin').hidden = done;
     $('chalTime').textContent = '⏱ ' + fmtMs(chalLimit(n)); $('chalTime').hidden = done;
-    $('chalPrize').innerHTML = '<div class="rwd big">' + prizeHtml(CHAL_PRIZE) + '</div>'; $('chalGo').hidden = done;
+    $('chalPrize').innerHTML = '<div class="rwd big">' + prizeHtml(CHAL_PRIZE) + '</div>'; $('chalGo').hidden = done; renderChalStreak();
     $('chal').hidden = false;
   }
   function drawHearts() {
@@ -1020,6 +1093,7 @@
     if (!c) return false;
     const y = +c.dataset.y, x = +c.dataset.x, s = cur.state[y][x];
     if (cur.bombs && cur.bombs.has(y + ',' + x)) return false;
+    if (iced(y, x)) return false;
     let ns = s;
     if (drag.mode === 'add' && (s === 0 || s === 3)) ns = 1;
     else if (drag.mode === 'remove' && s === 1) ns = 0;
@@ -1186,19 +1260,21 @@
   // the "maybe" mark: a white question mark in the game's own letters, with a fine black outline
   const QMARK = '<svg class="q" viewBox="0 0 24 24"><text x="12" y="20.6" text-anchor="middle" font-family="Nunito,system-ui,sans-serif" font-weight="900" font-size="25" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linejoin="round" paint-order="stroke">?</text></svg>';
   function paint() {
-    const n = cur.n; setTimeout(saveGame, 0); bossUpdate();
+    const n = cur.n; setTimeout(saveGame, 0); bossUpdate(); thawIce();
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
-      const el = cellEl(y, x), s = cur.state[y][x];
+      const el = cellEl(y, x), s = cur.state[y][x], ic = iced(y, x);
+      el.classList.toggle('iced', ic);
       const wrongX = s === 1 && cur.wrongMarks.has(y + ',' + x);   // black X: only after a wrong candy attempt
       const bomb = s === 0 && cur.bombs && cur.bombs.has(y + ',' + x);
-      const key = s === 2 ? 'c' + cur.regions[y][x] : s === 1 ? (wrongX ? 'xw' : 'x') : s === 3 ? 'q' : bomb ? 'b' : '';
+      const key = ic ? 'ice' : s === 2 ? 'c' + cur.regions[y][x] : s === 1 ? (wrongX ? 'xw' : 'x') : s === 3 ? 'q' : bomb ? 'b' : '';
       el.classList.toggle('has', s === 2);
       if (el.dataset.k === key) continue;      // leave unchanged squares alone so animations don't replay
       el.dataset.k = key;
-      if (s === 2) el.innerHTML = '<svg class="candy" style="--idur:' + (3 + Math.random() * 2.5).toFixed(1) + 's;--idelay:' + (0.4 + Math.random() * 1.6).toFixed(1) + 's"><use href="#c' + cur.cmap[cur.regions[y][x]] + '"/></svg>';
+      if (ic) el.innerHTML = '<img class="cice" src="art/ic_ice.webp" alt="" draggable="false">';
+      else if (s === 2) el.innerHTML = '<svg class="candy" style="--idur:' + (3 + Math.random() * 2.5).toFixed(1) + 's;--idelay:' + (0.4 + Math.random() * 1.6).toFixed(1) + 's"><use href="#c' + cur.cmap[cur.regions[y][x]] + '"/></svg>';
       else if (s === 1) el.innerHTML = '<span class="x' + (wrongX ? ' bad' : '') + '"></span>';
       else if (s === 3) el.innerHTML = QMARK;
-      else if (bomb) el.innerHTML = '<img class="cbomb" src="art/ic_bomb.webp?3" alt="" draggable="false">';
+      else if (bomb) el.innerHTML = '<img class="cbomb" src="' + giftImg(y, x) + '" alt="" draggable="false">';
       else el.innerHTML = '';
     }
     drawFound();
@@ -1258,6 +1334,7 @@
     if (cur.vehicleArmed) { useVehicle(cur.vehicleArmed, y, x); return; }
     S.unlock();
     if (cur.bombs && cur.bombs.has(y + ',' + x) && cur.state[y][x] === 0) { explodeBomb(y, x); return; }
+    if (iced(y, x)) { const el = cellEl(y, x); el.classList.remove('icehit'); void el.offsetWidth; el.classList.add('icehit'); buzz(12); if (S.crack) S.crack(true); if (!cur.iceTold) { cur.iceTold = true; toast('❄️ Frozen! Mark a square next to it to melt the ice'); } return; }
     const s = cur.state[y][x];
     if (maybe || cur.maybeMode) {
       if (s === 2) return;
@@ -1297,7 +1374,7 @@
     const el = cellEl(y, x); el.classList.remove('wrong'); void el.offsetWidth; el.classList.add('wrong');
     const h = $('hearts'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit');
     drawHearts(); saveGame();
-    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); cur.cakeDrop = false; if (cur.meta && cur.meta.kind === 'level' && cur.meta.level >= CAKE_FROM && cake.n > 0) { setCake(cake.n - 1); cur.cakeDrop = true; } $('loseCake').hidden = !cur.cakeDrop; freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; drawCoinRevive(); $('lose').hidden = false; }, 500); }
+    if (cur.hearts <= 0) { cur.done = true; $('lose').classList.toggle('bossw', isBoss()); saveGame(); cur.cakeDrop = false; if (cur.meta && cur.meta.kind === 'level' && cur.meta.level >= CAKE_FROM && cake.n > 0) { setCake(cake.n - 1); cur.cakeDrop = true; } $('loseCake').hidden = !cur.cakeDrop; { const lh = $('loseHot'); if (lh) lh.hidden = true; } freshScore(); score.run = 0; store.set('score', score); { const c0 = climb.step; climbLose(); cur.climbDropped = climb.step < c0; } retentionLose(); loseLife(); chalStop(); setTimeout(() => { loseText(false); S.lose(); if (V) V.lose(); $('loseLives').textContent = infOn() ? '' : 'Lives left: ' + livesNow() + ' / ' + MAX_LIVES; $('reviveBtn').hidden = !!cur.revived; drawCoinRevive(); $('lose').hidden = false; }, 500); }
   }
   function solved() {
     const n = cur.n, pos = [];
@@ -1332,7 +1409,7 @@
     const g = $('infTag'); if (g) { g.hidden = !on; if (on) g.textContent = '∞ ' + fmtMS(infUntil - Date.now()); }
   }
   setInterval(infTick, 1000);
-  function give(p, noHold) { if (p.life) addLives(p.life); if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens', 'car', 'rocket'].forEach((k) => { items[k] = (items[k] || 0) + (p[k] || 0); }); saveWallet(); updateHintUi(); }
+  function give(p, noHold) { if (p.life) addLives(p.life); if (p.inf) { infUntil = Math.max(Date.now(), infUntil) + p.inf * 60000; store.set('infUntil', infUntil); setTimeout(infTick, 0); } coins += p.coins || 0; if (p.coins && !noHold) { coinHold += p.coins; } hintsLeft += p.hints || 0; wands += p.wands || 0; ['shield', 'double', 'sweeper', 'lens', 'car', 'rocket'].forEach((k) => { items[k] = (items[k] || 0) + (p[k] || 0); }); if (p.packs) addPacks(p.packs); saveWallet(); updateHintUi(); }
   const coinSvg = '<img class="ico" src="art/ic_coin.webp" alt="" draggable="false">';
   /* coins you win fly into the main wallet (the top chip, or a floating bank on the game screen) and the counter ticks up as each lands */
   let coinHold = 0, bankT = 0;
@@ -1411,8 +1488,8 @@
     const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
     set('heartN', infOn() ? '∞ ' + fmtMS(infUntil - Date.now()) : (typeof livesNow === 'function' ? livesNow() : 5)); set('hintBadge', hintsLeft); set('shieldN', items.shield || 0); set('wandBadge', wands); set('coinN', coins - coinHold); set('bankN', coins - coinHold); set('hintN', hintsLeft); set('wandN', wands);
     $('hintBtn').classList.toggle('empty', hintsLeft <= 0); $('wandBtn').classList.toggle('empty', wands <= 0);
-    set('sweepBtnBadge', items.sweeper); set('lensBtnBadge', items.lens); $('sweepBtn').classList.toggle('empty', items.sweeper <= 0); $('lensBtn').classList.toggle('empty', items.lens <= 0);
-    set('carBtnBadge', items.car || 0); set('rocketBtnBadge', items.rocket || 0); $('carBtn').classList.toggle('empty', !(items.car > 0)); $('rocketBtn').classList.toggle('empty', !(items.rocket > 0));
+    // helpers given free by the win streak count on the badge too, and the button shows a FREE tag
+    [['sweeper', 'sweepBtn'], ['lens', 'lensBtn'], ['car', 'carBtn'], ['rocket', 'rocketBtn']].forEach(([k, id]) => { const f = freeOf(k), n = (items[k] || 0) + f; set(id + 'Badge', n); $(id).classList.toggle('empty', n <= 0); $(id).classList.toggle('free', f > 0); });
   }
   const ITEMS = {
     hint: { name: 'Hint', icon: 'hint', price: 30,
@@ -1430,16 +1507,16 @@
   ITEMS.double = { name: 'Double Points', icon: 'double', price: 50, count: () => items.double, add: (n) => { items.double += n; },
     desc: 'Pick it before a level starts. That level gives you double points for the daily ranking.', run: () => toast('Pick the x2 on the screen before a level starts.'),
     earn: () => 'Won in the lucky wheel and chests, or buy one with coins.' };
-  ITEMS.sweeper = { name: 'Sweeper', icon: 'sweeper', price: 40, count: () => items.sweeper, add: (n) => { items.sweeper += n; }, run: () => useSweeper(),
+  ITEMS.sweeper = { name: 'Sweeper', icon: 'sweeper', price: 40, count: () => items.sweeper + freeOf('sweeper'), add: (n) => { items.sweeper += n; }, run: () => useSweeper(),
     desc: 'The sweeper marks an X on every square that cannot hold a candy because of the candies you already placed: same row, same column, same color and the squares around them.',
     earn: () => 'Won in the Daily Bonus, quests and chests, or buy one with coins.' };
-  ITEMS.lens = { name: 'Magnifier', icon: 'lens', price: 35, count: () => items.lens, add: (n) => { items.lens += n; }, run: () => armLens(),
+  ITEMS.lens = { name: 'Magnifier', icon: 'lens', price: 35, count: () => items.lens + freeOf('lens'), add: (n) => { items.lens += n; }, run: () => armLens(),
     desc: 'Tap the magnifier, then tap any square. It tells you the truth: a candy goes there, or it gets an X.',
     earn: () => 'Won in the Daily Bonus, the lucky wheel and boss levels, or buy one with coins.' };
-  ITEMS.car = { name: 'Gummy Car', icon: 'car', price: 120, count: () => items.car || 0, add: (n) => { items.car = (items.car || 0) + n; }, run: () => armVehicle('car'),
+  ITEMS.car = { name: 'Gummy Car', icon: 'car', price: 120, count: () => (items.car || 0) + freeOf('car'), add: (n) => { items.car = (items.car || 0) + n; }, run: () => armVehicle('car'),
     desc: 'Tap the gummy car, then tap any square: it drives along that whole row and uncovers all of it, the candy too.',
     earn: () => 'Very rare: won in big chests and boss levels, or buy one with coins.' };
-  ITEMS.rocket = { name: 'Candy Rocket', icon: 'rocket', price: 120, count: () => items.rocket || 0, add: (n) => { items.rocket = (items.rocket || 0) + n; }, run: () => armVehicle('rocket'),
+  ITEMS.rocket = { name: 'Candy Rocket', icon: 'rocket', price: 120, count: () => (items.rocket || 0) + freeOf('rocket'), add: (n) => { items.rocket = (items.rocket || 0) + n; }, run: () => armVehicle('rocket'),
     desc: 'Tap the candy rocket, then tap any square: it flies up that whole column and uncovers all of it, the candy too.',
     earn: () => 'Very rare: won in big chests and boss levels, or buy one with coins.' };
   let itemKind = 'hint';
@@ -1485,7 +1562,7 @@
   }
   /* ---------- sweeper and magnifier ---------- */
   function useSweeper() {
-    if (!cur || cur.done || items.sweeper <= 0) return;
+    if (!cur || cur.done || !haveTool('sweeper')) return;
     const n = cur.n, mark = [];
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (cur.state[y][x] === 2) {
       const reg = cur.regions[y][x];
@@ -1495,12 +1572,12 @@
       }
     }
     if (!mark.length) { toast('Place a candy first, then sweep!'); return; }   // nothing is spent
-    items.sweeper--; saveWallet(); updateHintUi(); snapshot();
+    spendTool('sweeper'); snapshot();
     mark.forEach(([yy, xx], k) => { cur.state[yy][xx] = 1; cur.wrongMarks.delete(yy + ',' + xx); setTimeout(() => { const el = cellEl(yy, xx); el.classList.remove('hinted'); void el.offsetWidth; el.classList.add('hinted'); }, Math.min(k * 14, 500)); });
     paint(); spotlight(mark, 3000); buzz(18); S.hint(); S.praise(1);
   }
   function armVehicle(kind) {
-    if (!cur || cur.done || !(items[kind] > 0)) return;
+    if (!cur || cur.done || !haveTool(kind)) return;
     cur.vehicleArmed = kind; armUi(kind); toast(kind === 'car' ? '🚗 Tap a square: the car uncovers its whole row (tap the car again to cancel)' : '🚀 Tap a square: the rocket uncovers its whole column (tap the rocket again to cancel)', true);
   }
   // an armed tool: the board's squares pulse and the tool's button glows, so it is clear it waits for a tap (and can be tapped again to cancel)
@@ -1509,7 +1586,7 @@
   function disarmTool() { if (!cur) return; cur.lensArmed = false; cur.vehicleArmed = null; $('board').classList.remove('lens'); Object.values(TOOLBTN).forEach((id) => { const b = $(id); if (b) b.classList.remove('armed'); }); hideToast(); }
   function useVehicle(kind, y, x) {
     disarmTool();
-    items[kind]--; saveWallet(); updateHintUi(); snapshot();
+    spendTool(kind); snapshot();
     const n = cur.n, line = []; for (let i = 0; i < n; i++) line.push(kind === 'car' ? [y, i] : [n - 1 - i, x]);   // the car drives left to right, the rocket flies from the bottom up
     // the car / rocket is big and slow enough to be seen crossing the whole line, the line lights up first, and it leaves a sparkly trail
     const first = cellEl(line[0][0], line[0][1]).getBoundingClientRect(), last = cellEl(line[n - 1][0], line[n - 1][1]).getBoundingClientRect();
@@ -1548,12 +1625,12 @@
     }, D * (kind === 'car' ? (i + 1.2) / (n + 2.1) : (i + 1) / (n + 2.2))));
   }
   function armLens() {
-    if (!cur || cur.done || items.lens <= 0) return;
+    if (!cur || cur.done || !haveTool('lens')) return;
     cur.lensArmed = true; armUi('lens'); toast('🔍 Tap a square to peek at the truth (tap the magnifier again to cancel)', true);
   }
   function lensPeek(y, x) {
     disarmTool();
-    items.lens--; saveWallet(); updateHintUi(); snapshot(); const k = y + ',' + x;
+    spendTool('lens'); snapshot(); const k = y + ',' + x;
     if (cur.solution[y] === x) { cur.state[y][x] = 2; cur.wrongMarks.delete(k); paint(); toast('✅ Yes! A candy goes right here', true); const pc = placedCount(); S.candy(cur.regions[y][x], pc); placedFx(y, x, pc); if (solved()) winSoon(); }
     else { cur.state[y][x] = 1; cur.wrongMarks.delete(k); paint(); toast('❌ Not here. Marked with an X', true); S.x(); }
     spotlight([[y, x]], 3000); buzz(16);
@@ -1584,8 +1661,8 @@
     for (let i = 0; i < list.length; i++) { r -= wt[i]; if (r <= 0) return list[i]; }
     return list[0];
   }
-  const PICO = { inf: 'heart', life: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens', car: 'car', rocket: 'rocket' };
-  const PNAME = { inf: 'min of unlimited hearts', life: 'life', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier', car: 'gummy car', rocket: 'candy rocket' };
+  const PICO = { inf: 'heart', life: 'heart', coins: 'coin', hints: 'hint', wands: 'wand', shield: 'shield', double: 'double', sweeper: 'sweeper', lens: 'lens', car: 'car', rocket: 'rocket', packs: 'pack' };
+  const PNAME = { inf: 'min of unlimited hearts', life: 'life', coins: 'coin', hints: 'hint', wands: 'magic wand', shield: 'heart shield', double: 'double-points booster', sweeper: 'sweeper', lens: 'magnifier', car: 'gummy car', rocket: 'candy rocket', packs: 'sticker pack' };
   const prizeKeys = (p) => Object.keys(PICO).filter((k) => p[k]);
   function prizeHtml(p) {
     return prizeKeys(p).map((k) => '<span class="pz"><img class="pico" src="art/ic_' + PICO[k] + '.webp" alt="" draggable="false"><b>' + (k === 'inf' ? '∞ ' + p[k] + 'm' : '+' + p[k]) + '</b></span>').join('');
@@ -1743,7 +1820,7 @@
     if (!chal) { score.points += pt.gain; score.best = Math.max(score.best || 0, score.points);
       store.set('score', score); postScore().then((d) => { if (d && d.top) realTop = d.top; }); cur.leagueFrom = score.points - pt.gain; leaguePending = true; leagueBump(score.points); }
     const firstWin = !!(cur.meta && cur.meta.kind === 'level') && store.get('fwin', '') !== today(); if (firstWin) store.set('fwin', today());
-    const earnedCoins = chal ? 0 : (1 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // the Daily Challenge pays no coins either   // coins are scarce: 1 per win, 2 without losing a heart
+    const earnedCoins = chal ? 0 : (2 + (cur.hearts >= 3 ? 1 : 0)) * (rushActive() ? 2 : 1) * (firstWin ? 2 : 1);   // the Daily Challenge pays no coins either   // coins: 2 per win, 3 without losing a heart (raised 2026-11-21)
     coins += earnedCoins; saveWallet(); updateHintUi();
     onSolved();
     const winWait = !fumed ? 450 : isBoss() ? 1200 : 700;   // the win card: 0.45 s after the last candy; after Vinegar 1.2 s, after his minion 0.7 s
@@ -1752,6 +1829,7 @@
     if (!earnedCoins) $('winCoins').hidden = true;
     $('winGain').innerHTML = '+' + pt.gain + ' pts<small>' + '×' + pt.mult + ' in a row · ' + score.points + ' today</small>' + (cur.cake ? '<small class="wcake"><img src="art/3d_cake_' + cur.cake + '.webp?2" alt="" draggable="false">Cake ×' + (cur.cake + 1) + '</small>' : '');
     $('winGain').hidden = chal;   // no points line for the Daily Challenge
+    const newLv = m.kind === 'level' && level === m.level;
     if (m.kind === 'level') {
       if (isBossLv(m.level)) merge = [];
       if (!stars[m.level] || stars[m.level] < earned) { stars[m.level] = earned; store.set('stars', stars); }
@@ -1774,9 +1852,14 @@
     } else if (m.kind === 'daily' && daily.last !== m.date) {
       const y = new Date(); y.setDate(y.getDate() - 1);
       const yd = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
-      daily = { last: m.date, streak: daily.last === yd ? daily.streak + 1 : 1 }; store.set('daily', daily);
+      { const ns = dailyStreakOn(daily.last, daily.streak || 0); daily = { last: m.date, streak: ns, best: Math.max(daily.best || 0, ns) }; } store.set('daily', daily);
+      { const hist = store.get('dhist', []); if (!hist.includes(m.date)) hist.push(m.date); store.set('dhist', hist.slice(-60)); }
       give(CHAL_PRIZE); cur.chalWon = true; setTimeout(() => announce(CHAL_PRIZE, 'Challenge complete!', true), 3600);
     }
+    if (m.kind === 'daily') cur.chalUsed = Math.max(0, chalLimit(cur.n) - (cur.left || 0));
+    { const rx = retentionWin(newLv), we = $('winExtra'); we.hidden = !rx.length; we.innerHTML = rx.join('');
+      if (m.kind === 'daily' && !m.test) { we.hidden = false; we.innerHTML = '<span><img src="art/ic_flame.webp" alt="">' + T((daily.streak || 1) + ' day streak') + '</span><span>⏱ ' + fmtMs(cur.chalUsed) + '</span>'; } }
+    $('shareBtn').classList.toggle('main', m.kind === 'daily'); $('nextBtn').classList.toggle('main', m.kind !== 'daily');
     let st = ''; for (let i = 1; i <= 3; i++) st += starSvg(i <= earned);
     $('winStars').innerHTML = st;
     $('winInfo').textContent = cur.n + '×' + cur.n + (cur.tier !== 'normal' ? ' ' + tierLabel[cur.tier] : '') + ' solved' + (cur.hints ? ' · ' + cur.hints + ' hint' + (cur.hints > 1 ? 's' : '') : ' · no hints');
@@ -1796,7 +1879,7 @@
       wr.innerHTML = '👑 Vinegar defeated! Prizes: ' + prizeText(bp) + (flawless ? '' : '<br><small>No hearts lost = an even bigger prize!</small>');
     }
     updateHintUi();
-    $('nextBtn').textContent = m.kind === 'level' && m.level < LAST_LEVEL ? 'Next level' : 'Back to map';
+    $('nextBtn').textContent = m.kind === 'level' && m.level < LAST_LEVEL && !(m.level === STORY_END && !store.get('seenEnd', false)) ? 'Next level' : 'Back to map';
     setTimeout(() => {
       $('win').hidden = false; celebrate(); candyParty();
       const els = $('winStars').querySelectorAll('img.star');
@@ -2109,7 +2192,7 @@
     if (V) { const wait = introVoiceAt - performance.now(), step = introStep; if (wait > 60) setTimeout(() => { if (introStep === step && !$('intro').hidden) V.say(p.text, true); }, wait); else V.say(p.text, true); }
   }
   function showEnding() { store.set('seenEnd', true); if (V && V.prefetch) V.prefetch(ENDING.map((p) => p.text)); PANELS = ENDING; ENDING.forEach((p) => { const im = new Image(); im.src = 'art/' + p.img + '.jpg'; }); introStep = 1; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; if (M) M.start('menu'); renderIntro(); const rb = $('replayEnd'); if (rb) rb.hidden = false; }
-  function maybeEnding() { if (level > LAST_LEVEL && !store.get('seenEnd', false)) setTimeout(showEnding, 700); }
+  function maybeEnding() { if (level > STORY_END && !store.get('seenEnd', false)) setTimeout(showEnding, 700); }
   /* Age screen: asked once, on the very first launch, before the story. Neutral (no age is suggested or preferred).
      Under 13 the game is marked as child-directed: the Android app reads window.CandokuAge and serves only child-safe ads. */
   window.CandokuAge = store.get('age', null);
@@ -2128,6 +2211,8 @@
   function showIntro() { if (V && V.prefetch) V.prefetch(STORY.map((p) => p.text)); PANELS = STORY; introStep = 0; $('intro').hidden = false; document.body.classList.add('in-game'); $('introRain').innerHTML = ''; renderIntro(); }
   function endIntro() {
     const wasEnd = PANELS === ENDING; PANELS = STORY;
+    // after the ending (level 500) the adventure goes on: 50 more worlds
+    if (wasEnd && level <= LAST_LEVEL) setTimeout(() => { $('ciTitle').textContent = 'The adventure goes on!'; $('ciBody').innerHTML = '<div class="ice-intro"><img src="art/ev_tower.webp" alt="" draggable="false"></div><p>A new sour storm is rising far beyond the sea.</p><p><b>50 new worlds</b> and 500 new levels are waiting for you!</p>'; $('cakeInfo').hidden = false; }, 900);
     store.set('seenIntro', true); store.set('seenHow', true);
     if (V) V.cancel();
     $('intro').hidden = true; $('introRain').innerHTML = '';
@@ -2149,6 +2234,7 @@
     if (p) mascotAt = p.from;
     await transition(() => { renderHome(); show('home'); scrollToLevel(p ? p.from : level); });
     if (p) { await sleep(120); await hopTo(p.from, p.to); }
+    if (cur && cur.done && cur.hearts > 0) setTimeout(notifMaybeAsk, 600);
   }
   /* ---------- "Enjoying Bonbox?": asked only at a happy moment (right after a win), a few times at most, never again once answered ---------- */
   const RATE_AT = [8, 25, 60, 120, 200];
@@ -2176,7 +2262,7 @@
     if (bonusPending) { bonusPending = false; startCart(() => nextLevel()); return; }
     $('win').hidden = true;
     if (webGate() && cur.meta.kind === 'level' && cur.meta.level >= WEB_FREE) { await toMap(); openWebGate(); return; }   // the last free level on the web
-    if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL) { await toMap(); maybeEnding(); return; }
+    if (cur.meta.kind !== 'level' || cur.meta.level >= LAST_LEVEL || (cur.meta.level === STORY_END && !store.get('seenEnd', false))) { await toMap(); maybeEnding(); return; }
     const from = cur.meta.level, to = level; pendingHop = null;
     try {
       mascotAt = from; cakeHold = true;   // order on the map: the cake gets its layer and flies into its button, then Gumi hops, then the Play card
@@ -2212,6 +2298,17 @@
     card.appendChild(x);
   });
   $('rankBtn').onclick = openRanking;
+  $('towerGo').onclick = () => { S.tap(); towerGo(); }; $('towerClose').onclick = () => { S.tap(); $('tower').hidden = true; };
+  $('raceGo').onclick = () => { S.tap(); raceGo(); }; $('raceClose').onclick = () => { S.tap(); $('race').hidden = true; };
+  $('jarBuy').onclick = () => { S.tap(); buyPack('jar'); }; $('jarClose').onclick = () => { S.tap(); $('jarOv').hidden = true; };
+  $('albPack').onclick = () => { S.unlock(); openPack(); }; $('albClose').onclick = () => { S.tap(); $('album').hidden = true; };
+  $('albTrade').onclick = () => { const a = alb(); if (a.dust < DUST_PACK) return; a.dust -= DUST_PACK; a.packs++; store.set('album', a); S.ui('buy', 1, 1); renderAlbum(); };
+  $('packDone').onclick = () => { S.tap(); if (alb().packs > 0) { openPack(); return; } $('packOv').hidden = true; if (!$('album').hidden) renderAlbum(); updateSides(); };
+  $('advClose').onclick = () => { S.tap(); $('advent').hidden = true; };
+  $('notifYes').onclick = () => { S.tap(); $('notifAsk').hidden = true; const P = LN(); if (!P) return; Promise.resolve(P.requestPermissions()).then((r) => { notif.on = !!(r && r.display === 'granted'); store.set('notif', notif); if (notif.on) toast('🔔 We will let you know!'); }).catch(() => {}); };
+  $('notifNo').onclick = () => { S.tap(); $('notifAsk').hidden = true; };
+  // a shared Daily Challenge link (?daily=1) opens the challenge right after the loading screen
+  if (/[?&]daily=1/.test(location.search)) { const go = () => { if ($('splash') || !$('intro').hidden || !$('age').hidden) { setTimeout(go, 400); return; } closeAll(); openChal(); }; setTimeout(go, 1200); }
   $('pfCollection').onclick = openCollection;
   $('colClose').onclick = () => { S.tap(); $('collection').hidden = true; };
   document.querySelectorAll('#colTabs button').forEach((b) => { b.onclick = () => { colTab = b.dataset.t; S.tap(); renderCollection(); }; });
@@ -2261,7 +2358,7 @@
   $('homeBtn').onclick = () => { if (leaguePending) { leaguePending = false; openLeague(() => $('homeBtn').onclick()); return; } if (bonusPending) { bonusPending = false; startCart(() => $('homeBtn').onclick()); return; } $('win').hidden = true; toMap().then(() => { if (webGate() && cur && cur.done && cur.meta.kind === 'level' && cur.meta.level >= WEB_FREE && cur.hearts > 0) openWebGate(); else maybeEnding(); }); };
   $('loseHome').onclick = () => { $('lose').hidden = true; toMap(); };
   function reviveNow() {
-    cur.done = false; cur.hearts = 1; addLives(1); if (cur.cakeDrop) { setCake(cake.n + 1); cur.cakeDrop = false; } if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); }
+    cur.done = false; cur.hearts = 1; addLives(1); if (cur.cakeDrop) { setCake(cake.n + 1); cur.cakeDrop = false; } if (cur.climbDropped && climbOn()) { climb.step++; climb.moved = 0; store.set('climb', climb); } retentionRevive();
     $('lose').hidden = true; drawHearts(); saveGame(); toast('❤️ One more heart. Keep going!');
   }
   $('reviveBtn').onclick = () => { S.tap(); watchAd(() => { cur.revived = true; reviveNow(); }); };
@@ -2282,7 +2379,9 @@
   $('rateLater').onclick = () => { S.tap(); closeRate(); };
   $('rateGo').onclick = () => { S.tap(); const nat = NATIVE(); if (nat && nat.review) { try { nat.review(); } catch (e) {} } else if (DBG) toast('(test) the Google Play rating window opens here'); closeRate(); };
   $('shareBtn').onclick = async () => {
-    const text = T('Bonbox 🍬 ' + cur.label + ' ' + cur.n + '×' + cur.n + ' solved' + (cur.hints ? '' : ' with no hints'));
+    const dly = cur.meta && cur.meta.kind === 'daily' && !cur.meta.test;
+    const text = dly ? dailyShareText() : T('Bonbox 🍬 ' + cur.label + ' ' + cur.n + '×' + cur.n + ' solved' + (cur.hints ? '' : ' with no hints'));
+    const PLAY_URL = dly ? DAILY_URL : PLAY_URL0;
     // the link is always the game's Google Play page (inside the app location.href was https://localhost/, a dead link);
     // in the app the phone's own share sheet opens (the web view has no navigator.share)
     const NS = nativePlugin('Share');
@@ -2477,9 +2576,61 @@
   let bearColor = store.get('bearColor', 'pink');
   const bearColorOf = (id) => BEARCOLORS.find((c) => c.id === id) || BEARCOLORS[0];
   let look = { stand: 'art/gumi_hero.webp', win: 'art/gumi_win.webp', air: 'art/gumi_jump.webp' };
-  const FRAMES = [{ id: 'cream', name: 'Cream', bg: '#f7f1e5', at: 0 }, { id: 'mint', name: 'Mint', bg: 'linear-gradient(160deg,#e6fff0,#b9f0d2)', at: 10 }, { id: 'sky', name: 'Sky', bg: 'linear-gradient(160deg,#e6f4ff,#bcdcfb)', at: 25 },
-    { id: 'rose', name: 'Rose', bg: 'linear-gradient(160deg,#fff0f6,#ffcfe0)', at: 40 }, { id: 'gold', name: 'Gold', bg: 'linear-gradient(160deg,#fff7c9,#ffd96a)', at: 70 }, { id: 'night', name: 'Night', bg: 'linear-gradient(160deg,#5c4fd0,#2a2470)', at: 100 }];
-  const WORLD_NAMES = ['Lollipop Meadow', 'Chocolate River', 'Frosting Mountains', 'Cotton Candy Sky', 'Ice Cream Beach', 'Gingerbread Winter', 'Donut Lake', 'Cookie Canyon', 'Crystal Caves', 'Jelly Jungle', 'Cupcake Village', 'Candy Cane Forest', 'Caramel Falls', 'Carnival Fairground', 'Macaron Mesa', 'Waffle Castle', 'Soda Springs', 'Honey Hive Hills', 'Berry Bog', 'Mint Mountain', 'Licorice Night Market', 'Sugar Dunes Oasis', 'Pudding Pools', 'Cinnamon Autumn Forest', 'Starlight Sprinkle Galaxy', 'Toffee Treehouse Village', 'Gumdrop Garden', 'Royal Cake Palace', 'Rainbow Sherbet Glacier', 'Sweet Kingdom Gate', 'Sour Lemon Grove', 'Bubblegum Swamp', 'Marshmallow Clouds', 'Popcorn Peaks', 'Jellybean Harbor', 'Peppermint Blizzard', 'Fudge Volcano', 'Taffy Twister Plains', 'Sprinkle Desert', 'Gummy Bear Woods', 'Candy Carnival Night', 'Blueberry Moon Lagoon', 'Maple Syrup Marsh', 'Rock Candy Cliffs', 'Churro Canyon', 'Strawberry Storm Fields', 'Licorice Ruins', 'Thundercloud Citadel', 'Sour Storm Summit', "Vinegar's Castle"];
+  // board frames: one every 10 levels up to level 50 (5 frames), then one every 20 levels up to 990; light and dark colours mixed
+  const FRAMES = [{ id: 'cream', name: 'Cream', bg: '#f7f1e5', at: 0 },
+    { id: 'mint', name: 'Mint', bg: 'linear-gradient(160deg,#e6fff0,#b9f0d2)', at: 10 },
+    { id: 'lime', name: 'Lime', bg: 'linear-gradient(160deg,#f3ffd9,#c6ee8a)', at: 20 },
+    { id: 'sky', name: 'Sky', bg: 'linear-gradient(160deg,#e6f4ff,#bcdcfb)', at: 30 },
+    { id: 'rose', name: 'Rose', bg: 'linear-gradient(160deg,#fff0f6,#ffcfe0)', at: 40 },
+    { id: 'gold', name: 'Gold', bg: 'linear-gradient(160deg,#fff7c9,#ffd96a)', at: 50 },
+    { id: 'night', name: 'Night', bg: 'linear-gradient(160deg,#5c4fd0,#2a2470)', at: 70 },
+    { id: 'lavender', name: 'Lavender', bg: 'linear-gradient(160deg,#f3ecff,#d4c2ff)', at: 90 },
+    { id: 'peach', name: 'Peach', bg: 'linear-gradient(160deg,#fff1e6,#ffc9a8)', at: 110 },
+    { id: 'ocean', name: 'Ocean', bg: 'linear-gradient(160deg,#1f8fa8,#0b4a66)', at: 130 },
+    { id: 'cherry', name: 'Cherry', bg: 'linear-gradient(160deg,#c8243f,#7a0f24)', at: 150 },
+    { id: 'lemon', name: 'Lemon', bg: 'linear-gradient(160deg,#fffde0,#fff27a)', at: 170 },
+    { id: 'forest', name: 'Forest', bg: 'linear-gradient(160deg,#2f8a4e,#14502a)', at: 190 },
+    { id: 'bubblegum', name: 'Bubblegum', bg: 'linear-gradient(160deg,#ffe0f4,#ff9fd8)', at: 210 },
+    { id: 'midnight', name: 'Midnight', bg: 'linear-gradient(160deg,#28305e,#0c1030)', at: 230 },
+    { id: 'coral', name: 'Coral', bg: 'linear-gradient(160deg,#ffe3dc,#ff9f8a)', at: 250 },
+    { id: 'aqua', name: 'Aqua', bg: 'linear-gradient(160deg,#e0fffb,#8ff0e4)', at: 270 },
+    { id: 'plum', name: 'Plum', bg: 'linear-gradient(160deg,#8a3d8f,#4a1450)', at: 290 },
+    { id: 'butter', name: 'Butter', bg: 'linear-gradient(160deg,#fffaf0,#ffe9b0)', at: 310 },
+    { id: 'cocoa', name: 'Cocoa', bg: 'linear-gradient(160deg,#8a5a3c,#4a2c18)', at: 330 },
+    { id: 'ice', name: 'Ice', bg: 'linear-gradient(160deg,#f4fbff,#d2ecff)', at: 350 },
+    { id: 'grape', name: 'Grape', bg: 'linear-gradient(160deg,#a35cff,#5a1fb0)', at: 370 },
+    { id: 'sunset', name: 'Sunset', bg: 'linear-gradient(160deg,#ffd27a,#ff7aa8)', at: 390 },
+    { id: 'pistachio', name: 'Pistachio', bg: 'linear-gradient(160deg,#eef8d8,#bfe39a)', at: 410 },
+    { id: 'royal', name: 'Royal', bg: 'linear-gradient(160deg,#2a5ad8,#122a7a)', at: 430 },
+    { id: 'flamingo', name: 'Flamingo', bg: 'linear-gradient(160deg,#ffd0e0,#ff7fa8)', at: 450 },
+    { id: 'caramel', name: 'Caramel', bg: 'linear-gradient(160deg,#f2c27a,#c07a2a)', at: 470 },
+    { id: 'galaxy', name: 'Galaxy', bg: 'linear-gradient(160deg,#3a1d7a,#0f0a35 60%,#5a2a9a)', at: 490 },
+    { id: 'seafoam', name: 'Seafoam', bg: 'linear-gradient(160deg,#e8fff5,#a8ecd0)', at: 510 },
+    { id: 'ruby', name: 'Ruby', bg: 'linear-gradient(160deg,#ff4a6e,#a8102e)', at: 530 },
+    { id: 'vanilla', name: 'Vanilla', bg: 'linear-gradient(160deg,#fffdf6,#f6ecd2)', at: 550 },
+    { id: 'emerald', name: 'Emerald', bg: 'linear-gradient(160deg,#20c486,#0a6a48)', at: 570 },
+    { id: 'lilac', name: 'Lilac', bg: 'linear-gradient(160deg,#fbefff,#e4c4f6)', at: 590 },
+    { id: 'tangerine', name: 'Tangerine', bg: 'linear-gradient(160deg,#ffcf8a,#ff8a2a)', at: 610 },
+    { id: 'storm', name: 'Storm', bg: 'linear-gradient(160deg,#5a6a86,#2a3348)', at: 630 },
+    { id: 'cottoncandy', name: 'Cotton Candy', bg: 'linear-gradient(160deg,#ffd6ec,#cfe6ff)', at: 650 },
+    { id: 'matcha', name: 'Matcha', bg: 'linear-gradient(160deg,#c8e6a0,#7aa84a)', at: 670 },
+    { id: 'blush', name: 'Blush', bg: 'linear-gradient(160deg,#fff5f2,#ffd8d0)', at: 690 },
+    { id: 'deepsea', name: 'Deep Sea', bg: 'linear-gradient(160deg,#0f6a8a,#062a4a)', at: 710 },
+    { id: 'honey', name: 'Honey', bg: 'linear-gradient(160deg,#ffe58a,#f0a818)', at: 730 },
+    { id: 'berry', name: 'Berry', bg: 'linear-gradient(160deg,#c0307a,#5a0f3e)', at: 750 },
+    { id: 'frost', name: 'Frost', bg: 'linear-gradient(160deg,#ffffff,#e2f2ff 50%,#f2ecff)', at: 770 },
+    { id: 'mocha', name: 'Mocha', bg: 'linear-gradient(160deg,#c49a7a,#7a5236)', at: 790 },
+    { id: 'rainbow', name: 'Rainbow', bg: 'linear-gradient(160deg,#ffc4c4,#ffe9a8,#c8f5c0,#c0e4ff,#e2c8ff)', at: 810 },
+    { id: 'aurora', name: 'Aurora', bg: 'linear-gradient(160deg,#1a4a5a,#2a8a6a 45%,#6a3aa0)', at: 830 },
+    { id: 'melon', name: 'Melon', bg: 'linear-gradient(160deg,#eaffe0,#ffc8b0)', at: 850 },
+    { id: 'slate', name: 'Slate', bg: 'linear-gradient(160deg,#8a96a8,#4a5466)', at: 870 },
+    { id: 'candycane', name: 'Candy Cane', bg: 'repeating-linear-gradient(135deg,#ffffff 0 14px,#ff5a6a 14px 28px)', at: 890 },
+    { id: 'sapphire', name: 'Sapphire', bg: 'linear-gradient(160deg,#3a7aff,#0a2a9a)', at: 910 },
+    { id: 'apricot', name: 'Apricot', bg: 'linear-gradient(160deg,#fff0d8,#ffc27a)', at: 930 },
+    { id: 'twilight', name: 'Twilight', bg: 'linear-gradient(160deg,#ff8ab0,#6a4ad0 55%,#1a1a5a)', at: 950 },
+    { id: 'opal', name: 'Opal', bg: 'linear-gradient(160deg,#f8f4ff,#d6f6ff 35%,#ffe2f2 70%,#fffbd6)', at: 970 },
+    { id: 'crown', name: 'Crown Gold', bg: 'linear-gradient(160deg,#fff3a0,#f0b400 50%,#a86a00)', at: 990 }];
+  const WORLD_NAMES = ['Lollipop Meadow', 'Chocolate River', 'Frosting Mountains', 'Cotton Candy Sky', 'Ice Cream Beach', 'Gingerbread Winter', 'Donut Lake', 'Cookie Canyon', 'Crystal Caves', 'Jelly Jungle', 'Cupcake Village', 'Candy Cane Forest', 'Caramel Falls', 'Carnival Fairground', 'Macaron Mesa', 'Waffle Castle', 'Soda Springs', 'Honey Hive Hills', 'Berry Bog', 'Mint Mountain', 'Licorice Night Market', 'Sugar Dunes Oasis', 'Pudding Pools', 'Cinnamon Autumn Forest', 'Starlight Sprinkle Galaxy', 'Toffee Treehouse Village', 'Gumdrop Garden', 'Royal Cake Palace', 'Rainbow Sherbet Glacier', 'Sweet Kingdom Gate', 'Sour Lemon Grove', 'Bubblegum Swamp', 'Marshmallow Clouds', 'Popcorn Peaks', 'Jellybean Harbor', 'Peppermint Blizzard', 'Fudge Volcano', 'Taffy Twister Plains', 'Sprinkle Desert', 'Gummy Bear Woods', 'Candy Carnival Night', 'Blueberry Moon Lagoon', 'Maple Syrup Marsh', 'Rock Candy Cliffs', 'Churro Canyon', 'Strawberry Storm Fields', 'Licorice Ruins', 'Thundercloud Citadel', 'Sour Storm Summit', "Vinegar's Castle", "Sugar Sea Shore", "Coral Candy Reef", "Sunken Bonbon Ship", "Lollipop Lighthouse Isle", "Fruit Punch Island", "Coconut Cream Cove", "Cinnamon Volcano Isle", "Mango Sunset Bay", "Toffee Pirate Port", "Jelly Kraken Depths", "Mochi Blossom Garden", "Matcha Bamboo Valley", "Dragon Fruit Temple", "Lantern Lychee Town", "Ramune Rapids", "Red Bean Bridges", "Jade Jelly Pagoda", "Fortune Cookie Cliffs", "Yuzu Moon Lake", "Golden Dragon Palace", "Snow Globe Village", "Hot Cocoa Springs", "Frosted Pine Peaks", "Peppermint Pole", "Sugarplum Ice Rink", "Eggnog Igloo Town", "Aurora Candy Sky", "Gumdrop Glacier Caves", "Yogurt Yeti Ridge", "Crystal Ice Castle", "Clockwork Candy Factory", "Cookie Conveyor Works", "Pudding Steam Pipes", "Lollipop Robot Lab", "Neon Gummy City", "Sugar Arcade Street", "Donut Hover Highway", "Laser Licorice Tower", "Caramel Circuit Core", "Mega Candy Machine", "Marshmallow Moon Craters", "Comet Candy Trail", "Sorbet Rings of Saturn", "Nougat Nebula", "Mint Meteor Field", "Starfruit Space Station", "Cupcake Planet", "Gelato Galaxy Gate", "Supernova Sugar Storm", "Sour Star Fortress"];
   const passed = () => Math.max(0, level - 1);
   let outfit = store.get('outfit', 'hero'), frame = store.get('frame', 'cream');
   const outfitOf = (id) => OUTFITS.find((o) => o.id === id) || OUTFITS[0], frameOf = (id) => FRAMES.find((f) => f.id === id) || FRAMES[0];
@@ -2703,11 +2854,11 @@
   let quests = store.get('quests', null), chest = store.get('chest', { n: 0 }), wheel = store.get('wheel', { date: '', extra: 0 });
   let gifts = store.get('gifts', { daily: '', free: 0 }), plays = store.get('plays', { date: '', memory: 0, toss: 0, odd: 0, jars: 0, shoot: 0, hoop: 0, cart: 0 });
 
-  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm', 'chal', 'odds'].forEach((id) => { $(id).hidden = true; }); if (!$('evwin').hidden) closeEvWin(false); };
+  const closeAll = () => { ['wheel', 'chest', 'quests', 'gifts', 'games', 'memory', 'toss', 'pass', 'quick', 'events', 'climb', 'storm', 'chal', 'odds', 'tower', 'race', 'album', 'jarOv', 'advent', 'packOv'].forEach((id) => { $(id).hidden = true; }); if (!$('evwin').hidden) closeEvWin(false); };
   const QDEF = [
-    { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 3 },
-    { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 3 },
-    { id: 'flawless', text: 'Solve a level without losing a heart', goal: 1, coins: 4 }
+    { id: 'solved', text: 'Solve 3 levels', goal: 3, coins: 5 },
+    { id: 'nohint', text: 'Solve a level with no hints', goal: 1, coins: 5 },
+    { id: 'flawless', text: 'Solve a level without losing a heart', goal: 1, coins: 6 }
   ];
   function freshDay() {
     const t = today();
@@ -2727,7 +2878,7 @@
   function updateSides() {
     freshDay();
     const set = (id, t) => { const e = $(id); if (e) e.textContent = t; };
-    set('medDailyTag', daily.last === today() ? '✓' : '⏱ Play');
+    set('medDailyTag', daily.last === today() ? '✓' : (() => { try { const s = streakAlive(); return s > 0 ? '🔥 ' + s : '⏱ Play'; } catch (e) { return '⏱ Play'; } })());
     const free = wheel.date !== today() || wheel.extra > 0;
     set('medWheelTag', free ? 'FREE' : 'Soon'); $('medWheel').classList.toggle('ready', free);
     { const q = chest.q, rd = q ? chestLeft() <= 0 : chest.n >= CHEST_AT;
@@ -2750,7 +2901,7 @@
     S.unlock(); S.tap(); closeAll();
     const list = $('giftList'); list.innerHTML = '';
     const rows = [
-      { name: 'Daily gift', sub: dailyGiftReady() ? 'Ready to collect!' : 'Come back tomorrow', ready: dailyGiftReady(), prize: { coins: 3 }, claim: () => { gifts.daily = today(); } },
+      { name: 'Daily gift', sub: dailyGiftReady() ? 'Ready to collect!' : 'Come back tomorrow', ready: dailyGiftReady(), prize: { coins: 5 }, claim: () => { gifts.daily = today(); } },
       { name: 'Free hint', sub: freeGiftReady() ? 'Ready to collect!' : 'Ready in ' + (() => { const ms = 24 * HOUR - (Date.now() - gifts.free), h = Math.floor(ms / HOUR), m = Math.ceil((ms % HOUR) / 60000); return h + 'h ' + m + 'm'; })(), ready: freeGiftReady(), prize: { hints: 1 }, claim: () => { gifts.free = Date.now(); } }
     ];
     rows.forEach((r) => {
@@ -2777,9 +2928,9 @@
   let chestForce = null;   // test mode only: the next small chest holds the wand (true) or not (false)
   function chestLoot(tier) {
     const common = () => { let p; do { p = rollPrize(0, false); } while (p.rare); return p; };
-    if (tier === 'small') { const f = chestForce; chestForce = null; return (f !== null ? f : Math.random() < 0.08) ? { wands: 1 } : common(); }   // the small chest can hold a magic wand, rarely (about 1 in 12)
-    if (tier === 'med') return mergePrize({ coins: 4 }, common());
-    return mergePrize(mergePrize({ coins: 8, inf: 15 }, common()), rollPrize(6, true));
+    if (tier === 'small') { const f = chestForce; chestForce = null; return mergePrize({ coins: 2 }, (f !== null ? f : Math.random() < 0.08) ? { wands: 1 } : common()); }   // the small chest can hold a magic wand, rarely (about 1 in 12)
+    if (tier === 'med') return mergePrize({ coins: 4, packs: 1 }, common());
+    return mergePrize(mergePrize({ coins: 8, inf: 15, packs: 1 }, common()), rollPrize(6, true));
   }
   function renderChest() {
     const art = document.querySelector('#chest .chest-art'), full = chest.n >= CHEST_AT, b = $('chestOpen'), q = chest.q;
@@ -3111,7 +3262,8 @@
     { id: 'lives', name: 'Full Lives', price: '$0.99', img: 'ic_heart', lives: true, give: {} },
     { id: 'inf2h', name: 'Unlimited Lives', price: '$1.99', img: 'ic_heart', tag: '2 HOURS', give: { inf: 120 } },
     { id: 'helpers', name: 'Helper Pack', price: '$3.99', img: 'ic_wand', give: { hints: 10, wands: 5, shield: 3, sweeper: 3, lens: 3, double: 3 } },
-    { id: 'noads', name: 'No Ads', price: '$9.99', img: 'ic_shield', once: true, give: {}, noads: true }
+    { id: 'noads', name: 'No Ads', price: '$9.99', img: 'ic_shield', once: true, give: {}, noads: true },
+    { id: 'jar', name: 'Candy Jar', price: '$1.99', img: 'ev_jar', hidden: true, give: {} }
   ];
   let owned = store.get('owned', {});
   // called after a purchase is confirmed (by the native app, or by the test mode)
@@ -3120,6 +3272,7 @@
     if (p.once) { if (owned[id]) return false; owned[id] = true; store.set('owned', owned); }
     if (p.lives) { addLives(MAX_LIVES); toast('❤️ Lives refilled!'); if (!$('lives').hidden) renderLives(); }
     if (p.noads) { adsOff = true; store.set('adsOff', true); toast('Ads removed. Thank you!'); }
+    if (p.id === 'jar') { const c = jar.c; jar.c = 0; store.set('jar', jar); if (c) giveReward({ coins: c }, 'Candy Jar!', true); if (!$('jarOv').hidden) renderJar(); }
     if (prizeKeys(p.give).length) giveReward(p.give, p.name + '!', true);
     updateHintUi(); if (!$('shop').hidden) openShop();
     return true;
@@ -3128,6 +3281,7 @@
   function buyPack(id) {
     const p = PACKS.find((x) => x.id === id); if (!p) return; if (p.once && owned[id]) { toast('You already have this'); return; }
     if (p.lives && (infOn() || livesNow() >= MAX_LIVES)) { toast('You are full of lives. Go play!'); return; }
+    if (p.id === 'jar' && jar.c < JAR_MIN) { toast('The jar opens at ' + JAR_MIN + ' coins'); return; }
     const nat = NATIVE();
     if (nat && nat.purchase) { Promise.resolve(nat.purchase(id)).then((done) => { if (done) grantPack(id); }).catch(() => toast('The purchase did not go through')); return; }
     if (DBG) { toast('(test) purchase approved'); setTimeout(() => grantPack(id), 600); return; }
@@ -3136,6 +3290,7 @@
   function renderPacks() {
     const box = $('shopPacks'); if (!box) return; box.innerHTML = '';
     PACKS.forEach((p) => {
+      if (p.hidden) return;
       const gone = p.once && owned[p.id], d = document.createElement('div'); d.className = 'pack' + (p.tag ? ' tagged' : '') + (gone ? ' gone' : '');
       d.innerHTML = (p.tag ? '<i class="ptag">' + p.tag + '</i>' : '') + '<img src="art/' + p.img + '.webp" alt="" draggable="false"><b>' + p.name + '</b><small>' + (p.noads ? 'Remove the ads forever' : p.lives ? 'Refill all 5 lives' : prizeChipsHtml(p.give)) + '</small>';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn main pbuy'; b.textContent = gone ? 'Owned ✓' : p.price; b.disabled = !!gone; b.onclick = () => { S.tap(); buyPack(p.id); }; d.appendChild(b); box.appendChild(d);
@@ -3244,6 +3399,404 @@
     toast('⚡ Coin Rush! Double coins from level wins for 30 minutes'); updateRushTag();
   }
 
+
+  /* ======================================================================================================
+     KEEP PLAYING (2026-11-21): win streak helpers, Sugar Tower, Candy Race, Sticker Album, Candy Jar,
+     Advent Calendar, daily streak + freeze + share, phone notifications (app only), frozen squares.
+     The state lives in `var`s: give() can be called during start-up, before this block has run.
+     ====================================================================================================== */
+  var hot, tower, race, jar, ALB, adv, notif, dfreeze;
+  const dayNum = (s) => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
+  const dayStr = (n) => { const d = new Date(n * 864e5); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); };
+  const srand = (seed) => { let s = seed >>> 0 || 1; return () => { s = Math.imul(s ^ (s >>> 15), 2246822507) + 0x9e3779b9 >>> 0; s ^= s >>> 13; return (s >>> 0) / 4294967296; }; };
+  const isLevelWin = () => !!(cur && cur.meta && cur.meta.kind === 'level' && !cur.meta.test);
+
+  /* ---------- 1. Win streak: every new level won in a row gives free helpers for the next level (lost on a lost level) ---------- */
+  const HOT_FROM = 6, HOT_GIFTS = [['sweeper'], ['sweeper', 'lens'], ['sweeper', 'lens', 'car']];
+  hot = store.get('hot', { n: 0 }); if (!(hot.n >= 0)) hot = { n: 0 };
+  const hotGifts = (n) => (n > 0 ? HOT_GIFTS[Math.min(n, HOT_GIFTS.length) - 1] : []);
+  function freeOf(k) { return (cur && cur.free && cur.free[k]) || 0; }
+  function haveTool(k) { return (items[k] || 0) + freeOf(k) > 0; }
+  function spendTool(k) { if (freeOf(k) > 0) cur.free[k]--; else items[k] = Math.max(0, (items[k] || 0) - 1); saveWallet(); updateHintUi(); saveGame(); }
+  function hotWin() { hot.n = Math.min(99, hot.n + 1); store.set('hot', hot); }
+  const TOOLNAME = { sweeper: 'sweeper', lens: 'magnifier', car: 'gummy car' };
+  function hotStart(lv) {
+    cur.free = {}; if (lv < HOT_FROM || !hot.n) return;
+    const g = hotGifts(hot.n); g.forEach((k) => { cur.free[k] = 1; }); updateHintUi();
+    setTimeout(() => { if (cur && !cur.done && cur.meta.level === lv) { toast('🔥 Win streak ×' + hot.n + ': free ' + g.map((k) => TOOLNAME[k]).join(' + ') + '!');
+      g.forEach((k, i) => { const b = $(TOOLBTN[k] || 'sweepBtn'); if (b) { b.classList.remove('nudge'); void b.offsetWidth; b.style.animationDelay = (i * 0.15) + 's'; b.classList.add('nudge'); setTimeout(() => b.classList.remove('nudge'), 3500); } }); } }, cur.cake ? 3300 : 900);
+  }
+
+  /* ---------- 2. Sugar Tower: win 7 levels in a row within 24 h with 99 other players; whoever reaches the top shares the coin pot ---------- */
+  const TOWER_FROM = 12, TOWER_STEPS = 7, TOWER_MS = 24 * 3600e3, TOWER_POT = 500;
+  tower = Object.assign({ start: 0, step: 0, fell: false, seed: 1, claimed: false }, store.get('tower', {})); if (!(tower.start >= 0 && tower.step >= 0)) tower = { start: 0, step: 0, fell: false, seed: 1, claimed: false };
+  const towerLeftMs = () => Math.max(0, tower.start + TOWER_MS - Date.now());
+  const towerState = () => (!tower.start || tower.claimed ? 'idle' : tower.step >= TOWER_STEPS ? 'won' : tower.fell ? 'fell' : towerLeftMs() <= 0 ? 'late' : 'on');
+  const towerPlayers = (s) => { const r = srand(tower.seed); let p = 100; for (let i = 0; i < s; i++) p = Math.max(2, Math.round(p * (0.6 + 0.2 * r()))); return p; };
+  const towerShare = () => Math.floor(TOWER_POT / towerPlayers(TOWER_STEPS));
+  function towerStart() { if (level < TOWER_FROM) return; tower = { start: Date.now(), step: 0, fell: false, seed: (Math.random() * 1e9) | 0, claimed: false }; store.set('tower', tower); S.unlock2(); buzz([20, 30, 40]); renderTower(); updateSides(); }
+  function towerWin() { if (towerState() !== 'on') return; tower.step++; tower.moved = 1; store.set('tower', tower); }
+  function towerFall() { if (towerState() !== 'on') return false; tower.fell = true; store.set('tower', tower); return true; }
+  function renderTower() {
+    const st = towerState(), box = $('towerFloors'); box.innerHTML = '';
+    for (let i = TOWER_STEPS; i >= 1; i--) {
+      const got = tower.step >= i && st !== 'idle', next = st === 'on' && tower.step === i - 1, d = document.createElement('div');
+      d.className = 'tw-fl' + (got ? ' got' : '') + (next ? ' next' : '') + (i === TOWER_STEPS ? ' top' : '');
+      d.style.setProperty('--h', (i * 41 % 360) + 'deg');
+      d.innerHTML = '<b>' + i + '</b><span>' + (st === 'idle' ? '' : got ? '👥 ' + towerPlayers(i) : next ? '👥 ' + towerPlayers(tower.step) + ' ' + T('climbing') : '') + '</span>' + (i === TOWER_STEPS ? '<img src="art/ic_coin.webp" alt="" draggable="false"><em>' + TOWER_POT + '</em>' : '')
+        + (got && tower.step === i ? '<img class="tw-me" src="' + look.stand + '" alt="" draggable="false">' : '');
+      box.appendChild(d);
+    }
+    if (st === 'on' && tower.step === 0) box.insertAdjacentHTML('beforeend', '<div class="tw-ground"><img class="tw-me" src="' + look.stand + '" alt="" draggable="false"></div>');
+    if (tower.moved) { const me = box.querySelector('.tw-me'); if (me && me.animate) me.animate([{ transform: 'translateY(40px) scale(.8)', opacity: 0 }, { transform: 'translateY(-14px)', opacity: 1, offset: 0.6 }, { transform: 'none' }], { duration: 700, delay: 250, fill: 'backwards', easing: 'ease-out' }); setTimeout(() => S.hop(), 300); tower.moved = 0; store.set('tower', tower); }
+    const left = towerPlayers(tower.step);
+    $('towerInfo').innerHTML = st === 'on' ? 'Win <b>' + TOWER_STEPS + ' levels in a row</b> on the map. Lose one and you fall off! <b>' + left + '</b> of 100 players still climbing.'
+      : st === 'won' ? 'You made it to the top with <b>' + towerPlayers(TOWER_STEPS) + '</b> players! Your share of the pot:'
+      : st === 'fell' ? 'Oh no, you fell off the tower on floor ' + (tower.step + 1) + '. Try again!'
+      : st === 'late' ? 'Time is up! Start a new tower and climb faster.'
+      : level < TOWER_FROM ? 'Opens at level ' + TOWER_FROM + '.' : '100 players race up the tower. Win 7 levels in a row within 24 hours and share the pot of ' + TOWER_POT + ' coins!';
+    const b = $('towerGo'); b.hidden = level < TOWER_FROM;
+    b.innerHTML = st === 'on' ? 'Play level ' + Math.min(level, LAST_LEVEL) : st === 'won' ? 'Claim ' + towerShare() + ' ' + coinSvg : st === 'idle' ? 'Start · 24 hours' : 'Try again';
+    $('towerPrize').innerHTML = st === 'won' ? '<div class="rwd big">' + prizeHtml({ coins: towerShare(), packs: 1 }) + '</div>' : '';
+    const t = $('towerTimer'); t.hidden = st !== 'on'; if (st === 'on') t.textContent = '⏱ ' + fmtClock(towerLeftMs());
+  }
+  function towerGo() {
+    const st = towerState();
+    if (st === 'on') { closeAll(); goPlay(); return; }
+    if (st === 'won') { tower.claimed = true; store.set('tower', tower); giveReward({ coins: towerShare(), packs: 1 }, 'Top of the Sugar Tower!', true); renderTower(); updateSides(); return; }
+    towerStart();
+  }
+  function openTower() { S.unlock(); S.tap(); closeAll(); $('tower').hidden = false; renderTower(); }
+  // play the next level on the map from an event window
+  function goPlay() { if (!canPlay()) { openLives(); return; } const lv = Math.min(level, LAST_LEVEL); openPrelevel(lv); }
+
+  /* ---------- 3. Candy Race: 5 players, the first to win 8 levels wins; 48 hours ---------- */
+  const RACE_FROM = 8, RACE_GOAL = 8, RACE_MS = 48 * 3600e3, RACE_PRIZE = [{ coins: 25, packs: 1 }, { coins: 12 }, { coins: 6 }];
+  race = store.get('race', null);
+  if (race && !(Array.isArray(race.rv) && race.rv.length && race.rv.every((r) => r && RIVALS[r.ri] && r.sp > 0) && race.start > 0 && race.me >= 0)) race = null;   // damaged save: no race
+  const raceHours = () => (race ? (Math.min(Date.now(), race.start + RACE_MS) - race.start) / 3600e3 : 0);
+  const rivalAt = (rv, h) => Math.min(RACE_GOAL, Math.floor(Math.max(0, h - rv.d) * rv.sp));
+  const rivalEnd = (rv) => rv.d + RACE_GOAL / rv.sp;   // hour the rival crosses the line
+  const raceOver = () => !!race && (race.meAt != null || Date.now() >= race.start + RACE_MS);
+  function raceStanding() {
+    if (!race) return [];
+    const h = raceHours(), meH = race.meAt != null ? race.meAt : Infinity;
+    const all = race.rv.map((rv) => ({ name: RIVALS[rv.ri].n, rival: RIVALS[rv.ri], p: rivalAt(rv, h), end: rivalEnd(rv) <= h ? rivalEnd(rv) : Infinity }));
+    all.push({ me: true, name: 'You', p: race.me, end: meH });
+    return all.sort((a, b) => a.end - b.end || b.p - a.p || (b.me ? 1 : 0) - (a.me ? 1 : 0));
+  }
+  const racePlace = () => raceStanding().findIndex((e) => e.me) + 1;
+  function raceStart() {
+    if (level < RACE_FROM) return;
+    const pool = RIVALS.map((r, i) => i).filter((i) => i > 1).sort(() => Math.random() - 0.5).slice(0, 4);
+    const sp = [0.55 + Math.random() * 0.4, 0.9 + Math.random() * 0.5, 1.3 + Math.random() * 0.6, 1.8 + Math.random() * (Math.random() < 0.3 ? 2.2 : 0.8)];
+    race = { start: Date.now(), me: 0, meAt: null, claimed: false, rv: pool.map((ri, k) => ({ ri, sp: sp[k], d: 0.15 + Math.random() * 0.6 })) };
+    store.set('race', race); S.unlock2(); buzz([20, 30, 40]); renderRace(); updateSides();
+  }
+  function raceWin() {
+    if (!race || raceOver()) return;
+    race.me++; race.moved = 1; if (race.me >= RACE_GOAL) race.meAt = raceHours(); store.set('race', race);
+  }
+  function renderRace() {
+    const box = $('raceLanes'); box.innerHTML = '';
+    const list = race ? raceStanding() : [], h = raceHours();
+    list.forEach((e, k) => {
+      const d = document.createElement('div'); d.className = 'rc-lane' + (e.me ? ' me' : '') + (e.p >= RACE_GOAL ? ' fin' : '');
+      d.innerHTML = '<span class="rc-pos">' + (k + 1) + '</span>' + leagueAvatar(e) + '<span class="rc-mid"><small>' + esc(T(e.name)) + '</small><span class="rc-track"><i style="width:' + (e.p / RACE_GOAL * 100) + '%"></i><img src="art/ic_flame.webp" alt="" draggable="false"></span></span><b>' + (e.p >= RACE_GOAL ? '🏁' : e.p + '/' + RACE_GOAL) + '</b>';
+      box.appendChild(d);
+    });
+    const over = raceOver(), pl = race ? racePlace() : 0, pz = RACE_PRIZE[pl - 1];
+    $('raceInfo').innerHTML = !race || race.claimed ? (level < RACE_FROM ? 'Opens at level ' + RACE_FROM + '.' : 'Race 4 players: the first to win <b>' + RACE_GOAL + ' levels</b> wins the big prize. You have 48 hours.')
+      : over ? (pz ? 'The race is over. You finished <b>#' + pl + '</b>!' : 'The race is over. You finished #' + pl + '. Win faster next time!')
+      : 'Win levels on the map. The first to win <b>' + RACE_GOAL + '</b> takes the gold!';
+    $('racePrizes').innerHTML = RACE_PRIZE.map((p, i) => '<span class="rc-pz' + (over && pl === i + 1 ? ' on' : '') + '"><b>' + ['🥇', '🥈', '🥉'][i] + '</b>' + prizeHtml(p) + '</span>').join('');
+    const b = $('raceGo'); b.hidden = level < RACE_FROM;
+    b.textContent = !race || race.claimed ? 'Start the race' : over ? (pz ? 'Claim' : 'OK') : 'Play level ' + Math.min(level, LAST_LEVEL);
+    const t = $('raceTimer'); t.hidden = !race || race.claimed || over; if (!t.hidden) t.textContent = '⏱ ' + fmtClock(race.start + RACE_MS - Date.now());
+    if (race && race.moved) { const me = box.querySelector('.rc-lane.me i'); if (me && me.animate) me.animate([{ filter: 'brightness(2)' }, { filter: 'none' }], { duration: 900 }); race.moved = 0; store.set('race', race); }
+  }
+  function raceGo() {
+    if (!race || race.claimed) { raceStart(); return; }
+    if (!raceOver()) { closeAll(); goPlay(); return; }
+    const pz = RACE_PRIZE[racePlace() - 1]; race.claimed = true; store.set('race', race);
+    if (pz) giveReward(pz, racePlace() === 1 ? 'You won the Candy Race!' : 'Candy Race: #' + racePlace() + '!', racePlace() === 1);
+    renderRace(); updateSides();
+  }
+  function openRace() { S.unlock(); S.tap(); closeAll(); $('race').hidden = false; renderRace(); }
+
+  /* ---------- 4. Candy Jar: every level won drops coins into a locked jar; break it open (a small purchase in the app) ---------- */
+  const JAR_FROM = 6, JAR_ADD = 3, JAR_MIN = 150, JAR_MAX = 300;
+  jar = store.get('jar', { c: 0 }); if (!(jar.c >= 0)) jar = { c: 0 };
+  function jarAdd() { if (level < JAR_FROM || jar.c >= JAR_MAX) return 0; const a = Math.min(JAR_ADD, JAR_MAX - jar.c); jar.c += a; store.set('jar', jar); return a; }
+  function renderJar() {
+    $('jarN').textContent = jar.c + ' / ' + JAR_MAX; $('jarBar').style.width = (jar.c / JAR_MAX * 100) + '%'; $('jarMin').style.left = (JAR_MIN / JAR_MAX * 100) + '%';
+    $('jarInfo').textContent = jar.c >= JAR_MAX ? 'Your jar is full! Break it open and take all the coins.' : jar.c >= JAR_MIN ? 'Ready to break! Or keep winning to fill it up to ' + JAR_MAX + '.' : 'Every level you win drops ' + JAR_ADD + ' coins into the jar. It can be broken open at ' + JAR_MIN + '.';
+    const b = $('jarBuy'); b.disabled = jar.c < JAR_MIN; b.innerHTML = 'Break it open · ' + PACKS.find((p) => p.id === 'jar').price;
+    $('jarNote').hidden = payAvailable();
+  }
+  function openJar() { S.unlock(); S.tap(); closeAll(); $('jarOv').hidden = false; renderJar(); }
+
+  /* ---------- 5. Sticker Album: packs of 3 stickers, 9 sets of 9, a new album every two months ---------- */
+  const ALB_FROM = 5, DUST_PACK = 10;
+  const set9 = (name, imgs, prize) => ({ name, imgs, prize });
+  const range = (pre, a, b) => { const o = []; for (let i = a; i <= b; i++) o.push(pre + i); return o; };
+  const ALBUMS = [
+    { name: 'Sweet Album', sets: [
+      set9('Candy Shop', ['cd_lollipop', 'cd_candy', 'cd_chocolate_bar', 'cd_doughnut', 'cd_cupcake', 'cd_cookie', 'cd_cherries', 'cd_soft_ice_cream', 'cd_shortcake'], { coins: 8, hints: 1 }),
+      set9('Swirl Sweets', range('sw_', 1, 9), { coins: 8, sweeper: 1 }),
+      set9('Fancy Sweets', range('sw_', 10, 18), { coins: 10, lens: 1 }),
+      set9("Gumi's Outfits", ['gumi_win', 'gumi_chef_win', 'gumi_cowboy_win', 'gumi_fire_win', 'gumi_ninja_win', 'gumi_pirate_win', 'gumi_wizard_win', 'gumi_astronaut', 'gumi_king_win'], { coins: 12, shield: 1 }),
+      set9('Helpers', ['ic_hint', 'ic_undo', 'ic_sweeper', 'ic_lens', 'ic_shield', 'ic_double', 'ic_wand', 'ic_car', 'ic_rocket'], { coins: 12, wands: 1 }),
+      set9('Treasures', ['ic_coin', 'ic_heart', 'ic_sugarstar', 'ic_wheel', '3d_chest_small', '3d_chest_med', '3d_cake_1', '3d_cake_2', '3d_chest_large'], { coins: 15, double: 1 }),
+      set9('Sour Gang', ['minion_idle', 'minion_hit', 'minion_lose', 'boss_idle', 'boss_laugh', 'boss_hit', 'boss_worried', 'boss_lose', 'gumi_sad'], { coins: 15, rocket: 1 }),
+      set9('Arcade', ['ev_memory', 'ev_toss', 'ev_odd', 'ev_jars', 'ev_shooter', 'ev_hoop', 'ev_cart', 'ev_rush', 'ev_pass'], { coins: 18, car: 1 }),
+      set9('Bonbox Land', range('bg_', 0, 8), { coins: 20, wands: 1, inf: 30 })] },
+    { name: 'Bonbox Land Album', sets: [
+      set9('Sky Worlds', range('bg_', 9, 17), { coins: 8, hints: 1 }),
+      set9('Far Worlds', range('bg_', 18, 26), { coins: 8, sweeper: 1 }),
+      set9('Wild Worlds', range('bg_', 27, 35), { coins: 10, lens: 1 }),
+      set9('Lost Worlds', range('bg_', 36, 44), { coins: 10, shield: 1 }),
+      set9('Gumi Poses', ['gumi_hero', 'gumi_jump', 'gumi_blink', 'gumi_blue', 'gumi_red', 'gumi_chef', 'gumi_ninja', 'gumi_pirate', 'gumi_sad'], { coins: 12, wands: 1 }),
+      set9('Flying Gumi', ['air_chef', 'air_cowboy', 'air_fire', 'air_ninja', 'air_pirate', 'air_wizard', 'gumi_win', 'gumi_jump', 'air_king'], { coins: 12, double: 1 }),
+      set9('Sweet Gems', range('sw_', 13, 21), { coins: 15, rocket: 1 }),
+      set9('Big Events', ['ev_climb', 'ev_tower', 'ev_race', 'ev_jar', 'ev_album', 'ic_pack', 'ic_flame', 'ev_advent', '3d_cake_3'], { coins: 18, car: 1 }),
+      set9('Party Time', ['ic_gift_a', 'ic_gift_b', 'ic_gift_c', 'ic_freeze', 'ic_ice', 'ic_lock', 'ic_chest', 'ic_games', 'logo_bonbox'], { coins: 20, wands: 1, inf: 30 })] }
+  ];
+  const ALB_DONE = { coins: 80, wands: 1, car: 1, rocket: 1 };
+  const albSeason = () => { const d = new Date(); return d.getFullYear() * 6 + Math.floor(d.getMonth() / 2); };
+  const albEnds = () => { const s = albSeason(), y = Math.floor(s / 6), m = (s % 6) * 2 + 2; return new Date(y, m, 1).getTime(); };
+  const stkStars = (i) => (i === 8 ? 3 : i >= 6 ? 2 : 1);
+  function alb() {
+    if (!ALB) ALB = store.get('album', null);
+    if (ALB && (typeof ALB.got !== 'object' || !ALB.got || typeof ALB.sets !== 'object' || !ALB.sets || !(ALB.packs >= 0) || !(ALB.dust >= 0))) ALB = null;
+    if (!ALB || ALB.season !== albSeason()) { const keep = ALB ? ALB.packs || 0 : 1; ALB = { season: albSeason(), got: {}, sets: {}, done: false, packs: keep, dust: 0, meter: 0 }; store.set('album', ALB); }
+    return ALB;
+  }
+  const albDef = () => ALBUMS[albSeason() % ALBUMS.length];
+  const albCount = () => Object.keys(alb().got).length;
+  function addPacks(n) { alb().packs += n; store.set('album', ALB); if (typeof updateSides === 'function') try { updateSides(); } catch (e) {} }
+  function packMeter() { if (level < ALB_FROM) return false; const a = alb(); a.meter = (a.meter || 0) + 1; if (a.meter >= 3) { a.meter = 0; a.packs++; store.set('album', a); return true; } store.set('album', a); return false; }
+  function drawSticker() {
+    // half of the draws come from the stickers still missing (of that rarity), so an album can really be finished
+    const r = Math.random(), want = r < 0.1 ? 3 : r < 0.38 ? 2 : 1, def = albDef(), pool = [];
+    def.sets.forEach((st, si) => st.imgs.forEach((img, i) => { if (stkStars(i) === want) pool.push(si + ':' + i); }));
+    const miss = pool.filter((id) => !alb().got[id]), from = miss.length && Math.random() < 0.5 ? miss : pool;
+    return from[Math.floor(Math.random() * from.length)];
+  }
+  function openPack() {
+    const a = alb(); if (a.packs <= 0) return; a.packs--;
+    const def = albDef(), got = [];
+    for (let k = 0; k < 3; k++) { const id = drawSticker(), [si, i] = id.split(':').map(Number), nw = !a.got[id]; a.got[id] = (a.got[id] || 0) + 1; if (!nw) a.dust += stkStars(i); got.push({ id, si, i, nw, img: def.sets[si].imgs[i], stars: stkStars(i) }); }
+    store.set('album', a); showPack(got);
+  }
+  function showPack(got) {
+    const ov = $('packOv'), st = $('packStage'), cards = $('packCards'); cards.innerHTML = ''; $('packDone').hidden = true; ov.hidden = false;
+    st.innerHTML = '<i class="pk-glow"></i><img class="pk-pack" src="art/ic_pack.webp" alt="" draggable="false">'; st.hidden = false;
+    const pk = st.querySelector('.pk-pack'); S.popIn && S.popIn();
+    if (pk.animate) pk.animate([{ transform: 'scale(.4) rotate(-12deg)' }, { transform: 'scale(1.05) rotate(4deg)', offset: 0.35 }, { transform: 'scale(1) rotate(-3deg)', offset: 0.5 }, { transform: 'scale(1.04) rotate(3deg)', offset: 0.65 }, { transform: 'scale(1.1) rotate(-4deg)', offset: 0.8 }, { transform: 'scale(1.3)', opacity: 0 }], { duration: 1100, fill: 'forwards' });
+    setTimeout(() => { if (S.popper) S.popper(); buzz([20, 30, 40]); giftPop(st, 'art/ic_pack.webp'); }, 950);
+    setTimeout(() => {
+      st.hidden = true;
+      got.forEach((g, k) => {
+        const d = document.createElement('div'); d.className = 'pk-card s' + g.stars + (g.nw ? ' new' : '');
+        d.innerHTML = '<span class="pk-in"><span class="pk-front"><img src="art/' + g.img + (/^bg_/.test(g.img) ? '.jpg' : '.webp') + '" alt="" draggable="false"' + (/^bg_/.test(g.img) ? ' class="ph"' : '') + '><i>' + '★'.repeat(g.stars) + '</i></span><span class="pk-back"></span></span>'
+          + '<b>' + (g.nw ? 'NEW!' : '+' + g.stars + ' ⭐') + '</b>';
+        cards.appendChild(d);
+        setTimeout(() => { d.classList.add('flip'); if (S.star) S.star(Math.min(3, g.stars), 1); buzz(12); }, 250 + k * 420);
+      });
+      setTimeout(() => { const b = $('packDone'); b.hidden = false; b.textContent = alb().packs > 0 ? 'Open next pack (' + alb().packs + ')' : 'Collect'; checkSets(); }, 250 + got.length * 420 + 300);
+    }, 1350);
+  }
+  // a full set (and the full album) pays its prize the moment it is complete
+  function checkSets() {
+    const a = alb(), def = albDef();
+    def.sets.forEach((st, si) => { if (!a.sets[si] && st.imgs.every((x, i) => a.got[si + ':' + i])) { a.sets[si] = true; store.set('album', a); soon(() => giveReward(st.prize, 'Set complete: ' + st.name + '!', true), 400); } });
+    if (!a.done && albCount() >= 81) { a.done = true; store.set('album', a); soon(() => giveReward(ALB_DONE, 'Album complete!', true), 900); }
+  }
+  let albOpenSet = -1;
+  function renderAlbum() {
+    const a = alb(), def = albDef(), box = $('albGrid'); box.innerHTML = '';
+    $('albCount').textContent = albCount() + ' / 81';
+    $('albBar').style.width = (albCount() / 81 * 100) + '%';
+    const days = Math.max(1, Math.ceil((albEnds() - Date.now()) / 864e5)); $('albEnds').textContent = T(def.name) + ' · ' + T('New album in ' + days + ' days');
+    const pb = $('albPack'); pb.innerHTML = '<img src="art/ic_pack.webp" alt="" draggable="false"><span>Open pack</span><i>' + a.packs + '</i>'; pb.disabled = a.packs <= 0; pb.classList.toggle('ready', a.packs > 0);
+    const tb = $('albTrade'); tb.innerHTML = '⭐ ' + a.dust + ' / ' + DUST_PACK + '<small>Trade for a pack</small>'; tb.disabled = a.dust < DUST_PACK;
+    $('albMeter').textContent = level < ALB_FROM ? 'Opens at level ' + ALB_FROM : 'Win 3 levels for a free pack: ' + (alb().meter || 0) + ' / 3';
+    if (albOpenSet >= 0) {
+      const st = def.sets[albOpenSet], d = document.createElement('div'); d.className = 'alb-big';
+      d.innerHTML = '<button class="link alb-back" type="button">‹ All sets</button><h3>' + st.name + '</h3><div class="alb-9">' + st.imgs.map((img, i) => { const n = a.got[albOpenSet + ':' + i];
+        return '<span class="stk9 s' + stkStars(i) + (n ? '' : ' miss') + '"><img src="art/' + img + (/^bg_/.test(img) ? '.jpg' : '.webp') + '" alt="" draggable="false" loading="lazy"' + (/^bg_/.test(img) ? ' class="ph"' : '') + '><i>' + '★'.repeat(stkStars(i)) + '</i>' + (n > 1 ? '<u>×' + n + '</u>' : '') + '</span>'; }).join('') + '</div>'
+        + '<div class="alb-sp">' + (a.sets[albOpenSet] ? '✓ ' : '') + prizeHtml(st.prize) + '</div>';
+      d.querySelector('.alb-back').onclick = () => { S.tap(); albOpenSet = -1; renderAlbum(); };
+      box.appendChild(d); return;
+    }
+    def.sets.forEach((st, si) => {
+      const have = st.imgs.filter((x, i) => a.got[si + ':' + i]).length, b = document.createElement('button'); b.type = 'button'; b.className = 'alb-set' + (a.sets[si] ? ' done' : '');
+      b.innerHTML = '<span class="alb-th">' + st.imgs.slice(0, 4).map((img, i) => '<img src="art/' + img + (/^bg_/.test(img) ? '.jpg' : '.webp') + '" alt="" draggable="false" loading="lazy" class="' + (a.got[si + ':' + i] ? '' : 'miss') + (/^bg_/.test(img) ? ' ph' : '') + '">').join('') + '</span><b>' + st.name + '</b><em>' + (a.sets[si] ? '✓ Done' : have + ' / 9') + '</em>';
+      b.onclick = () => { S.tap(); albOpenSet = si; renderAlbum(); };
+      box.appendChild(b);
+    });
+    box.insertAdjacentHTML('beforeend', '<div class="alb-final">Complete the album: ' + prizeHtml(ALB_DONE) + '</div>');
+  }
+  function openAlbum() { S.unlock(); S.tap(); closeAll(); albOpenSet = -1; $('album').hidden = false; renderAlbum(); }
+
+  /* ---------- 6. Advent calendar: 1-24 December, one door a day; a missed door can be opened later for coins ---------- */
+  const ADV_CATCH = 15;
+  const ADV = [{ coins: 5 }, { hints: 1 }, { packs: 1 }, { sweeper: 1 }, { coins: 8 }, { lens: 1 }, { inf: 30 }, { packs: 1 }, { coins: 10 }, { shield: 1 }, { hints: 2 }, { packs: 2 },
+    { double: 1 }, { coins: 12 }, { wands: 1 }, { packs: 1 }, { sweeper: 1, lens: 1 }, { coins: 15 }, { rocket: 1 }, { packs: 2 }, { car: 1 }, { inf: 60 }, { coins: 20, hints: 2 }, { coins: 50, wands: 1, car: 1, rocket: 1, packs: 3 }];
+  adv = store.get('advent', { y: 0, got: {} }); if (!adv.got || typeof adv.got !== 'object') adv = { y: 0, got: {} };
+  const advToday = () => { const m = location.search.match(/advday=(\d+)/); if (m && DBG) return +m[1]; const d = new Date(); return d.getMonth() === 11 && d.getDate() <= 26 ? d.getDate() : 0; };
+  const advOn = () => advToday() > 0;
+  const advYear = () => new Date().getFullYear();
+  const advGot = (n) => adv.y === advYear() && !!adv.got[n];
+  const advReady = () => advOn() && advToday() <= 24 && !advGot(advToday());
+  function advOpenDoor(n, door) {
+    if (adv.y !== advYear()) adv = { y: advYear(), got: {} };
+    const t = advToday();
+    if (n > t || n > 24) { S.tap(); toast('🎄 This door opens on December ' + n); return; }
+    if (adv.got[n]) return;
+    if (n < t) { if (coins < ADV_CATCH) { toast('Not enough coins'); return; } coins -= ADV_CATCH; saveWallet(); updateHintUi(); }
+    adv.got[n] = true; store.set('advent', adv);
+    door.classList.add('opening'); S.unlock2 && S.unlock2(); buzz([20, 30]);
+    setTimeout(() => { giveReward(ADV[n - 1], n === 24 ? 'Merry Christmas!' : 'Advent calendar · day ' + n, n === 24); renderAdvent(); updateSides(); }, 650);
+  }
+  function renderAdvent() {
+    const box = $('advGrid'), t = advToday(); box.innerHTML = '';
+    for (let n = 1; n <= 24; n++) {
+      const got = advGot(n), d = document.createElement('button'); d.type = 'button';
+      d.className = 'adv-door' + (got ? ' open' : n === t ? ' today' : n < t ? ' missed' : ' shut');
+      d.style.setProperty('--r', ((n * 37) % 9 - 4) + 'deg');
+      d.innerHTML = got ? '<span class="adv-in">' + prizeHtml(ADV[n - 1]) + '</span><b>' + n + '</b>' : '<span class="adv-leaf"><b>' + n + '</b>' + (n < t ? '<small>' + ADV_CATCH + ' 🪙</small>' : '') + '</span>';
+      d.onclick = () => advOpenDoor(n, d); box.appendChild(d);
+    }
+    $('advInfo').textContent = !advOn() ? 'The advent calendar opens on December 1!' : t > 24 ? 'Merry Christmas! See you next year.' : 'A door a day until Christmas. Day 24 holds the biggest gift!';
+  }
+  function openAdvent() { S.unlock(); S.tap(); closeAll(); $('advent').hidden = false; renderAdvent(); }
+
+  /* ---------- 7. Daily Challenge streak: a streak freeze covers a missed day; the result can be shared ---------- */
+  const FREEZE_PRICE = 40, FREEZE_MAX = 2;
+  dfreeze = store.get('dfreeze', { n: 0 }); if (!(dfreeze.n >= 0)) dfreeze = { n: 0 };
+  const DAILY_ONE = dayNum('2026-11-01');
+  const dailyNo = () => dayNum(today()) - DAILY_ONE + 1;
+  // the streak counts on when the player missed days and has a freeze for each missed day
+  function dailyStreakOn(last, streak) {
+    const gap = last ? dayNum(today()) - dayNum(last) : 99;
+    if (gap === 1) return streak + 1;
+    if (gap > 1 && gap - 1 <= dfreeze.n && streak > 0) { dfreeze.n -= gap - 1; store.set('dfreeze', dfreeze); return streak + 1; }
+    return 1;
+  }
+  const streakAlive = () => { if (!daily.last) return 0; const gap = dayNum(today()) - dayNum(daily.last); return gap <= 1 + dfreeze.n ? daily.streak || 0 : 0; };
+  function renderChalStreak() {
+    const box = $('chalStreak'); if (!box) return;
+    const hist = store.get('dhist', []), t = dayNum(today()), s = streakAlive();
+    let row = ''; for (let k = 6; k >= 0; k--) { const d = dayStr(t - k), on = hist.includes(d); row += '<i class="' + (on ? 'on' : '') + (k === 0 ? ' now' : '') + '">' + (on ? '✓' : (window.LANG === 'es' ? 'DLMMJVS' : 'SMTWTFS')[new Date(d + 'T12:00').getDay()]) + '</i>'; }
+    box.innerHTML = '<div class="cs-top"><img src="art/ic_flame.webp" alt="" draggable="false"><b>' + s + '</b><span>' + T('day streak') + '<small>' + T('Best') + ' ' + Math.max(s, daily.best || 0) + '</small></span></div>'
+      + '<div class="cs-week">' + row + '</div>'
+      + '<div class="cs-frz"><img src="art/ic_freeze.webp" alt="" draggable="false"><span><b>Streak freeze ×' + dfreeze.n + '</b><small>Keeps your streak if you miss a day</small></span><button class="btn main" id="frzBuy" type="button"' + (dfreeze.n >= FREEZE_MAX ? ' disabled' : '') + '>' + (dfreeze.n >= FREEZE_MAX ? 'Full' : FREEZE_PRICE + ' ' + coinSvg) + '</button></div>';
+    const fb = $('frzBuy'); fb.onclick = () => { if (dfreeze.n >= FREEZE_MAX) return; if (coins < FREEZE_PRICE) { toast('Not enough coins'); return; } coins -= FREEZE_PRICE; dfreeze.n++; store.set('dfreeze', dfreeze); saveWallet(); updateHintUi(); S.ui('buy', 1, 1); renderChalStreak(); };
+  }
+  function dailyShareText() {
+    const used = cur.chalUsed || 0, s = daily.streak || 1;
+    return 'Bonbox Daily #' + dailyNo() + ' 🍬\n⏱ ' + fmtMs(used) + '  ' + '❤️'.repeat(cur.hearts) + '🤍'.repeat(MAX_HEARTS - cur.hearts) + '\n🔥 ' + T(s + (s === 1 ? ' day streak' : ' day streak')) + '\n' + T('Can you beat my time?');
+  }
+  const DAILY_URL = 'https://bonbox.pages.dev/play/?daily=1';
+
+  /* ---------- 8. Phone notifications (Android app only): planned when the app goes to the background, cleared when it comes back ---------- */
+  notif = store.get('notif', { asked: 0, on: false });
+  const LN = () => nativePlugin('LocalNotifications');
+  function notifPlan() {
+    const now = Date.now(), out = [], at = (d, h, m) => { const x = new Date(now); x.setDate(x.getDate() + d); x.setHours(h, m || 0, 0, 0); return x.getTime(); };
+    const add = (id, when, title, body) => { if (when > now + 60e3) out.push({ id, at: when, title: T(title), body: T(body) }); };
+    const n = livesNow(); if (n < MAX_LIVES && lives.t) add(1, lives.t + (MAX_LIVES - n) * LIFE_MS, 'Your lives are full! ❤️', 'Gumi is ready for the next level.');
+    if (chest.q && chestLeft() > 0) add(2, chest.q.ready, 'Your chest is open! 🎁', 'Come and see what is inside.');
+    if (daily.last === today()) add(3, at(1, 19), 'Keep your streak alive! 🔥', "Today's Daily Challenge is waiting.");
+    else if (streakAlive() > 0) add(3, at(0, 20), 'Your streak is in danger! 🔥', 'Play the Daily Challenge before midnight.');
+    if (towerState() === 'on') add(4, tower.start + TOWER_MS - 2 * 3600e3, 'Sugar Tower ends in 2 hours! 🏰', 'Climb to the top and share the pot.');
+    if (race && !race.claimed && !raceOver()) add(5, race.start + RACE_MS - 3 * 3600e3, 'The Candy Race is almost over! 🏁', 'Win a few more levels to take the gold.');
+    if (advOn()) add(6, at(1, 10), 'A new advent door is ready! 🎄', 'Open today\'s gift.');
+    add(7, at(2, 18), 'Gumi misses you! 🍬', 'Your free wheel spin is waiting.');
+    return out;
+  }
+  async function notifSync(away) {
+    const P = LN(); if (!P || !notif.on) return;
+    try {
+      await P.cancel({ notifications: [1, 2, 3, 4, 5, 6, 7].map((id) => ({ id })) });
+      if (away) { const list = notifPlan(); if (list.length) await P.schedule({ notifications: list.map((x) => ({ id: x.id, title: x.title, body: x.body, schedule: { at: new Date(x.at), allowWhileIdle: true } })) }); }
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => { notifSync(document.hidden); });
+  function notifMaybeAsk() {
+    if (!LN() || notif.asked || level < 5) return;
+    notif.asked = Date.now(); store.set('notif', notif); $('notifAsk').hidden = false;
+  }
+
+  /* ---------- 9. Frozen squares (from level 51): ice hides a square's colour; mark a square next to it to melt it ---------- */
+  const ICE_FROM = 51;
+  const iceLevel = (lv) => lv >= ICE_FROM && (tierOf(lv) === 'normal' || (lv > STORY_END && tierOf(lv) === 'veryhard')) && !isBossLv(lv) && lv % 3 === 1 && lv % 10 !== 1;   // never the first level of a world (Vinegar steals its sticker there)
+  function iceStart(lv) {
+    cur.ice = new Set(); if (!iceLevel(lv)) return;
+    const r = srand(hash('ice' + lv)), n = cur.n, cells = []; for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) cells.push([y, x]);
+    for (let i = cells.length - 1; i > 0; i--) { const k = Math.floor(r() * (i + 1)); [cells[i], cells[k]] = [cells[k], cells[i]]; }
+    const want = Math.max(3, n - 3), got = [];
+    for (const [y, x] of cells) { if (got.length >= want) break; if (got.every(([yy, xx]) => Math.max(Math.abs(yy - y), Math.abs(xx - x)) >= 2)) got.push([y, x]); }
+    got.forEach(([y, x]) => cur.ice.add(y + ',' + x));
+    if (!store.get('iceSeen', false)) { const intro = () => { if (!cur || cur.done || !cur.ice || !cur.ice.size) return; if (document.querySelector('.overlay:not([hidden])')) { setTimeout(intro, 700); return; } store.set('iceSeen', true);
+      $('ciTitle').textContent = 'New: Frozen squares!';
+      $('ciBody').innerHTML = '<div class="ice-intro"><img src="art/ic_ice.webp" alt="" draggable="false"></div><p>Some squares are frozen: the ice hides their color.</p><p><b>Mark an X (or a candy) on a square next to it</b> and the ice melts. Then you can see its color.</p>';
+      $('cakeInfo').hidden = false; }; setTimeout(intro, 1100); }
+  }
+  function iced(y, x) { return !!(cur && cur.ice && cur.ice.has(y + ',' + x)); }
+  // ice melts when its own square or any square around it gets an X or a candy (helpers can melt it too)
+  function thawIce() {
+    if (!cur || !cur.ice || !cur.ice.size) return;
+    const n = cur.n, melted = [];
+    cur.ice.forEach((k) => { const [y, x] = k.split(',').map(Number); let go = cur.state[y][x] !== 0;
+      for (let yy = y - 1; yy <= y + 1 && !go; yy++) for (let xx = x - 1; xx <= x + 1; xx++) { if (yy < 0 || xx < 0 || yy >= n || xx >= n) continue; const s = cur.state[yy][xx]; if (s === 1 || s === 2) { go = true; break; } }
+      if (go) melted.push(k); });
+    melted.forEach((k) => cur.ice.delete(k));
+    if (melted.length) setTimeout(() => melted.forEach((k, i) => { const [y, x] = k.split(',').map(Number), el = cellEl(y, x); if (!el) return;
+      const r = el.getBoundingClientRect(), L = fxLayer();
+      for (let q = 0; q < 10; q++) { const p = document.createElement('i'), a = Math.random() * 6.283, d = r.width * (0.4 + Math.random() * 0.6); p.className = 'ice-shard'; p.style.left = (r.left + r.width / 2) + 'px'; p.style.top = (r.top + r.height / 2) + 'px'; L.appendChild(p);
+        p.animate([{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + Math.cos(a) * d + 'px),calc(-50% + ' + (Math.sin(a) * d + r.width * 0.5) + 'px)) rotate(' + (Math.random() * 400) + 'deg)', opacity: 0 }], { duration: 600, easing: 'ease-out', fill: 'forwards' }).onfinish = () => p.remove(); }
+      if (i === 0 && S.crack) S.crack(); }), 0);
+  }
+
+  /* ---------- the win of a level feeds every event; the result shows in one small line on the win card ---------- */
+  function retentionWin(isNew) {
+    const out = [];
+    if (!isLevelWin()) return out;
+    const lv = cur.meta.level;
+    if (isNew && lv >= HOT_FROM) { hotWin(); out.push('<span><img src="art/ic_flame.webp" alt="">' + T('Streak') + ' ' + hot.n + '</span>'); }
+    { const was = towerState(); towerWin(); if (was === 'on') out.push('<span><img src="art/ev_tower.webp" alt="">' + tower.step + '/' + TOWER_STEPS + '</span>'); }
+    if (race && !race.claimed && !raceOver()) { raceWin(); out.push('<span><img src="art/ev_race.webp" alt="">' + race.me + '/' + RACE_GOAL + '</span>'); }
+    { const a = jarAdd(); if (a) out.push('<span><img src="art/ev_jar.webp" alt="">+' + a + '</span>'); }
+    if (lv >= ALB_FROM) { const p = packMeter(); out.push('<span><img src="art/ic_pack.webp" alt="">' + (p ? '+1!' : (alb().meter || 0) + '/3') + '</span>'); }
+    return out;
+  }
+  // a lost level: the streak and the tower are lost (a revive gives them back)
+  function retentionLose() {
+    if (!isLevelWin()) return;
+    cur.hotDrop = hot.n; if (hot.n) { hot.n = 0; store.set('hot', hot); }
+    cur.towerFell = towerFall();
+    const lh = $('loseHot'); if (lh) { lh.hidden = !(cur.hotDrop || cur.towerFell); lh.textContent = (cur.hotDrop ? '🔥 Your win streak of ' + cur.hotDrop + ' is lost' : '') + (cur.hotDrop && cur.towerFell ? ' · ' : '') + (cur.towerFell ? '🏰 You fell off the Sugar Tower' : '') + '. Keep playing to save it!'; }
+  }
+  function retentionRevive() {
+    if (cur.hotDrop) { hot.n = cur.hotDrop; store.set('hot', hot); cur.hotDrop = 0; }
+    if (cur.towerFell) { tower.fell = false; store.set('tower', tower); cur.towerFell = false; }
+  }
+  // event cards on the Events screen
+  function retentionCards() {
+    const list = [];
+    if (advOn()) list.push({ name: 'Advent Calendar', img: 'ev_advent', a: '#ff5a5a', b: '#8a1020', tag: () => advReady() ? 'OPEN DOOR ' + advToday() : advToday() > 24 ? 'Merry Christmas!' : 'Back tomorrow', hot: advReady, go: openAdvent });
+    list.push({ name: 'Sugar Tower', img: 'ev_tower', a: '#ff8ad8', b: '#7a2bb0', tag: () => { const s = towerState(); return level < TOWER_FROM ? '🔒 Lv ' + TOWER_FROM : s === 'on' ? tower.step + ' / ' + TOWER_STEPS + ' · ⏱ ' + fmtClock(towerLeftMs()) : s === 'won' ? 'CLAIM' : 'START'; }, hot: () => level >= TOWER_FROM && towerState() !== 'on', go: openTower });
+    list.push({ name: 'Candy Race', img: 'ev_race', a: '#5ad0ff', b: '#1a4fb0', tag: () => level < RACE_FROM ? '🔒 Lv ' + RACE_FROM : !race || race.claimed ? 'START' : raceOver() ? 'CLAIM' : '#' + racePlace() + ' · ' + race.me + ' / ' + RACE_GOAL, hot: () => level >= RACE_FROM && (!race || race.claimed || raceOver()), go: openRace });
+    list.push({ name: 'Sticker Album', img: 'ev_album', a: '#c38bff', b: '#55209a', tag: () => level < ALB_FROM ? '🔒 Lv ' + ALB_FROM : alb().packs > 0 ? alb().packs + (alb().packs === 1 ? ' PACK' : ' PACKS') : albCount() + ' / 81', hot: () => level >= ALB_FROM && alb().packs > 0, go: openAlbum });
+    list.push({ name: 'Candy Jar', img: 'ev_jar', a: '#ffd36a', b: '#b8640a', tag: () => level < JAR_FROM ? '🔒 Lv ' + JAR_FROM : jar.c + ' / ' + JAR_MAX, hot: () => jar.c >= JAR_MIN, go: openJar });
+    return list;
+  }
+  const retentionHot = () => retentionCards().filter((o) => o.hot()).length;
+  if (location.search.includes('dbg')) Object.assign(window.CandokuDebug || {}, { hot: (n) => { hot.n = n; store.set('hot', hot); }, packs: (n) => addPacks(n), album: () => alb(), tower: () => tower, race: () => race, jar: (c) => { jar.c = c; store.set('jar', jar); }, iceAt: (lv) => iceLevel(lv), level: (n) => { level = n; store.set('level', n); }, notifPlan: () => notifPlan() });
+
   /* ---------- prize items fly into the matching counter at the top ---------- */
   function flyItems(r, src) {
     if (!r || !r.p) return;
@@ -3294,7 +3847,9 @@
     $('ewGo').textContent = T(Object.keys(p).length ? 'Collect' : 'OK'); $('ewGo').disabled = false; $('ewGo').dataset.from = o.from || 'quick';
     const party = $('winParty'); if (o.win && party) { $('evwin').insertBefore(party, $('evwin').firstChild); }
     $('evwin').hidden = false; $('evwin').classList.toggle('won', !!o.win);
-    if (o.win) { S.fanfare(); setTimeout(candyParty, 120); } else S.prize();
+    // the narrator says it (if the narrator is on in the settings); the win fanfare then plays softer under the voice
+    const talk = !!(V && V.isEnabled() && S.isOn() && S.evSay), said = talk && S.evSay(o.win ? 'win' : stars >= 1 ? 'good' : 'try');
+    if (o.win) { S.fanfare(said ? 0.4 : 1); setTimeout(candyParty, 120); } else S.prize();
     st.forEach((e, i) => setTimeout(() => { if (i < stars) { e.className = 'on'; S.star && S.star(i + 1, 1); buzz(12); } else e.className = 'off'; }, 380 + i * 320));
     // the coins count up from 0 to the prize
     const cb = $('ewPrize').querySelector('.k-coins b'); if (cb && reward > 1) { const t0 = performance.now() + 380 + stars * 320, D = Math.min(900, 120 + reward * 60); cb.textContent = '0';
@@ -3385,13 +3940,13 @@
       { name: 'Lucky Wheel', img: 'ic_wheel', a: '#b58aff', b: '#5a2fb8', tag: () => (wheel.date !== today() || wheel.extra > 0) ? 'FREE SPIN' : 'Soon', hot: () => wheel.date !== today() || wheel.extra > 0, go: openWheel },
       { name: 'Sour Storm', img: 'boss_idle', a: '#8a6cff', b: '#2a1458', tag: () => stormOn() ? (stormClaim() ? 'CLAIM ' + stormClaim() : '⏱ ' + fmtClock(STORM_MS - (Date.now() - storm.start))) : stormClaim() ? 'CLAIM ' + stormClaim() : stormFree() ? 'START' : 'Soon', hot: () => stormClaim() > 0 || stormFree(), go: openStorm },
       { name: 'Coin Rush', img: 'ev_rush', a: '#ffd23a', b: '#d9780a', tag: () => rushActive() ? '⚡ ' + Math.ceil((rush.until - Date.now()) / 60000) + ' min left' : rush.day === today() ? 'Back tomorrow' : 'START', hot: () => rushActive() || rush.day !== today(), go: () => { startRush(); refreshEvents(); } }
-    ].concat(GAMES.filter((g) => g[0] !== 'cart').map((g) => ({ name: g[1], img: g[2], a: g[3], b: g[4], key: g[0],
+    ].concat(retentionCards(), GAMES.filter((g) => g[0] !== 'cart').map((g) => ({ name: g[1], img: g[2], a: g[3], b: g[4], key: g[0],
       tag: () => { const l = MAX_PLAYS - (plays[g[0]] || 0), w = gameWait(g[0]); return l <= 0 ? 'Back tomorrow' : w > 0 ? '⏳ ' + fmtWait(w) : 'PLAY · ' + l + ' left'; },
       hot: () => (MAX_PLAYS - (plays[g[0]] || 0)) > 0 && gameWait(g[0]) <= 0, dim: () => (MAX_PLAYS - (plays[g[0]] || 0)) <= 0 || gameWait(g[0]) > 0, go: () => playGame(g[0]) })));
   }
   function eventsHot() {
     const passClaim = PASS.filter((x, i) => i < pass.step && !pass.cl[i]).length;
-    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + (stormClaim() > 0 || stormFree() ? 1 : 0);
+    return (passClaim ? 1 : 0) + ((chest.q ? chestLeft() <= 0 : chest.n >= CHEST_AT) ? 1 : 0) + ((wheel.date !== today() || wheel.extra > 0) ? 1 : 0) + (!rushActive() && rush.day !== today() ? 1 : 0) + (stormClaim() > 0 || stormFree() ? 1 : 0) + (() => { try { return retentionHot(); } catch (e) { return 0; } })();
   }
   function renderEvents() {
     freshDay(); buildEventItems(); const grid = $('evGrid'); grid.innerHTML = '';
