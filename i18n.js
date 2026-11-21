@@ -234,6 +234,7 @@
   };
   // keep playing (2026-11-21)
   Object.assign(D, {
+    'Restart level': 'Reiniciar nivel',
     'Candy Climb prizes!': '¡Premios de la Escalada dulce!',
     '🔥 Super Hard': '🔥 Súper difícil', 'SUPER HARD': 'SÚPER DIFÍCIL', '🔥 Super Hard level!': '🔥 ¡Nivel súper difícil!', 'Super Hard beaten!': '¡Venciste un nivel súper difícil!',
     'One of the hardest boards in the game, and': 'Uno de los tableros más difíciles del juego, y', 'only 2 hearts': 'solo 2 corazones',
